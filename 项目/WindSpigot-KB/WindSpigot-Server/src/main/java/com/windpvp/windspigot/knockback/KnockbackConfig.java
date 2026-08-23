@@ -267,7 +267,7 @@ public class KnockbackConfig {
 	 */
 	private static void loadProfileFromFile(File file) {
 		String key = file.getName().substring(0, file.getName().length() - ".yml".length());
-		YamlConfiguration yml = YamlConfiguration.loadConfiguration(file);
+		YamlConfiguration yml = loadYaml(file);
 
 		CraftKnockbackProfile profile = (CraftKnockbackProfile) getKbProfileByName(key);
 		if (profile == null) {
@@ -321,9 +321,46 @@ public class KnockbackConfig {
 		profile.setSnowballVertical(yml.getDouble("projectiles.snowball.vertical", 0.4D));
 		profile.setEggHorizontal(yml.getDouble("projectiles.egg.horizontal", 0.4D));
 		profile.setEggVertical(yml.getDouble("projectiles.egg.vertical", 0.4D));
+
+		// 引擎参数覆盖：模式文件中出现的引擎键（base-kb/multiplier 等）对该模式的受害者优先生效
+		profile.clearEngineOverrides();
+		for (KnockbackEngineSettings.Param p : KnockbackEngineSettings.PARAMS.values()) {
+			if (!yml.contains(p.path)) {
+				continue;
+			}
+			switch (p.type) {
+			case DOUBLE:
+				profile.setEngineOverride(p.path, yml.getDouble(p.path));
+				break;
+			case INT:
+				profile.setEngineOverride(p.path, yml.getInt(p.path));
+				break;
+			case BOOL:
+				profile.setEngineOverride(p.path, yml.getBoolean(p.path));
+				break;
+			}
+		}
 	}
 
 	// ==================== 引擎参数多文件 IO ====================
+
+	/**
+	 * 加载 yml 文件并剥离 UTF-8 BOM（记事本等编辑器保存的带 BOM 文件会导致首个键名损坏）
+	 */
+	public static YamlConfiguration loadYaml(File file) {
+		YamlConfiguration yml = new YamlConfiguration();
+		try {
+			String content = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+					java.nio.charset.StandardCharsets.UTF_8);
+			if (content.startsWith("\uFEFF")) {
+				content = content.substring(1);
+			}
+			yml.loadFromString(content);
+		} catch (IOException | InvalidConfigurationException ex) {
+			LOGGER.log(Level.ERROR, "无法加载 " + file.getPath(), ex);
+		}
+		return yml;
+	}
 
 	/**
 	 * 加载引擎参数：kb配置文件/ 下各分类文件（合并语义），
@@ -345,7 +382,7 @@ public class KnockbackConfig {
 				if (!file.exists()) {
 					continue;
 				}
-				total += KnockbackEngineSettings.loadFrom(YamlConfiguration.loadConfiguration(file));
+				total += KnockbackEngineSettings.loadFrom(loadYaml(file));
 			}
 			WindSpigot.LOGGER.info("击退引擎参数加载: " + total + " 个键来自 " + KB_DIR.getPath());
 		}
@@ -381,8 +418,7 @@ public class KnockbackConfig {
 		KB_DIR.mkdirs();
 		for (Map.Entry<String, List<String>> entry : CATEGORY_FILES.entrySet()) {
 			File file = new File(KB_DIR, entry.getKey());
-			YamlConfiguration yml = file.exists() ? YamlConfiguration.loadConfiguration(file)
-					: new YamlConfiguration();
+			YamlConfiguration yml = file.exists() ? loadYaml(file) : new YamlConfiguration();
 			for (KnockbackEngineSettings.Param p : KnockbackEngineSettings.PARAMS.values()) {
 				if (entry.getValue().contains(p.category)) {
 					yml.set(p.path, p.get());

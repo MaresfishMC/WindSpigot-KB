@@ -5,12 +5,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dev.cobblesword.nachospigot.knockback.KnockbackProfile;
+import net.minecraft.server.ChatComponentText;
 import net.minecraft.server.Entity;
 import net.minecraft.server.EntityHuman;
 import net.minecraft.server.EntityLiving;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.MathHelper;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.PacketPlayOutChat;
 import net.minecraft.server.PacketPlayOutEntityVelocity;
 
 /**
@@ -33,6 +35,25 @@ import net.minecraft.server.PacketPlayOutEntityVelocity;
 public final class KnockbackEngine {
 
 	private KnockbackEngine() {
+	}
+
+	// ==================== 模式覆盖查询（受害者个人模式中的引擎键优先于全局） ====================
+
+	/**
+	 * 数值参数取值：受害者被设置了个人模式且模式文件覆盖该引擎键时，用覆盖值；否则用全局值。
+	 * 布尔开关保持全局（避免同场玩家规则不一致）。
+	 */
+	private static double d(Entity victim, String path) {
+		if (victim != null) {
+			KnockbackProfile profile = victim.getKnockbackProfile();
+			if (profile instanceof CraftKnockbackProfile) {
+				Object override = ((CraftKnockbackProfile) profile).getEngineOverride(path);
+				if (override instanceof Number) {
+					return ((Number) override).doubleValue();
+				}
+			}
+		}
+		return KnockbackEngineSettings.d(path);
 	}
 
 	// ==================== 连击追踪 ====================
@@ -71,6 +92,11 @@ public final class KnockbackEngine {
 		if (attacker.isExtraKnockback() || attacker.isSprinting()) {
 			return true;
 		}
+		return isInSprintGrace(attacker);
+	}
+
+	/** 是否处于疾跑宽限窗口内（仅当 sprint-reach.enabled 开启） */
+	private static boolean isInSprintGrace(EntityHuman attacker) {
 		if (!KnockbackEngineSettings.b("sprint-reach.enabled")) {
 			return false;
 		}
@@ -81,13 +107,18 @@ public final class KnockbackEngine {
 	// ==================== 动态 misplay（借鉴 KnockbackManager 思想，按 ping 补偿） ====================
 
 	/**
-	 * 基于目标玩家延迟计算击退补偿系数。
+	 * 基于目标玩家延迟计算击退补偿系数（速度补偿，不改动位置）。
 	 * 延迟越高，目标客户端实际位置越滞后于服务端，击退按系数放大以补偿"misplay"。
+	 * 反作弊兼容：补偿倍率封顶 1+max-compensation；目标正贴墙碰撞时回退本次补偿。
 	 *
 	 * @return 1.0 表示无补偿
 	 */
 	public static double getMisplayMultiplier(Entity victim) {
 		if (!KnockbackEngineSettings.b("dynamic-misplay.enabled") || !(victim instanceof EntityPlayer)) {
+			return 1.0D;
+		}
+		// 反作弊兼容：目标正在水平碰撞（贴墙/被卡）时不补偿，避免误触发移动检测
+		if (KnockbackEngineSettings.b("dynamic-misplay.anti-cheat-compatible") && victim.positionChanged) {
 			return 1.0D;
 		}
 		int ping = ((EntityPlayer) victim).ping;
@@ -98,7 +129,10 @@ public final class KnockbackEngine {
 			factor = Math.min(factor * (1.0D + target), 1.0D);
 		}
 		double compensation = KnockbackEngineSettings.d("dynamic-misplay.compensation");
-		return 1.0D + target * compensation * factor;
+		double multiplier = 1.0D + target * compensation * factor;
+		// 反作弊兼容：补偿上限（默认 1.3 倍）
+		double maxMultiplier = 1.0D + KnockbackEngineSettings.d("dynamic-misplay.max-compensation");
+		return Math.min(multiplier, maxMultiplier);
 	}
 
 	// ==================== 阶段一：基础击退 ====================
@@ -118,25 +152,31 @@ public final class KnockbackEngine {
 		}
 
 		boolean air = !victim.onGround;
+		// 空中/地面判定宽限：服务端 onGround 与客户端存在 1~2 tick 延迟，
+		// 落地后 air-ground.grace-ticks 内仍按地面计算，避免摩擦/乘区突变导致"吸地/飘移"
+		int groundGrace = KnockbackEngineSettings.i("air-ground.grace-ticks");
+		if (air && groundGrace > 0
+				&& MinecraftServer.currentTick - victim.kbLastGroundTick <= groundGrace) {
+			air = false;
+		}
+
 		boolean pvp = KnockbackEngineSettings.b("pvp.enabled") && victim instanceof EntityHuman
 				&& attacker != null;
 
-		// ---- 基础值 × 乘区（空中/地面分开，对刀走独立乘区） ----
+		// ---- 基础值 × 乘区（空中/地面分开，对刀走独立乘区，模式文件可覆盖） ----
 		String state = air ? "air" : "ground";
 		String multPrefix = pvp ? "pvp.multiplier." : "multiplier.";
 
-		double horizontal = KnockbackEngineSettings.d("base-kb.horizontal." + state)
-				* KnockbackEngineSettings.d(multPrefix + "horizontal." + state);
-		double vertical = KnockbackEngineSettings.d("base-kb.vertical." + state)
-				* KnockbackEngineSettings.d(multPrefix + "vertical." + state);
+		double horizontal = d(victim, "base-kb.horizontal." + state) * d(victim, multPrefix + "horizontal." + state);
+		double vertical = d(victim, "base-kb.vertical." + state) * d(victim, multPrefix + "vertical." + state);
 
 		// ---- 距离衰减（借鉴 MMC：远距离命中减免击退） ----
 		if (KnockbackEngineSettings.b("range-reduction.enabled") && attacker != null) {
-			double startRange = KnockbackEngineSettings.d("range-reduction.start-range");
+			double startRange = d(victim, "range-reduction.start-range");
 			if (magnitude > startRange) {
 				double reduction = Math.min(
-						(magnitude - startRange) * KnockbackEngineSettings.d("range-reduction.factor"),
-						KnockbackEngineSettings.d("range-reduction.max-reduction"));
+						(magnitude - startRange) * d(victim, "range-reduction.factor"),
+						d(victim, "range-reduction.max-reduction"));
 				horizontal = Math.max(0.0D, horizontal - reduction);
 			}
 		}
@@ -144,21 +184,18 @@ public final class KnockbackEngine {
 		// ---- 连击递增（连续命中有额外击退） ----
 		if (KnockbackEngineSettings.b("combo.enabled")) {
 			int combo = nextCombo(victim);
-			horizontal += Math.min(combo * KnockbackEngineSettings.d("combo.increment"),
-					KnockbackEngineSettings.d("combo.max"));
+			horizontal += Math.min(combo * d(victim, "combo.increment"), d(victim, "combo.max"));
 		}
 
 		// ---- 防飞天限高（受击者高出攻击者过多时改用超限垂直击退） ----
 		if (KnockbackEngineSettings.b("y-limit.enabled") && attacker != null
-				&& victim.locY - attacker.locY > KnockbackEngineSettings.d("y-limit.max-y-height")) {
-			vertical = KnockbackEngineSettings.d("y-limit.vertical-kb-after-limit");
+				&& victim.locY - attacker.locY > d(victim, "y-limit.max-y-height")) {
+			vertical = d(victim, "y-limit.vertical-kb-after-limit");
 		}
 
 		// ---- 动量保留（momentum=保留比例, 0=完全覆盖原有速度, 原版=0.5） ----
-		double momentumH = KnockbackEngineSettings.d("base-kb.horizontal-momentum")
-				* KnockbackEngineSettings.d(multPrefix + "horizontal-momentum");
-		double momentumV = KnockbackEngineSettings.d("base-kb.vertical-momentum")
-				* KnockbackEngineSettings.d(multPrefix + "vertical-momentum");
+		double momentumH = d(victim, "base-kb.horizontal-momentum") * d(victim, multPrefix + "horizontal-momentum");
+		double momentumV = d(victim, "base-kb.vertical-momentum") * d(victim, multPrefix + "vertical-momentum");
 
 		victim.motX *= momentumH;
 		victim.motY *= momentumV;
@@ -169,8 +206,7 @@ public final class KnockbackEngine {
 		victim.motZ -= z / magnitude * horizontal;
 
 		// ---- 垂直上限钳制 ----
-		double verticalLimit = KnockbackEngineSettings.d("base-kb.vertical-limit")
-				* KnockbackEngineSettings.d(multPrefix + "vertical-limit");
+		double verticalLimit = d(victim, "base-kb.vertical-limit") * d(victim, multPrefix + "vertical-limit");
 		if (victim.motY > verticalLimit) {
 			victim.motY = verticalLimit;
 		}
@@ -189,7 +225,9 @@ public final class KnockbackEngine {
 	 */
 	public static boolean applySprintKnockback(EntityHuman attacker, Entity victim, int enchantLevel,
 			KnockbackProfile profile) {
-		boolean sprintKb = isSprintingEffective(attacker);
+		boolean realSprint = attacker.isExtraKnockback() || attacker.isSprinting();
+		boolean graceSprint = !realSprint && isInSprintGrace(attacker);
+		boolean sprintKb = realSprint || graceSprint;
 		if (!sprintKb && enchantLevel <= 0) {
 			return false;
 		}
@@ -202,16 +240,25 @@ public final class KnockbackEngine {
 
 		boolean applied = false;
 
-		// 疾跑额外击退（绝对值累加）
+		// 疾跑额外击退（绝对值累加，模式文件可覆盖）
 		if (sprintKb) {
-			double sprintExtraH = pvp ? KnockbackEngineSettings.d("pvp.horizontal.sprint-extra")
-					: KnockbackEngineSettings.d("horizontal.sprint-extra");
-			double sprintExtraV = pvp ? KnockbackEngineSettings.d("pvp.vertical.sprint-extra")
-					: KnockbackEngineSettings.d("vertical.sprint-extra");
+			double sprintExtraH = pvp ? d(victim, "pvp.horizontal.sprint-extra")
+					: d(victim, "horizontal.sprint-extra");
+			double sprintExtraV = pvp ? d(victim, "pvp.vertical.sprint-extra")
+					: d(victim, "vertical.sprint-extra");
 			if (sprintExtraH != 0.0D || sprintExtraV != 0.0D) {
 				victim.g(sin * sprintExtraH * dynamicMultiplier, sprintExtraV * dynamicMultiplier,
 						cos * sprintExtraH * dynamicMultiplier);
 				applied = true;
+				// 疾跑宽限视觉反馈：宽限生效时通过 ActionBar 提示攻击者
+				if (graceSprint && KnockbackEngineSettings.b("sprint-reach.feedback")
+						&& attacker instanceof EntityPlayer) {
+					int remaining = KnockbackEngineSettings.i("sprint-reach.grace-ticks")
+							- (MinecraftServer.currentTick - attacker.kbLastSprintStopTick);
+					((EntityPlayer) attacker).playerConnection.sendPacket(new PacketPlayOutChat(
+							new ChatComponentText("§e疾跑宽限生效 §7(剩余 " + Math.max(0, remaining) + " tick)"),
+							(byte) 2));
+				}
 			}
 		}
 

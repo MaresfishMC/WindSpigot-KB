@@ -58,6 +58,8 @@ public abstract class EntityLiving extends Entity {
 	public boolean kbGravityOverride = false;
 	/** 无敌帧内已施加击退（供 EntityHuman.attack() 识别并同步速度包） */
 	public boolean kbIframeKbApplied = false;
+	/** 最后一次处于地面的 tick（空中/地面判定宽限用） */
+	public int kbLastGroundTick = 0;
 	// WindSpigot end
 	public float aE;
 	public float aF;
@@ -1660,6 +1662,10 @@ public abstract class EntityLiving extends Entity {
 					}
 				} else {
 					this.motY -= KnockbackEngine.gravityFor(this); // WindSpigot - 击退滞空期间自定义重力
+				}
+
+				if (this.onGround) {
+					this.kbLastGroundTick = MinecraftServer.currentTick; // WindSpigot - 空中/地面判定宽限
 				}
 
 				this.motY *= KnockbackEngine.airResistanceFor(this); // WindSpigot - 击退滞空期间自定义空气阻力

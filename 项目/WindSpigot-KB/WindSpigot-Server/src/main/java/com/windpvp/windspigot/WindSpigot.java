@@ -22,6 +22,7 @@ import com.windpvp.windspigot.commands.SetMaxSlotCommand;
 import com.windpvp.windspigot.commands.SpawnMobCommand;
 import com.windpvp.windspigot.config.WindSpigotConfig;
 import com.windpvp.windspigot.hitdetection.LagCompensator;
+import com.windpvp.windspigot.knockback.CraftKnockbackAPI;
 import com.windpvp.windspigot.protocol.MovementListener;
 import com.windpvp.windspigot.protocol.PacketListener;
 import com.windpvp.windspigot.statistics.StatisticsClient;
@@ -39,6 +40,12 @@ public class WindSpigot {
 	private static WindSpigot INSTANCE;
 	
 	private CombatThread knockbackThread;
+
+	private CraftKnockbackAPI knockbackAPI;
+
+	public CraftKnockbackAPI getKnockbackAPI() {
+		return knockbackAPI;
+	}
 	
 	private final Executor statisticsExecutor = Executors
 			.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("WindSpigot Statistics Thread")
@@ -54,7 +61,12 @@ public class WindSpigot {
 	private WindSpigot() {
 		initCmds();
 		initStatistics();
-		
+
+		// 击退引擎对外 API（供竞技场等插件集成）
+		knockbackAPI = new CraftKnockbackAPI();
+		Bukkit.getServicesManager().register(dev.cobblesword.nachospigot.knockback.KnockbackAPI.class,
+				knockbackAPI, CorePluginBridge.get(), org.bukkit.plugin.ServicePriority.Normal);
+
 		// We do not want to initialize this again after a reload
 		if (WindSpigotConfig.asyncPathSearches && SearchHandler.getInstance() == null) {
 			new SearchHandler();

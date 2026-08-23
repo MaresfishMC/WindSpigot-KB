@@ -2,11 +2,15 @@ package com.windpvp.windspigot.knockback;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.bukkit.configuration.file.YamlConfiguration;
+
+import com.windpvp.windspigot.WindSpigot;
 
 /**
  * 击退引擎全局参数（新版 schema，与 KB 调试工具「新版适配」的 knockback.yml 一一对应）。
@@ -14,8 +18,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
  * 设计说明:
  * - 所有参数统一注册在 {@link #PARAMS} 注册表中，指令 / GUI / 配置文件共用同一份元数据，
  *   保证「所有参数均可通过指令调整」且井然有序。
+ * - 参数值保存在 {@link AtomicReference} 持有的不可变快照中：热重载时先构建完整新快照，
+ *   校验通过后原子替换，杜绝并发读到半合并状态（reload 与击退计算天然线程安全）。
  * - 热更新采用「合并」语义：reload 时只覆盖文件中【显式存在】的键，
  *   这样调试工具导出的 YAML（只含工具认识的键）不会冲掉核心扩展参数（如 dynamic-misplay）。
+ * - 一致性自检：每次合并后运行 {@link #validate(Map)} 校验，若异常则回滚至上一稳定快照。
  * - 击退语义（与调试工具注释一致）:
  *   最终击退 = base-kb × multiplier；sprint-extra 为绝对值累加。
  *
@@ -28,14 +35,13 @@ public class KnockbackEngineSettings {
 		DOUBLE, INT, BOOL
 	}
 
-	/** 单个参数的元数据 + 存取器 */
+	/** 单个参数的元数据（值存于快照，不存于此） */
 	public static final class Param {
 		public final String path; // yml 路径（点分）
 		public final Type type;
 		public final Object def; // 默认值
 		public final String category; // GUI/指令分组
 		public final String desc; // 中文说明
-		private Object value;
 
 		Param(String path, Type type, Object def, String category, String desc) {
 			this.path = path;
@@ -43,42 +49,51 @@ public class KnockbackEngineSettings {
 			this.def = def;
 			this.category = category;
 			this.desc = desc;
-			this.value = def;
 		}
 
 		public Object get() {
-			return value;
+			return SNAPSHOT.get().get(path);
 		}
 
 		public double getDouble() {
-			return ((Number) value).doubleValue();
+			return ((Number) get()).doubleValue();
 		}
 
 		public int getInt() {
-			return ((Number) value).intValue();
+			return ((Number) get()).intValue();
 		}
 
 		public boolean getBool() {
-			return (Boolean) value;
+			return Boolean.TRUE.equals(get());
 		}
 
-		@SuppressWarnings("incomplete-switch")
+		/** 写时复制：修改立即生效且对并发读取安全 */
 		public void set(Object v) {
+			Object val;
 			switch (type) {
 			case DOUBLE:
-				this.value = ((Number) v).doubleValue();
+				val = ((Number) v).doubleValue();
 				break;
 			case INT:
-				this.value = ((Number) v).intValue();
+				val = ((Number) v).intValue();
 				break;
 			case BOOL:
-				this.value = (Boolean) v;
+			default:
+				val = (Boolean) v;
 				break;
+			}
+			while (true) {
+				Map<String, Object> current = SNAPSHOT.get();
+				Map<String, Object> next = new HashMap<>(current);
+				next.put(path, val);
+				if (SNAPSHOT.compareAndSet(current, Collections.unmodifiableMap(next))) {
+					return;
+				}
 			}
 		}
 
 		public void reset() {
-			this.value = def;
+			set(def);
 		}
 
 		/** GUI 点击调整的推荐步长 */
@@ -95,6 +110,7 @@ public class KnockbackEngineSettings {
 			if (p.contains("range-reduction.max-reduction")) return 0.05;
 			if (p.contains("y-limit.max-y-height")) return 0.25;
 			if (p.contains("combo.")) return 0.05;
+			if (p.contains("max-compensation")) return 0.05;
 			return 0.015;
 		}
 	}
@@ -140,6 +156,7 @@ public class KnockbackEngineSettings {
 		reg("sprint-reach.enabled", Type.BOOL, false, CAT_SPRINT, "疾跑宽松判定总开关");
 		reg("sprint-reach.grace-ticks", Type.INT, 5, CAT_SPRINT, "疾跑宽限(tick内仍视为疾跑)");
 		reg("sprint-reach.extra", Type.DOUBLE, 0.5D, CAT_SPRINT, "疾跑时额外攻击距离(格)");
+		reg("sprint-reach.feedback", Type.BOOL, false, CAT_SPRINT, "疾跑宽限生效时ActionBar提示");
 
 		// ---------- 对刀 PVP 独立参数 ----------
 		reg("pvp.enabled", Type.BOOL, true, CAT_PVP, "对刀独立参数总开关");
@@ -175,10 +192,25 @@ public class KnockbackEngineSettings {
 		reg("combo.reset-ticks", Type.INT, 40, CAT_ADVANCED, "连击重置间隔(tick)");
 		reg("gravity.value", Type.DOUBLE, 0.08D, CAT_ADVANCED, "击退后重力(仅击退滞空时)");
 		reg("gravity.air-resistance", Type.DOUBLE, 0.98D, CAT_ADVANCED, "击退后空气阻力");
+		reg("air-ground.grace-ticks", Type.INT, 1, CAT_ADVANCED, "空中/地面判定宽限(落地后tick内仍按地面)");
 		// 核心扩展（调试工具不含此节，合并热更新不会丢失）
 		reg("dynamic-misplay.enabled", Type.BOOL, false, CAT_ADVANCED, "动态misplay开关(按目标ping补偿)");
 		reg("dynamic-misplay.target", Type.DOUBLE, 0.0D, CAT_ADVANCED, "目标misplay值");
 		reg("dynamic-misplay.compensation", Type.DOUBLE, 0.5D, CAT_ADVANCED, "misplay补偿系数");
+		reg("dynamic-misplay.max-compensation", Type.DOUBLE, 0.3D, CAT_ADVANCED, "misplay补偿上限(倍率<=1+该值)");
+		reg("dynamic-misplay.anti-cheat-compatible", Type.BOOL, true, CAT_ADVANCED, "反作弊兼容(碰撞时回退补偿)");
+	}
+
+	// ==================== 原子快照（热重载并发安全） ====================
+
+	private static final AtomicReference<Map<String, Object>> SNAPSHOT = new AtomicReference<>(buildDefaults());
+
+	private static Map<String, Object> buildDefaults() {
+		Map<String, Object> map = new HashMap<>();
+		for (Param p : PARAMS.values()) {
+			map.put(p.path, p.def);
+		}
+		return Collections.unmodifiableMap(map);
 	}
 
 	// ==================== 便捷存取 ====================
@@ -223,19 +255,65 @@ public class KnockbackEngineSettings {
 	}
 
 	public static void resetAll() {
-		for (Param p : PARAMS.values()) {
-			p.reset();
-		}
+		SNAPSHOT.set(buildDefaults());
 	}
 
-	// ==================== 配置文件读写（合并语义） ====================
+	// ==================== 一致性自检 ====================
 
 	/**
-	 * 从配置加载：只覆盖文件中【显式存在】的键，其余保持当前值（合并热更新）。
+	 * 校验一份候选快照的合法性。
 	 *
-	 * @return 实际被覆盖的键数量
+	 * @return null 表示合法；否则返回错误描述
+	 */
+	private static String validate(Map<String, Object> m) {
+		for (Param p : PARAMS.values()) {
+			Object v = m.get(p.path);
+			if (v == null) {
+				return "缺少参数: " + p.path;
+			}
+			String error = checkValue(p, v);
+			if (error != null) {
+				return error;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * 校验单个参数值（指令/GUI 写入前调用）。
+	 *
+	 * @return null 表示合法；否则返回错误描述
+	 */
+	public static String checkValue(Param p, Object v) {
+		if (p.type == Type.DOUBLE || p.type == Type.INT) {
+			double num = ((Number) v).doubleValue();
+			if (Double.isNaN(num) || Double.isInfinite(num)) {
+				return "非法数值(NaN/Infinity): " + p.path;
+			}
+			// 动量保留必须在 [0,1]，否则击退会无限放大
+			if (p.path.contains("momentum") && (num < 0.0D || num > 1.0D)) {
+				return "动量保留必须在0~1之间: " + p.path + "=" + num;
+			}
+			// 乘区/上限/衰减/连击等不允许负数（y-limit.vertical-kb-after-limit 明确允许负值）
+			if (!p.path.equals("y-limit.vertical-kb-after-limit") && !p.path.contains("sprint-extra")
+					&& !p.path.equals("dynamic-misplay.target") && num < 0.0D) {
+				return "参数不允许为负数: " + p.path + "=" + num;
+			}
+		}
+		return null;
+	}
+
+	// ==================== 配置文件读写（合并语义 + 原子替换 + 校验回滚） ====================
+
+	/**
+	 * 从配置加载：在当前快照基础上只覆盖文件中【显式存在】的键，构建新快照并原子替换。
+	 * 若合并结果未通过一致性校验，则回滚（保持旧快照不变）。
+	 *
+	 * @return 实际被覆盖的键数量；-1 表示校验失败已回滚
 	 */
 	public static int loadFrom(YamlConfiguration config) {
+		Map<String, Object> current = SNAPSHOT.get();
+		Map<String, Object> next = new HashMap<>(current);
 		int loaded = 0;
 		for (Param p : PARAMS.values()) {
 			if (!config.contains(p.path)) {
@@ -243,17 +321,26 @@ public class KnockbackEngineSettings {
 			}
 			switch (p.type) {
 			case DOUBLE:
-				p.set(config.getDouble(p.path));
+				next.put(p.path, config.getDouble(p.path));
 				break;
 			case INT:
-				p.set(config.getInt(p.path));
+				next.put(p.path, config.getInt(p.path));
 				break;
 			case BOOL:
-				p.set(config.getBoolean(p.path));
+				next.put(p.path, config.getBoolean(p.path));
 				break;
 			}
 			loaded++;
 		}
+		if (loaded == 0) {
+			return 0;
+		}
+		String error = validate(next);
+		if (error != null) {
+			WindSpigot.LOGGER.warn("击退参数一致性自检失败，已回滚至上一稳定配置: " + error);
+			return -1;
+		}
+		SNAPSHOT.set(Collections.unmodifiableMap(next));
 		return loaded;
 	}
 

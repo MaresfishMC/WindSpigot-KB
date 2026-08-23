@@ -167,29 +167,38 @@ public class KnockbackCommand extends Command {
 			sender.sendMessage("§c未知参数: " + path + " §7(/kb list 查看全部)");
 			return;
 		}
+		Object parsed;
 		switch (p.type) {
 		case BOOL:
 			if (!rawValue.equalsIgnoreCase("true") && !rawValue.equalsIgnoreCase("false")) {
 				sender.sendMessage("§c布尔参数只接受 true/false");
 				return;
 			}
-			p.set(Boolean.parseBoolean(rawValue));
+			parsed = Boolean.parseBoolean(rawValue);
 			break;
 		case INT:
 			if (!NumberUtils.isNumber(rawValue)) {
 				sender.sendMessage("§c整数参数格式错误: " + rawValue);
 				return;
 			}
-			p.set((int) Double.parseDouble(rawValue));
+			parsed = (int) Double.parseDouble(rawValue);
 			break;
 		case DOUBLE:
+		default:
 			if (!NumberUtils.isNumber(rawValue)) {
 				sender.sendMessage("§c数值参数格式错误: " + rawValue);
 				return;
 			}
-			p.set(Double.parseDouble(rawValue));
+			parsed = Double.parseDouble(rawValue);
 			break;
 		}
+		// 一致性自检：非法值拒绝写入
+		String error = KnockbackEngineSettings.checkValue(p, parsed);
+		if (error != null) {
+			sender.sendMessage("§c参数校验失败，已拒绝: " + error);
+			return;
+		}
+		p.set(parsed);
 		KnockbackConfig.saveEngineSettings(); // 即时生效 + 持久化
 		sender.sendMessage("§a已更新 §f" + p.path + " §7→ " + formatValue(p) + " §7(已保存)");
 	}

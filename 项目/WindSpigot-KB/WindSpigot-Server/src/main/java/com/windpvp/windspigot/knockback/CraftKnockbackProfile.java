@@ -70,6 +70,22 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	private double targetMisplay = 0.0D;
 	private double misplayCompensation = 0.5D;
 
+	// ==================== 引擎参数覆盖（模式文件中的引擎键，优先级高于全局引擎参数） ====================
+	private final java.util.Map<String, Object> engineOverrides = new java.util.HashMap<>();
+
+	/** 获取该模式对引擎参数的覆盖值（无覆盖返回 null） */
+	public Object getEngineOverride(String path) {
+		return engineOverrides.get(path);
+	}
+
+	void setEngineOverride(String path, Object value) {
+		engineOverrides.put(path, value);
+	}
+
+	void clearEngineOverrides() {
+		engineOverrides.clear();
+	}
+
 	public CraftKnockbackProfile(String name) {
 		this.name = name;
 	}
