@@ -36,4 +36,4 @@ build.bat
 - PaperSpigot / TacoSpigot — 更上游
 - [dw1e/KnockbackManager](https://github.com/dw1e/KnockbackManager) — 动态 misplay 与配置文件拆分思路（仅借鉴，未照搬）
 - [Revethere 的博客](https://revethere.github.io/posts/academic@min-kb-click-freq-lower-bound/) — 击退运动公式与 MMC 击退算法分析
-- [5090Dv2（墨渊）](https://github.com/5090Dv2) — KB 调试工具（新版适配）与参数 schema
+- [原作者主写，5090dv2主发](https://github.com/5090Dv2) — KB 调试工具（新版适配）与参数 schema
