@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>KBM 微调工具 · 高级设置完整版</title>
+    <style>
+        /* ===== 样式与之前一致，略作精简 ===== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0b0b1a;
+            --card: #14142a;
+            --panel: #101020;
+            --border: #2a2a48;
+            --text: #e0e0f0;
+            --text2: #8a8aaa;
+            --accent: #6fbf73;
+            --gold: #e6b84d;
+            --shadow: 0 8px 24px rgba(0,0,0,0.6);
+            --radius: 12px;
+            --font: 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            padding: 12px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 760px;
+            width: 100%;
+            background: var(--card);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        h1 { color: var(--accent); font-size: 2rem; font-weight: 300; text-align: center; letter-spacing: 2px; margin: 0 0 6px; }
+        .sub { text-align: center; color: var(--text2); border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 18px; font-size: 0.95rem; }
+        .env-tip {
+            background: #1a2a2a;
+            color: #a6e3a1;
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border: 1px solid #2a4a3a;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+        .env-tip a { color: var(--accent); text-decoration: none; font-weight: 600; cursor: pointer; padding: 0 6px; }
+        .env-tip a:hover { text-decoration: underline; }
+        .section {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+        }
+        .row label {
+            color: var(--text2);
+            font-size: 0.9rem;
+            min-width: 70px;
+        }
+        .row input, .row select {
+            background: #0a0a18;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            height: 36px;
+            flex: 1 1 120px;
+            min-width: 80px;
+        }
+        .row input:focus, .row select:focus { border-color: var(--accent); outline: none; }
+        .btn {
+            background: #3a4a6a;
+            border: none;
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            height: 36px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.1s;
+            user-select: none;
+            gap: 4px;
+            min-width: 64px;
+        }
+        .btn:hover { filter: brightness(1.15); }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: #4f7a4f; }
+        .btn-danger { background: #8a4a4a; }
+        .btn-warning { background: #b08a3a; }
+        .btn-info { background: #3a6a8a; }
+        .btn-mild { background: #4a7a4a; }
+        .btn-medium { background: #b08a3a; }
+        .btn-strong { background: #8a4a4a; }
+        .btn-cancel { background: #4a4a6a; }
+        .btn-ghost { background: transparent; border: 1px solid #4a4a6a; }
+
+        .info-panel {
+            background: #0a0a18;
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            border: 1px solid #1a1a30;
+            margin-bottom: 16px;
+        }
+        .info-cell { font-size: 0.9rem; color: var(--text2); }
+        .info-cell .value { color: var(--gold); font-family: monospace; font-weight: 600; }
+
+        .config-card {
+            background: #0a0a18;
+            border-left: 4px solid var(--accent);
+            padding: 10px 14px;
+            margin: 8px 0;
+            border-radius: 6px;
+        }
+        .config-card .detail {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #1a1a2e;
+            padding: 4px 0;
+            font-size: 0.9rem;
+        }
+        .config-card .detail .val { color: var(--gold); font-family: monospace; }
+        .choice-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .choice-buttons .btn { flex: 1; min-width: 80px; }
+
+        .scheme-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+            align-items: center;
+        }
+        .scheme-actions .btn { flex: 0 1 auto; min-width: 60px; height: 30px; font-size: 0.8rem; padding: 0 8px; }
+        .scheme-actions select { flex: 1; min-width: 100px; height: 30px; font-size: 0.8rem; background: #0a0a18; border: 1px solid var(--border); color: #fff; border-radius: 4px; }
+
+        .history {
+            background: #0a0a18;
+            border-radius: 6px;
+            padding: 6px 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #1a1a30;
+        }
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #1a1a2e;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .history-item:hover { background: #1a1a2e; }
+        .history-item .time { color: #5a5a7a; flex-shrink: 0; }
+        .history-item .action { color: var(--accent); flex-shrink: 0; }
+        .history-item .desc { color: #aaa; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-item .restore {
+            background: #3a4a6a;
+            border: none;
+            color: #fff;
+            padding: 0 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            height: 24px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .suggestion-box {
+            background: #0a0a18;
+            border-left: 4px solid var(--gold);
+            padding: 8px 12px;
+            margin-top: 8px;
+            color: var(--gold);
+            border-radius: 4px;
+            min-height: 34px;
+            font-size: 0.95rem;
+        }
+
+        .foldable-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .foldable-header .arrow { display: inline-block; transition: transform 0.2s; }
+        .foldable-header .arrow.collapsed { transform: rotate(-90deg); }
+        .foldable-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            max-height: 500px;
+        }
+        .foldable-content.collapsed { max-height: 0; padding-top: 0; margin-top: 0; }
+
+        .preset-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .preset-tag {
+            background: #1a2a3a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #3a5a6a;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .preset-tag:hover { background: #2a4a5a; }
+        .preset-tag .del { color: #a06060; font-weight: bold; margin-left: 4px; cursor: pointer; }
+        .preset-tag .del:hover { color: #c07070; }
+        .preset-tag .load-a, .preset-tag .load-b {
+            background: #3a6a8a;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0 8px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            height: 20px;
+            line-height: 20px;
+        }
+        .preset-tag .load-a:hover { background: #4a7a9a; }
+        .preset-tag .load-b:hover { background: #4a7a9a; }
+
+        .tour-highlight {
+            display: none;
+            position: fixed;
+            border: 3px solid var(--accent);
+            border-radius: 10px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+            pointer-events: auto;
+            transition: left 0.15s, top 0.15s, width 0.15s, height 0.15s;
+            z-index: 10000;
+            background: transparent;
+        }
+        .tour-tip {
+            display: none;
+            position: fixed;
+            background: rgba(24,24,43,0.95);
+            border: 1px solid var(--accent);
+            border-radius: 14px;
+            padding: 16px 20px;
+            max-width: 300px;
+            color: #e8e8f0;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            z-index: 10001;
+            pointer-events: auto;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            transition: left 0.15s, top 0.15s;
+        }
+        .tour-tip .title { color: var(--accent); font-weight: 600; margin-bottom: 6px; font-size: 1.05rem; }
+        .tour-tip .desc { color: #c0c0e0; margin-bottom: 10px; }
+        .tour-tip .btn-group { text-align: right; margin-top: 8px; }
+        .tour-tip .btn-group .btn { margin: 0 0 0 8px; height: 34px; line-height: 34px; padding: 0 16px; font-size: 0.85rem; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 20000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: #18182b;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 350px;
+            width: 100%;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .modal-box h2 { color: var(--accent); margin: 0 0 8px; }
+        .modal-box p { color: #9a9ab8; margin: 6px 0 16px; }
+        .modal-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .modal-buttons .btn { flex: 1 1 40%; min-width: 80px; }
+
+        @media (max-width: 600px) {
+            .row label { min-width: 100%; }
+            .row input, .row select { width: 100%; flex: none; }
+            .btn { flex: 1 1 100%; }
+            .modal-buttons .btn { width: 100%; }
+            .tour-tip { max-width: 90%; left: 5% !important; top: 10% !important; }
+            .choice-buttons .btn { flex: 1 1 100%; }
+            .scheme-actions { flex-wrap: wrap; }
+            .scheme-actions .btn { flex: 1 1 100%; }
+            .scheme-actions select { flex: 1 1 100%; }
+            .preset-tag { flex-wrap: wrap; }
+        }
+        @media (max-width: 400px) {
+            .container { padding: 12px; }
+            h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="env-tip">
+        <span>✅ 双配置独立版 · 自动保存</span>
+        <a onclick="startTour()">🎓 新手导览</a>
+        <a onclick="exportConfig()">💾 导出当前配置(YAML)</a>
+        <a onclick="document.getElementById('importFileInput').click()">📂 全局导入多文件</a>
+        <input type="file" id="importFileInput" accept=".yml,.yaml" multiple style="display:none;" onchange="importGlobalConfig(event)">
+        <a onclick="saveProgress()">💾 保存进度(JSON)</a>
+        <a onclick="document.getElementById('restoreFileInput').click()">📂 恢复进度(JSON)</a>
+        <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreProgress(event)">
+    </div>
+    <h1>🔧 KBM 微调工具</h1>
+    <div class="sub">每轮只调一个参数 · 方案独立配置 · 二分逼近</div>
+
+    <div id="mainContent">
+        <div class="section">
+            <span style="color:var(--accent); font-weight:600;">🔒 独立模式</span>
+            <input type="checkbox" id="independentModeToggle" checked onchange="toggleMode()" style="vertical-align:middle;">
+            <span id="modeStatus" style="color:var(--text2); font-size:0.85rem; margin-left:8px;">开启 (其他参数锁定为理论值)</span>
+        </div>
+
+        <div class="section" id="step-param">
+            <div class="row">
+                <label>参数</label>
+                <select id="paramSelect" onchange="onParamChange()">
+                    <option value="horizontal.ground">h.ground</option>
+                    <option value="horizontal.air">h.air</option>
+                    <option value="horizontal.sprint_extra">h.sprint_extra</option>
+                    <option value="vertical.ground">v.ground</option>
+                    <option value="vertical.air">v.air</option>
+                    <option value="vertical.sprint_extra">v.sprint_extra</option>
+                </select>
+            </div>
+            <div class="row" id="step-range">
+                <label>下限 (A)</label>
+                <input type="number" id="minVal" step="0.001" value="0.4">
+                <label>上限 (B)</label>
+                <input type="number" id="maxVal" step="0.001" value="0.6">
+            </div>
+            <div class="row">
+                <button class="btn btn-primary" onclick="loadTheory()" id="btnTheory">📐 理论值</button>
+                <button class="btn btn-primary" onclick="initBisect()" id="btnStart">开始</button>
+                <button class="btn btn-danger" onclick="resetCurrentParam()" id="btnResetParam">重置此参数</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div id="fixedConfigDisplay" style="display:table; width:100%;"></div>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <div class="info-cell">参数：<span class="value" id="currentParamName">-</span></div>
+            <div class="info-cell">迭代：<span class="value" id="iterCount">0</span></div>
+            <div class="info-cell">区间：<span class="value" id="currentLow">-</span> ~ <span class="value" id="currentHigh">-</span></div>
+            <div class="info-cell">推荐值：<span class="value" id="currentBest">-</span></div>
+            <div class="info-cell">宽度：<span class="value" id="currentWidth">-</span></div>
+        </div>
+
+        <!-- 方案 A 卡片 -->
+        <div class="section" style="padding:6px 10px;" id="step-configs">
+            <div class="config-card" id="configA">
+                <b style="color:var(--accent);">🔵 方案 A（下限）</b>
+                <div id="configADetails"></div>
+                <div class="choice-buttons"><button class="btn btn-primary" onclick="chooseA()" id="btnA">✅ A 更接近</button></div>
+                <div class="scheme-actions">
+                    <button class="btn btn-info" onclick="saveSchemeAsPreset('A')">💾 保存A为预设</button>
+                    <button class="btn btn-ghost" onclick="document.getElementById('importYamlA').click()">📂 从YAML导入A</button>
+                    <input type="file" id="importYamlA" accept=".yml,.yaml" style="display:none;" onchange="importYamlToScheme(event, 'A')">
+                    <select id="presetSelectA"></select>
+                    <button class="btn btn-ghost" onclick="loadPresetToScheme('A')">加载</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案 B 卡片 -->
+        <div class="section" style="padding:6px 10px;">
+            <div class="config-card" id="configB">
+                <b style="color:var(--accent);">🔴 方案 B（上限）</b>
+                <div id="configBDetails"></div>
+                <div class="choice-buttons"><button class="btn btn-primary" onclick="chooseB()" id="btnB">✅ B 更接近</button></div>
+                <div class="scheme-actions">
+                    <button class="btn btn-info" onclick="saveSchemeAsPreset('B')">💾 保存B为预设</button>
+                    <button class="btn btn-ghost" onclick="document.getElementById('importYamlB').click()">📂 从YAML导入B</button>
+                    <input type="file" id="importYamlB" accept=".yml,.yaml" style="display:none;" onchange="importYamlToScheme(event, 'B')">
+                    <select id="presetSelectB"></select>
+                    <button class="btn btn-ghost" onclick="loadPresetToScheme('B')">加载</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 折叠反馈区 -->
+        <div class="section" id="step-feedback">
+            <div class="foldable-header" onclick="toggleFeedback()">
+                <span class="arrow" id="feedbackArrow">▶</span>
+                <span>📊 实测数据辅助（可选）</span>
+                <span style="color:var(--text2); font-weight:normal; font-size:0.8rem;">点击展开</span>
+            </div>
+            <div class="foldable-content collapsed" id="feedbackContent">
+                <div style="color:var(--text2); font-size:0.9rem; margin-bottom:8px;">
+                    输入实测位移，获取量化调整建议；也可直接凭手感选择 A/B，无需填写。
+                </div>
+                <div class="row">
+                    <label>水平位移(格)</label>
+                    <input type="number" id="testHoriz" step="any" placeholder="例: 2.62">
+                </div>
+                <div class="row">
+                    <label>垂直高度(格)</label>
+                    <input type="number" id="testVert" step="any" placeholder="例: 0.94">
+                </div>
+                <button class="btn btn-warning" onclick="analyzeTest()" id="btnAnalyze">📈 分析</button>
+                <div class="suggestion-box" id="suggestion">💡 填入数据后点击“分析”获取建议。</div>
+            </div>
+        </div>
+
+        <!-- ===== 高级设置（packet.misplace + y_limit） ===== -->
+        <div class="section" id="advanced-settings">
+            <div class="foldable-header" onclick="toggleAdvanced()">
+                <span class="arrow" id="advancedArrow">▶</span>
+                <span>⚙️ 高级设置</span>
+                <span style="color:var(--text2); font-weight:normal; font-size:0.8rem;">点击展开</span>
+            </div>
+            <div class="foldable-content collapsed" id="advancedContent">
+                <!-- packet.misplace -->
+                <div style="color:var(--accent); font-weight:600; margin-top:6px;">📦 packet.misplace</div>
+                <div class="row">
+                    <label>启用 misplace</label>
+                    <input type="checkbox" id="packetMisplaceEnabled" onchange="onExtraConfigChange()" style="width:auto; flex:0 0 auto;">
+                </div>
+                <div class="row">
+                    <label>距离 (格)</label>
+                    <input type="number" id="packetMisplaceDistance" step="0.01" value="0.1" onchange="onExtraConfigChange()" style="flex:0 1 120px;">
+                    <span style="color:var(--text2); font-size:0.8rem;">推荐 ≤ 0.2</span>
+                </div>
+                <div style="color:var(--text2); font-size:0.8rem; margin-bottom:8px;">注：此设置与服务器端命中检测不兼容。</div>
+
+                <!-- y_limit -->
+                <div style="color:var(--accent); font-weight:600; margin-top:10px;">📐 Y轴高度限制 (y_limit)</div>
+                <div class="row">
+                    <label>启用</label>
+                    <input type="checkbox" id="yLimitEnabled" onchange="onYLimitChange()" style="width:auto; flex:0 0 auto;">
+                </div>
+                <div class="row">
+                    <label>最大高度 (格)</label>
+                    <input type="number" id="yLimitMaxHeight" step="0.0001" value="0.675" onchange="onYLimitChange()" style="flex:0 1 120px;">
+                </div>
+                <div class="row">
+                    <label>超出后垂直击退</label>
+                    <input type="number" id="yLimitAfterKb" step="0.01" value="0.0" onchange="onYLimitChange()" style="flex:0 1 120px;">
+                    <span style="color:var(--text2); font-size:0.8rem;">≤ 0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预设管理（通用） -->
+        <div class="section">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span style="color:var(--accent); font-weight:600;">📌 预设管理</span>
+                <div>
+                    <input type="text" id="presetName" placeholder="预设名称" style="background:#0a0a18; border:1px solid var(--border); color:#fff; padding:4px 8px; border-radius:4px; width:120px;">
+                    <button class="btn btn-info" onclick="savePreset()">保存</button>
+                </div>
+            </div>
+            <div class="preset-list" id="presetList"></div>
+        </div>
+
+        <div class="section" style="padding:6px 8px;" id="step-history">
+            <div style="color:var(--accent); font-weight:600;">📋 历史记录（点击可恢复）</div>
+            <div class="history" id="historyLog"><span style="color:var(--text2);">暂无记录</span></div>
+        </div>
+
+        <div style="text-align:center; color:var(--text2); font-size:0.85rem; margin-top:6px;">
+            💡 建议顺序：水平地面 → 水平空中 → 垂直地面 → 垂直空中 → 疾跑额外
+        </div>
+    </div>
+
+    <!-- 调参指南 -->
+    <div id="guideContent" style="display:none; margin-top:16px;">
+        <div class="section">
+            <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">📖 如何使用</h2>
+            <p style="color:var(--text2);">本工具通过 <b>二分法</b> 快速逼近最佳参数，您只需根据手感选择 A/B 即可。</p>
+            <ol style="color:var(--text2); padding-left:20px;">
+                <li><b>选择参数</b> → 点击 <b>“理论值”</b> 自动填入范围。</li>
+                <li><b>测试方案</b> → 在游戏内分别测试方案 A 和 B。</li>
+                <li><b>反馈</b> → 点击 <b>“A更接近”</b> 或 <b>“B更接近”</b>，选择接近程度，工具自动缩小区间。</li>
+                <li><b>迭代</b> → 重复直至区间宽度足够小。</li>
+            </ol>
+            <p style="color:var(--text2);"><b>📂 多文件导入</b>：全局导入支持选择多个 YAML 文件，工具根据文件名自动识别分配到方案 A 或 B。</p>
+            <p style="color:var(--text2);"><b>💾 自动保存</b>：所有修改自动保存在浏览器中，刷新页面不会丢失。</p>
+            <p style="color:var(--text2);"><b>⚙️ 高级设置</b>：可调整 packet.misplace 和 y_limit 参数，导出时一并写入 YAML。</p>
+        </div>
+        <div class="section">
+            <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">🔌 插件信息</h2>
+            <p style="color:var(--text2);">KnockbackManager 由 dw1e 编写，基于 ProtocolLib。</p>
+            <p>📦 GitHub: <a class="guide-link" href="https://github.com/dw1e/KnockbackManager" target="_blank">github.com/dw1e/KnockbackManager</a></p>
+        </div>
+        <div class="section">
+            <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">❓ 常见问题</h2>
+            <p style="color:var(--text2);"><b>Q: 导入多个文件如何分配？</b><br>A: 根据文件名自动识别，包含 "A"/"下限"/"low" 等→方案A，包含 "B"/"上限"/"high" 等→方案B，无法识别时弹窗让您选择。</p>
+            <p style="color:var(--text2);"><b>Q: 刷新页面数据会丢失吗？</b><br>A: 不会，自动保存到浏览器 localStorage，重新打开自动恢复。</p>
+        </div>
+    </div>
+
+    <div style="text-align:center; margin-top:14px;">
+        <button class="btn btn-ghost" onclick="toggleGuide()">📖 显示/隐藏调参指南</button>
+        <button class="btn btn-info" onclick="startTour()">🎓 新手导览</button>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal-overlay" id="confidenceModal">
+        <div class="modal-box">
+            <h2>🔍 接近程度</h2>
+            <p id="modalMessage">哪个方案更接近目标手感？</p>
+            <div class="modal-buttons">
+                <button class="btn btn-mild" onclick="confirmChoice('mild')">略微</button>
+                <button class="btn btn-medium" onclick="confirmChoice('medium')">中等</button>
+                <button class="btn btn-strong" onclick="confirmChoice('strong')">明显</button>
+                <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导览浮层 -->
+    <div class="tour-highlight" id="tourHighlight"></div>
+    <div class="tour-tip" id="tourTip">
+        <div class="title" id="tourTitle">步骤 1</div>
+        <div class="desc" id="tourDesc">描述</div>
+        <div class="btn-group">
+            <button class="btn btn-ghost" onclick="tourPrev()" id="tourPrev">上一步</button>
+            <button class="btn btn-primary" onclick="tourNext()" id="tourNext">下一步</button>
+            <button class="btn btn-danger" onclick="endTour()" id="tourEnd">结束</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ================================================================
+    // 核心数据结构
+    // ================================================================
+    var THEORY = {
+        "horizontal.ground": 0.5275653923541247,
+        "horizontal.air": 0.50459547,
+        "horizontal.sprint_extra": 0.3253521126760563,
+        "vertical.ground": 0.226402482,
+        "vertical.air": 0.201944941,
+        "vertical.sprint_extra": 0.0
+    };
+    // 固定参数（部分可由高级设置覆盖）
+    var fixedParams = {
+        "projectile.enabled": false,
+        "projectile.horizontal_multiplier": 1.0,
+        "projectile.vertical_multiplier": 1.0,
+        "projectile.direction_override": false,
+        "packet.delay.enabled": false,
+        "packet.delay.ticks": 2,
+        "stop_sprint": true,
+        // y_limit 由 yLimitSettings 动态覆盖
+        "hit_delay": 20,
+        "potion.enabled": false,
+        "potion.horizontal_multiplier": 1.05,
+        "potion.vertical_multiplier": 1.0,
+        "potion.compensation_multiplier": 1.15,
+        "modern.cooldown_affects_kb": true,
+        "modern.netherite_kb_resistance": true
+    };
+
+    // 额外可调配置（packet.misplace 和 y_limit）
+    var extraConfig = {
+        "packet.misplace.enabled": false,
+        "packet.misplace.distance": 0.1
+    };
+
+    var yLimitSettings = {
+        enabled: true,
+        max_y_height: 0.675,
+        vertical_kb_after_limit: 0.0
+    };
+
+    var independentMode = true;
+    var currentParam = 'horizontal.ground';
+    var schemeA = JSON.parse(JSON.stringify(THEORY));
+    var schemeB = JSON.parse(JSON.stringify(THEORY));
+    var paramsState = {};
+    var MIN_WIDTH = 1e-7;
+    var pendingChoice = null;
+    var presets = JSON.parse(localStorage.getItem('kbm_presets') || '{}');
+
+    // ================================================================
+    // 自动保存与恢复（包含 extraConfig 和 yLimitSettings）
+    // ================================================================
+    function autoSaveState() {
+        var state = {
+            version: '1.4',
+            timestamp: new Date().toISOString(),
+            currentParam: currentParam,
+            independentMode: independentMode,
+            schemeA: schemeA,
+            schemeB: schemeB,
+            paramsState: paramsState,
+            presets: presets,
+            extraConfig: extraConfig,
+            yLimitSettings: yLimitSettings
+        };
+        try {
+            localStorage.setItem('kbm_auto_save', JSON.stringify(state));
+        } catch (e) {
+            // 忽略存储错误
+        }
+    }
+
+    function autoRestoreState() {
+        try {
+            var raw = localStorage.getItem('kbm_auto_save');
+            if (!raw) return false;
+            var state = JSON.parse(raw);
+            if (!state.version) return false;
+            currentParam = state.currentParam || 'horizontal.ground';
+            independentMode = (state.independentMode !== undefined) ? state.independentMode : true;
+            if (state.schemeA) schemeA = state.schemeA;
+            if (state.schemeB) schemeB = state.schemeB;
+            if (state.paramsState) paramsState = state.paramsState;
+            if (state.presets) {
+                presets = state.presets;
+                localStorage.setItem('kbm_presets', JSON.stringify(presets));
+            }
+            if (state.extraConfig) {
+                extraConfig = state.extraConfig;
+                document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+                document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+            }
+            if (state.yLimitSettings) {
+                yLimitSettings = state.yLimitSettings;
+                document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+                document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+                document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // 每次修改后调用 autoSaveState
+    function notifyChange() {
+        autoSaveState();
+    }
+
+    // extraConfig 变化时触发保存
+    function onExtraConfigChange() {
+        extraConfig['packet.misplace.enabled'] = document.getElementById('packetMisplaceEnabled').checked;
+        var dist = parseFloat(document.getElementById('packetMisplaceDistance').value);
+        if (!isNaN(dist) && dist >= 0) {
+            extraConfig['packet.misplace.distance'] = dist;
+        }
+        notifyChange();
+    }
+
+    // y_limit 变化时触发保存
+    function onYLimitChange() {
+        yLimitSettings.enabled = document.getElementById('yLimitEnabled').checked;
+        var maxH = parseFloat(document.getElementById('yLimitMaxHeight').value);
+        if (!isNaN(maxH) && maxH >= 0) {
+            yLimitSettings.max_y_height = maxH;
+        }
+        var afterKb = parseFloat(document.getElementById('yLimitAfterKb').value);
+        if (!isNaN(afterKb)) {
+            yLimitSettings.vertical_kb_after_limit = afterKb;
+        }
+        notifyChange();
+    }
+
+    // ================================================================
+    // 辅助函数
+    // ================================================================
+    function getParamState(param) {
+        if (!paramsState[param]) {
+            paramsState[param] = {
+                low: 0.4,
+                high: 0.6,
+                mid: 0.5,
+                iter: 0,
+                initialized: false,
+                history: []
+            };
+        }
+        return paramsState[param];
+    }
+
+    function getCurrentState() {
+        return getParamState(currentParam);
+    }
+
+    function getCurrentBoundaries() {
+        var valA = schemeA[currentParam];
+        var valB = schemeB[currentParam];
+        var low = Math.min(valA, valB);
+        var high = Math.max(valA, valB);
+        return { low: low, high: high };
+    }
+
+    function setCurrentBoundaries(low, high) {
+        var valA = schemeA[currentParam];
+        var valB = schemeB[currentParam];
+        if (valA <= valB) {
+            schemeA[currentParam] = low;
+            schemeB[currentParam] = high;
+        } else {
+            schemeA[currentParam] = high;
+            schemeB[currentParam] = low;
+        }
+        document.getElementById('minVal').value = low;
+        document.getElementById('maxVal').value = high;
+        var state = getCurrentState();
+        state.low = low;
+        state.high = high;
+        state.mid = (low + high) / 2;
+        notifyChange();
+    }
+
+    function resetCurrentParamToTheory() {
+        var theo = THEORY[currentParam];
+        schemeA[currentParam] = theo;
+        schemeB[currentParam] = theo;
+        var state = getCurrentState();
+        state.initialized = false;
+        state.low = 0.4;
+        state.high = 0.6;
+        state.mid = 0.5;
+        state.iter = 0;
+        state.history = [];
+        document.getElementById('minVal').value = 0.4;
+        document.getElementById('maxVal').value = 0.6;
+        renderAll();
+        notifyChange();
+    }
+
+    // ================================================================
+    // 渲染函数
+    // ================================================================
+    function renderAll() {
+        renderFixed();
+        renderTest();
+        renderHistory();
+        renderPresets();
+    }
+
+    function renderFixed() {
+        var container = document.getElementById('fixedConfigDisplay');
+        container.innerHTML = '';
+        var current = currentParam;
+        var keys = Object.keys(THEORY);
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            var vA = schemeA[k];
+            var vB = schemeB[k];
+            var displayVal = (k === current) ? vA + ' / ' + vB : vA;
+            var tr = document.createElement('div');
+            tr.style.display = 'table-row';
+            var td1 = document.createElement('span');
+            td1.style.display = 'table-cell';
+            td1.style.padding = '2px 6px';
+            td1.style.color = '#8a8aaa';
+            td1.textContent = k;
+            var td2 = document.createElement('span');
+            td2.style.display = 'table-cell';
+            td2.style.padding = '2px 6px';
+            td2.style.textAlign = 'right';
+            td2.style.fontFamily = 'monospace';
+            td2.style.fontWeight = 'bold';
+            var isLocked = independentMode && (k !== current);
+            td2.style.color = isLocked ? '#5a5a7a' : '#e6b84d';
+            if (isLocked) {
+                td2.textContent = vA.toFixed(8);
+            } else {
+                td2.textContent = displayVal;
+            }
+            if (k === current) {
+                tr.style.background = '#1a2a2a';
+                td1.style.color = '#6fbf73';
+            }
+            tr.appendChild(td1);
+            tr.appendChild(td2);
+            container.appendChild(tr);
+        }
+        // 显示固定参数 + 高级设置
+        var extra = document.createElement('div');
+        extra.style.display = 'table-row';
+        var extraCell = document.createElement('span');
+        extraCell.style.display = 'table-cell';
+        extraCell.colSpan = 2;
+        extraCell.style.color = '#555';
+        extraCell.style.fontSize = '0.8rem';
+        var fixedStr = '';
+        fixedStr += 'packet.misplace.enabled: ' + extraConfig['packet.misplace.enabled'] + ' ';
+        fixedStr += 'packet.misplace.distance: ' + extraConfig['packet.misplace.distance'] + ' ';
+        fixedStr += 'y_limit: ' + JSON.stringify(yLimitSettings) + ' ';
+        for (var f in fixedParams) {
+            var val = fixedParams[f];
+            if (typeof val === 'object') {
+                val = JSON.stringify(val);
+            }
+            fixedStr += f + ': ' + val + ' ';
+        }
+        extraCell.textContent = fixedStr;
+        extra.appendChild(extraCell);
+        container.appendChild(extra);
+    }
+
+    function renderTest() {
+        var param = currentParam;
+        var state = getCurrentState();
+        var isInit = state.initialized;
+
+        if (!isInit) {
+            document.getElementById('configADetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
+            document.getElementById('configBDetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
+            document.getElementById('currentParamName').textContent = param;
+            document.getElementById('currentLow').textContent = '-';
+            document.getElementById('currentHigh').textContent = '-';
+            document.getElementById('currentBest').textContent = '-';
+            document.getElementById('currentWidth').textContent = '-';
+            document.getElementById('iterCount').textContent = '0';
+            document.getElementById('btnA').disabled = true;
+            document.getElementById('btnB').disabled = true;
+            return;
+        }
+
+        var cfgA = makeConfigForScheme('A');
+        var cfgB = makeConfigForScheme('B');
+
+        var renderDetail = function(cfg, targetId) {
+            var html = '';
+            for (var k in cfg) {
+                var v = cfg[k];
+                var d = (typeof v === 'number') ? v.toFixed(8) : v;
+                var star = (k === param) ? '★ ' : '';
+                html += '<div class="detail"><span>' + star + k + '</span><span class="val">' + d + '</span></div>';
+            }
+            document.getElementById(targetId).innerHTML = html;
+        };
+        renderDetail(cfgA, 'configADetails');
+        renderDetail(cfgB, 'configBDetails');
+
+        var boundaries = getCurrentBoundaries();
+        document.getElementById('currentParamName').textContent = param;
+        document.getElementById('currentLow').textContent = boundaries.low.toFixed(6);
+        document.getElementById('currentHigh').textContent = boundaries.high.toFixed(6);
+        var mid = (boundaries.low + boundaries.high) / 2;
+        document.getElementById('currentBest').textContent = mid.toFixed(6);
+        var width = boundaries.high - boundaries.low;
+        document.getElementById('currentWidth').textContent = width.toFixed(6);
+        document.getElementById('iterCount').textContent = state.iter;
+
+        if (width < MIN_WIDTH) {
+            document.getElementById('btnA').disabled = true;
+            document.getElementById('btnB').disabled = true;
+            document.getElementById('currentWidth').textContent = width.toFixed(6) + ' ✅ 已收敛';
+        } else {
+            document.getElementById('btnA').disabled = false;
+            document.getElementById('btnB').disabled = false;
+        }
+    }
+
+    function makeConfigForScheme(scheme) {
+        var cfg = {};
+        var values = (scheme === 'A') ? schemeA : schemeB;
+        for (var k in THEORY) {
+            if (independentMode && k !== currentParam) {
+                cfg[k] = THEORY[k];
+            } else {
+                cfg[k] = values[k];
+            }
+        }
+        // 添加固定参数
+        for (var f in fixedParams) {
+            cfg[f] = fixedParams[f];
+        }
+        // 添加 y_limit 覆盖
+        cfg['y_limit'] = {
+            enabled: yLimitSettings.enabled,
+            max_y_height: yLimitSettings.max_y_height,
+            vertical_kb_after_limit: yLimitSettings.vertical_kb_after_limit
+        };
+        // 添加 packet.misplace
+        cfg['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
+        cfg['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
+        return cfg;
+    }
+
+    // ================================================================
+    // 历史管理（保持不变）
+    // ================================================================
+    function addHistory(action, desc) {
+        var state = getCurrentState();
+        var boundaries = getCurrentBoundaries();
+        var entry = {
+            action: action,
+            desc: desc,
+            low: boundaries.low,
+            high: boundaries.high,
+            mid: (boundaries.low + boundaries.high) / 2,
+            iter: state.iter,
+            time: new Date().toLocaleTimeString()
+        };
+        state.history.unshift(entry);
+        if (state.history.length > 50) state.history.pop();
+        renderHistory();
+        notifyChange();
+    }
+
+    function renderHistory() {
+        var state = getCurrentState();
+        var log = document.getElementById('historyLog');
+        if (state.history.length === 0) {
+            log.innerHTML = '<span style="color:var(--text2);">暂无记录</span>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < state.history.length; i++) {
+            var e = state.history[i];
+            html += '<div class="history-item" onclick="restoreHistory(' + i + ')">' +
+                '<span class="time">[' + e.time + ']</span> ' +
+                '<span class="action">' + e.action + '</span> ' +
+                '<span class="desc">' + e.desc + '</span>' +
+                '<button class="restore" onclick="event.stopPropagation(); restoreHistory(' + i + ')">↩</button>' +
+                '</div>';
+        }
+        log.innerHTML = html;
+    }
+
+    function restoreHistory(index) {
+        var state = getCurrentState();
+        var e = state.history[index];
+        if (!e) return;
+        var boundaries = getCurrentBoundaries();
+        if (Math.abs(boundaries.low - e.low) < 1e-12 &&
+            Math.abs(boundaries.high - e.high) < 1e-12 &&
+            state.iter === e.iter) {
+            return;
+        }
+        setCurrentBoundaries(e.low, e.high);
+        state.iter = e.iter;
+        state.initialized = true;
+        renderAll();
+        notifyChange();
+    }
+
+    // ================================================================
+    // 参数切换
+    // ================================================================
+    function onParamChange() {
+        var newParam = document.getElementById('paramSelect').value;
+        if (newParam === currentParam) return;
+        currentParam = newParam;
+        var state = getCurrentState();
+        var boundaries = getCurrentBoundaries();
+        document.getElementById('minVal').value = boundaries.low;
+        document.getElementById('maxVal').value = boundaries.high;
+        if (state.initialized) {
+            renderAll();
+        } else {
+            document.getElementById('configADetails').innerHTML = '<div style="color:#666;">尚未调整此参数，请点击“理论值”或“开始”</div>';
+            document.getElementById('configBDetails').innerHTML = '<div style="color:#666;">尚未调整此参数，请点击“理论值”或“开始”</div>';
+            document.getElementById('currentLow').textContent = '-';
+            document.getElementById('currentHigh').textContent = '-';
+            document.getElementById('currentBest').textContent = '-';
+            document.getElementById('currentWidth').textContent = '-';
+            document.getElementById('iterCount').textContent = '0';
+            document.getElementById('btnA').disabled = true;
+            document.getElementById('btnB').disabled = true;
+            renderFixed();
+            renderHistory();
+        }
+        notifyChange();
+    }
+
+    // ================================================================
+    // 操作函数（二分法）
+    // ================================================================
+    function loadTheory() {
+        var param = currentParam;
+        var theo = THEORY[param];
+        if (theo === undefined) { alert('无理论值'); return; }
+        var offset = 0.015;
+        var low = Math.max(0, theo - offset);
+        var high = theo + offset;
+        schemeA[param] = low;
+        schemeB[param] = high;
+        var state = getCurrentState();
+        state.iter = 0;
+        state.initialized = true;
+        document.getElementById('minVal').value = low;
+        document.getElementById('maxVal').value = high;
+        addHistory('📐 理论值', param + '=' + theo.toFixed(6) + ' 范围[' + low.toFixed(4) + ', ' + high.toFixed(4) + ']');
+        renderAll();
+        enableButtons(true);
+        notifyChange();
+    }
+
+    function initBisect() {
+        var param = currentParam;
+        var low = parseFloat(document.getElementById('minVal').value);
+        var high = parseFloat(document.getElementById('maxVal').value);
+        if (low >= high) { alert('下限必须小于上限'); return; }
+        setCurrentBoundaries(low, high);
+        var state = getCurrentState();
+        state.iter = 0;
+        state.initialized = true;
+        addHistory('初始化', '范围[' + low.toFixed(4) + ', ' + high.toFixed(4) + ']');
+        renderAll();
+        enableButtons(true);
+        notifyChange();
+    }
+
+    function chooseA() {
+        var state = getCurrentState();
+        if (!state.initialized) { alert('请先点击“开始”或“理论值”初始化'); return; }
+        var boundaries = getCurrentBoundaries();
+        if ((boundaries.high - boundaries.low) < MIN_WIDTH) {
+            alert('已收敛，无需继续二分。');
+            return;
+        }
+        pendingChoice = 'A';
+        showModal('方案 A（下限）更接近？');
+    }
+
+    function chooseB() {
+        var state = getCurrentState();
+        if (!state.initialized) { alert('请先点击“开始”或“理论值”初始化'); return; }
+        var boundaries = getCurrentBoundaries();
+        if ((boundaries.high - boundaries.low) < MIN_WIDTH) {
+            alert('已收敛，无需继续二分。');
+            return;
+        }
+        pendingChoice = 'B';
+        showModal('方案 B（上限）更接近？');
+    }
+
+    function showModal(msg) {
+        document.getElementById('modalMessage').textContent = msg;
+        document.getElementById('confidenceModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('confidenceModal').style.display = 'none';
+        pendingChoice = null;
+    }
+
+    function confirmChoice(level) {
+        var choice = pendingChoice;
+        closeModal();
+        if (!choice) return;
+
+        var state = getCurrentState();
+        var boundaries = getCurrentBoundaries();
+        var factor = 0.5;
+        var actual = factor;
+        if (level === 'mild') actual = factor;
+        else if (level === 'medium') actual = factor * 0.5;
+        else if (level === 'strong') actual = factor * 0.2;
+        if (actual < 0.01) actual = 0.01;
+
+        var oldLow = boundaries.low, oldHigh = boundaries.high;
+        var newLow, newHigh;
+        if (choice === 'A') {
+            newLow = oldLow;
+            newHigh = oldLow + actual * (oldHigh - oldLow);
+        } else {
+            newLow = oldHigh - actual * (oldHigh - oldLow);
+            newHigh = oldHigh;
+        }
+
+        if (newLow >= newHigh) {
+            alert('区间过小，请扩大初始范围或选择更粗的“接近程度”。');
+            return;
+        }
+
+        setCurrentBoundaries(newLow, newHigh);
+        state.iter++;
+
+        var levelName = { mild: '略微', medium: '中等', strong: '明显' }[level];
+        addHistory('选择' + choice + '(' + levelName + ')', '范围[' + newLow.toFixed(4) + ', ' + newHigh.toFixed(4) + ']');
+        renderAll();
+        if ((newHigh - newLow) < MIN_WIDTH) {
+            enableButtons(false);
+        } else {
+            enableButtons(true);
+        }
+        notifyChange();
+    }
+
+    function enableButtons(en) {
+        var btns = document.querySelectorAll('.choice-buttons button');
+        for (var i = 0; i < btns.length; i++) btns[i].disabled = !en;
+        var boundaries = getCurrentBoundaries();
+        if ((boundaries.high - boundaries.low) < MIN_WIDTH) {
+            document.getElementById('btnA').disabled = true;
+            document.getElementById('btnB').disabled = true;
+        }
+    }
+
+    function resetCurrentParam() {
+        if (!confirm('确认重置当前参数 "' + currentParam + '" 的所有调整记录？')) return;
+        resetCurrentParamToTheory();
+        enableButtons(false);
+        renderAll();
+        notifyChange();
+    }
+
+    // ================================================================
+    // 多文件全局导入（包含 extraConfig 和 y_limit 解析）
+    // ================================================================
+    function importGlobalConfig(event) {
+        var files = event.target.files;
+        if (!files || files.length === 0) return;
+        var fileList = Array.from(files);
+        var pendingFiles = fileList.slice();
+
+        function processNext() {
+            if (pendingFiles.length === 0) {
+                alert('所有文件导入完成！');
+                renderAll();
+                notifyChange();
+                return;
+            }
+            var file = pendingFiles.shift();
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var values = parseYaml(e.target.result);
+                    if (Object.keys(values).length === 0) {
+                        alert('文件 "' + file.name + '" 未解析到有效的KBM参数，已跳过。');
+                        processNext();
+                        return;
+                    }
+                    // 根据文件名识别方案
+                    var lowerName = file.name.toLowerCase();
+                    var baseName = lowerName.replace(/\.[^.]+$/, '');
+                    var target = null;
+                    var hasA = /\b(a|lower|min|下限)\b/.test(baseName);
+                    var hasB = /\b(b|upper|high|max|上限)\b/.test(baseName);
+                    if (hasA && !hasB) {
+                        target = 'A';
+                    } else if (hasB && !hasA) {
+                        target = 'B';
+                    } else {
+                        var choice = confirm('文件 "' + file.name + '" 无法自动识别分配到哪个方案。\n点击"确定"分配到方案A，点击"取消"分配到方案B。');
+                        target = choice ? 'A' : 'B';
+                    }
+                    var targetObj = (target === 'A') ? schemeA : schemeB;
+                    // 应用参数
+                    for (var k in values) {
+                        if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance') {
+                            extraConfig[k] = values[k];
+                        } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+                            // 解析 y_limit 子项
+                            if (k === 'y_limit.enabled') yLimitSettings.enabled = values[k];
+                            if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = values[k];
+                            if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = values[k];
+                        } else {
+                            targetObj[k] = values[k];
+                        }
+                    }
+                    // 更新UI
+                    document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+                    document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+                    document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+                    document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+                    document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+
+                    // 自动保存为预设
+                    var presetName = file.name.replace(/\.[^.]+$/, '') + '_' + target;
+                    if (presets[presetName]) {
+                        var ts = new Date().getTime().toString().slice(-6);
+                        presetName = presetName + '_' + ts;
+                    }
+                    presets[presetName] = JSON.parse(JSON.stringify(values));
+                    localStorage.setItem('kbm_presets', JSON.stringify(presets));
+                    addHistory('📂 全局导入', '文件: ' + file.name + ' -> 方案' + target + ' (预设: ' + presetName + ')');
+                    alert('文件 "' + file.name + '" 已导入到方案 ' + target + '，并保存为预设 "' + presetName + '"');
+                    // 更新界面
+                    var boundaries = getCurrentBoundaries();
+                    document.getElementById('minVal').value = boundaries.low;
+                    document.getElementById('maxVal').value = boundaries.high;
+                    var state = getCurrentState();
+                    state.initialized = true;
+                    renderAll();
+                    renderPresets();
+                    notifyChange();
+                } catch (err) {
+                    alert('解析文件 "' + file.name + '" 失败：' + err.message);
+                }
+                processNext();
+            };
+            reader.readAsText(file);
+        }
+        processNext();
+        event.target.value = '';
+    }
+
+    // ================================================================
+    // 导入 YAML 到指定方案（单个文件）
+    // ================================================================
+    function importYamlToScheme(event, scheme) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var values = parseYaml(e.target.result);
+                if (Object.keys(values).length === 0) {
+                    alert('未解析到有效的KBM参数值，请检查YAML格式。');
+                    return;
+                }
+                var target = (scheme === 'A') ? schemeA : schemeB;
+                for (var k in values) {
+                    if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance') {
+                        extraConfig[k] = values[k];
+                    } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+                        if (k === 'y_limit.enabled') yLimitSettings.enabled = values[k];
+                        if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = values[k];
+                        if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = values[k];
+                    } else {
+                        target[k] = values[k];
+                    }
+                }
+                document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+                document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+                document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+                document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+                document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+
+                var presetName = file.name.replace(/\.[^.]+$/, '') + '_' + scheme;
+                if (presets[presetName]) {
+                    var ts = new Date().getTime().toString().slice(-6);
+                    presetName = presetName + '_' + ts;
+                }
+                presets[presetName] = JSON.parse(JSON.stringify(values));
+                localStorage.setItem('kbm_presets', JSON.stringify(presets));
+                var boundaries = getCurrentBoundaries();
+                document.getElementById('minVal').value = boundaries.low;
+                document.getElementById('maxVal').value = boundaries.high;
+                var state = getCurrentState();
+                state.initialized = true;
+                renderAll();
+                renderPresets();
+                addHistory('📂 从YAML导入方案' + scheme, '文件: ' + (file.name || '未知') + ' -> 预设: ' + presetName);
+                event.target.value = '';
+                alert('导入成功！方案 ' + scheme + ' 已更新，并自动保存为预设 "' + presetName + '"');
+                notifyChange();
+            } catch (err) {
+                alert('导入失败：' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ================================================================
+    // 解析YAML（支持 packet.misplace 和 y_limit）
+    // ================================================================
+    function parseYaml(content) {
+        var lines = content.split('\n');
+        var values = {};
+        var currentSection = '';
+        var inMisplace = false;
+        var inYLimit = false;
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (line === '' || line.startsWith('#')) continue;
+            // 处理嵌套 section
+            if (line.endsWith(':') && !line.includes(' ')) {
+                currentSection = line.slice(0, -1);
+                if (currentSection === 'packet') {
+                    inMisplace = false;
+                    inYLimit = false;
+                } else if (currentSection === 'misplace') {
+                    inMisplace = true;
+                    inYLimit = false;
+                } else if (currentSection === 'y_limit') {
+                    inYLimit = true;
+                    inMisplace = false;
+                } else {
+                    inMisplace = false;
+                    inYLimit = false;
+                }
+                continue;
+            }
+            // 匹配 key: value
+            var match = line.match(/^(\w+):\s*(.*)$/);
+            if (match) {
+                var key = match[1];
+                var val = match[2].trim();
+                // 处理布尔值
+                var boolVal = null;
+                if (val === 'true') boolVal = true;
+                else if (val === 'false') boolVal = false;
+                var numVal = parseFloat(val);
+                var finalVal = (boolVal !== null) ? boolVal : (isNaN(numVal) ? val : numVal);
+
+                var fullKey = '';
+                if (inMisplace && (key === 'enabled' || key === 'distance')) {
+                    fullKey = 'packet.misplace.' + key;
+                } else if (inYLimit && (key === 'enabled' || key === 'max_y_height' || key === 'vertical_kb_after_limit')) {
+                    fullKey = 'y_limit.' + key;
+                } else {
+                    fullKey = currentSection + '.' + key;
+                }
+                // 只保存我们关心的参数
+                var validKeys = ['horizontal.ground', 'horizontal.air', 'horizontal.sprint_extra',
+                                 'vertical.ground', 'vertical.air', 'vertical.sprint_extra',
+                                 'packet.misplace.enabled', 'packet.misplace.distance',
+                                 'y_limit.enabled', 'y_limit.max_y_height', 'y_limit.vertical_kb_after_limit'];
+                if (validKeys.includes(fullKey)) {
+                    values[fullKey] = finalVal;
+                }
+            }
+        }
+        return values;
+    }
+
+    // ================================================================
+    // 预设管理（包含 y_limit 和 extraConfig）
+    // ================================================================
+    function saveSchemeAsPreset(scheme) {
+        var name = prompt('请输入预设名称（用于保存方案 ' + scheme + '）：');
+        if (!name || name.trim() === '') return;
+        name = name.trim();
+        var target = (scheme === 'A') ? schemeA : schemeB;
+        var data = JSON.parse(JSON.stringify(target));
+        // 保存 extraConfig 和 yLimitSettings
+        data['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
+        data['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
+        data['y_limit.enabled'] = yLimitSettings.enabled;
+        data['y_limit.max_y_height'] = yLimitSettings.max_y_height;
+        data['y_limit.vertical_kb_after_limit'] = yLimitSettings.vertical_kb_after_limit;
+        presets[name] = data;
+        localStorage.setItem('kbm_presets', JSON.stringify(presets));
+        renderPresets();
+        addHistory('💾 保存方案' + scheme, '预设: ' + name);
+        alert('方案 ' + scheme + ' 已保存为预设 "' + name + '"');
+        notifyChange();
+    }
+
+    function loadPresetToScheme(scheme) {
+        var selectId = (scheme === 'A') ? 'presetSelectA' : 'presetSelectB';
+        var sel = document.getElementById(selectId);
+        var name = sel.value;
+        if (!name) {
+            alert('请先选择一个预设');
+            return;
+        }
+        var data = presets[name];
+        if (!data) {
+            alert('预设数据不存在');
+            return;
+        }
+        var target = (scheme === 'A') ? schemeA : schemeB;
+        for (var k in data) {
+            if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance') {
+                extraConfig[k] = data[k];
+            } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+                if (k === 'y_limit.enabled') yLimitSettings.enabled = data[k];
+                if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = data[k];
+                if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = data[k];
+            } else {
+                target[k] = data[k];
+            }
+        }
+        document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+        document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+        document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+        document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+        document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+
+        var boundaries = getCurrentBoundaries();
+        document.getElementById('minVal').value = boundaries.low;
+        document.getElementById('maxVal').value = boundaries.high;
+        var state = getCurrentState();
+        state.initialized = true;
+        renderAll();
+        addHistory('📂 加载预设到方案' + scheme, name);
+        alert('预设 "' + name + '" 已加载到方案 ' + scheme);
+        notifyChange();
+    }
+
+    function loadPresetToSchemeFromTag(name, scheme) {
+        var data = presets[name];
+        if (!data) {
+            alert('预设数据不存在');
+            return;
+        }
+        var target = (scheme === 'A') ? schemeA : schemeB;
+        for (var k in data) {
+            if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance') {
+                extraConfig[k] = data[k];
+            } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+                if (k === 'y_limit.enabled') yLimitSettings.enabled = data[k];
+                if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = data[k];
+                if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = data[k];
+            } else {
+                target[k] = data[k];
+            }
+        }
+        document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+        document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+        document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+        document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+        document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+
+        var boundaries = getCurrentBoundaries();
+        document.getElementById('minVal').value = boundaries.low;
+        document.getElementById('maxVal').value = boundaries.high;
+        var state = getCurrentState();
+        state.initialized = true;
+        renderAll();
+        addHistory('📂 加载预设到方案' + scheme, name);
+        var selectId = (scheme === 'A') ? 'presetSelectA' : 'presetSelectB';
+        var sel = document.getElementById(selectId);
+        if (sel) sel.value = name;
+        alert('预设 "' + name + '" 已加载到方案 ' + scheme);
+        notifyChange();
+    }
+
+    function savePreset() {
+        var name = document.getElementById('presetName').value.trim();
+        if (!name) {
+            alert('请输入预设名称');
+            return;
+        }
+        var data = JSON.parse(JSON.stringify(schemeA));
+        data['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
+        data['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
+        data['y_limit.enabled'] = yLimitSettings.enabled;
+        data['y_limit.max_y_height'] = yLimitSettings.max_y_height;
+        data['y_limit.vertical_kb_after_limit'] = yLimitSettings.vertical_kb_after_limit;
+        presets[name] = data;
+        localStorage.setItem('kbm_presets', JSON.stringify(presets));
+        renderPresets();
+        document.getElementById('presetName').value = '';
+        addHistory('📌 保存预设', name);
+        notifyChange();
+    }
+
+    function loadPreset(name) {
+        if (!confirm('加载预设 "' + name + '" 将覆盖方案A的值，确认？')) return;
+        var data = presets[name];
+        if (!data) return;
+        for (var k in data) {
+            if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance') {
+                extraConfig[k] = data[k];
+            } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+                if (k === 'y_limit.enabled') yLimitSettings.enabled = data[k];
+                if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = data[k];
+                if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = data[k];
+            } else {
+                schemeA[k] = data[k];
+            }
+        }
+        document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+        document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+        document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+        document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+        document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+
+        var boundaries = getCurrentBoundaries();
+        document.getElementById('minVal').value = boundaries.low;
+        document.getElementById('maxVal').value = boundaries.high;
+        var state = getCurrentState();
+        state.initialized = true;
+        renderAll();
+        addHistory('📌 加载预设到A', name);
+        notifyChange();
+    }
+
+    function deletePreset(name) {
+        if (!confirm('删除预设 "' + name + '" ？')) return;
+        delete presets[name];
+        localStorage.setItem('kbm_presets', JSON.stringify(presets));
+        renderPresets();
+        notifyChange();
+    }
+
+    function escHtml(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function escJs(str) {
+        return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function renderPresets() {
+        var container = document.getElementById('presetList');
+        var names = Object.keys(presets);
+        if (names.length === 0) {
+            container.innerHTML = '<span style="color:var(--text2); font-size:0.85rem;">暂无预设</span>';
+        } else {
+            var html = '';
+            for (var i = 0; i < names.length; i++) {
+                var n = names[i];
+                var nEsc = escHtml(n);
+                var nJs = escJs(n);
+                html += '<span class="preset-tag">' +
+                    nEsc +
+                    ' <button class="load-a" onclick="loadPresetToSchemeFromTag(\'' + nJs + '\',\'A\')">→A</button>' +
+                    ' <button class="load-b" onclick="loadPresetToSchemeFromTag(\'' + nJs + '\',\'B\')">→B</button>' +
+                    ' <span class="del" onclick="event.stopPropagation(); deletePreset(\'' + nJs + '\')">×</span>' +
+                    '</span>';
+            }
+            container.innerHTML = html;
+        }
+
+        var selects = ['presetSelectA', 'presetSelectB'];
+        for (var j = 0; j < selects.length; j++) {
+            var sel = document.getElementById(selects[j]);
+            if (!sel) continue;
+            var currentVal = sel.value;
+            sel.innerHTML = '';
+            var opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '选择预设...';
+            sel.appendChild(opt);
+            for (var k = 0; k < names.length; k++) {
+                var opt2 = document.createElement('option');
+                opt2.value = names[k];
+                opt2.textContent = names[k];
+                sel.appendChild(opt2);
+            }
+            if (currentVal && names.includes(currentVal)) {
+                sel.value = currentVal;
+            }
+        }
+    }
+
+    // ================================================================
+    // 折叠高级设置
+    // ================================================================
+    function toggleAdvanced() {
+        var content = document.getElementById('advancedContent');
+        var arrow = document.getElementById('advancedArrow');
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            arrow.textContent = '▼';
+        } else {
+            content.classList.add('collapsed');
+            arrow.textContent = '▶';
+        }
+    }
+
+    // ================================================================
+    // 导出配置（YAML）包含 packet.misplace 和 y_limit
+    // ================================================================
+    function exportConfig() {
+        var filename = prompt('请输入文件名（不含扩展名）：', 'kbm_config');
+        if (filename === null) return;
+        if (filename.trim() === '') filename = 'kbm_config';
+        var ext = '.yml';
+        var lines = [];
+        lines.push('# KBM 配置导出 (方案A)');
+        lines.push('# 导出时间: ' + new Date().toLocaleString());
+        lines.push('');
+        lines.push('horizontal:');
+        lines.push('  ground: ' + schemeA['horizontal.ground'].toFixed(10));
+        lines.push('  air: ' + schemeA['horizontal.air'].toFixed(10));
+        lines.push('  sprint_extra: ' + schemeA['horizontal.sprint_extra'].toFixed(10));
+        lines.push('vertical:');
+        lines.push('  ground: ' + schemeA['vertical.ground'].toFixed(10));
+        lines.push('  air: ' + schemeA['vertical.air'].toFixed(10));
+        lines.push('  sprint_extra: ' + schemeA['vertical.sprint_extra'].toFixed(10));
+        lines.push('');
+        lines.push('packet:');
+        lines.push('  misplace:');
+        lines.push('    enabled: ' + (extraConfig['packet.misplace.enabled'] ? 'true' : 'false'));
+        lines.push('    distance: ' + extraConfig['packet.misplace.distance'].toFixed(2));
+        lines.push('');
+        lines.push('y_limit:');
+        lines.push('  enabled: ' + (yLimitSettings.enabled ? 'true' : 'false'));
+        lines.push('  max_y_height: ' + yLimitSettings.max_y_height.toFixed(4));
+        lines.push('  vertical_kb_after_limit: ' + yLimitSettings.vertical_kb_after_limit.toFixed(2));
+        lines.push('');
+        // 其他固定参数
+        for (var k in fixedParams) {
+            var v = fixedParams[k];
+            if (typeof v === 'boolean') v = v ? 'true' : 'false';
+            lines.push(k + ': ' + v);
+        }
+        var content = lines.join('\n');
+        var blob = new Blob([content], { type: 'text/yaml;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename + ext;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        addHistory('💾 导出', '文件: ' + filename + ext);
+    }
+
+    // ================================================================
+    // 保存/恢复进度（JSON）包含 extraConfig 和 yLimitSettings
+    // ================================================================
+    function saveProgress() {
+        var filename = prompt('请输入进度文件名（不含扩展名）：', 'kbm_progress');
+        if (filename === null) return;
+        if (filename.trim() === '') filename = 'kbm_progress';
+        var ext = '.json';
+        var progress = {
+            version: '1.4',
+            timestamp: new Date().toISOString(),
+            currentParam: currentParam,
+            independentMode: independentMode,
+            schemeA: schemeA,
+            schemeB: schemeB,
+            paramsState: paramsState,
+            presets: presets,
+            extraConfig: extraConfig,
+            yLimitSettings: yLimitSettings
+        };
+        var json = JSON.stringify(progress, null, 2);
+        var blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename + ext;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        addHistory('💾 保存进度', '文件: ' + filename + ext);
+    }
+
+    function restoreProgress(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var progress = JSON.parse(e.target.result);
+                if (!progress.version) {
+                    alert('无效的进度文件');
+                    return;
+                }
+                currentParam = progress.currentParam || 'horizontal.ground';
+                independentMode = (progress.independentMode !== undefined) ? progress.independentMode : true;
+                if (progress.schemeA) schemeA = progress.schemeA;
+                if (progress.schemeB) schemeB = progress.schemeB;
+                if (progress.paramsState) paramsState = progress.paramsState;
+                if (progress.presets) {
+                    presets = progress.presets;
+                    localStorage.setItem('kbm_presets', JSON.stringify(presets));
+                }
+                if (progress.extraConfig) {
+                    extraConfig = progress.extraConfig;
+                    document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+                    document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+                }
+                if (progress.yLimitSettings) {
+                    yLimitSettings = progress.yLimitSettings;
+                    document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+                    document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+                    document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+                }
+                document.getElementById('paramSelect').value = currentParam;
+                document.getElementById('independentModeToggle').checked = independentMode;
+                document.getElementById('modeStatus').textContent = independentMode ? '开启 (其他参数锁定为理论值)' : '关闭 (其他参数保持当前值)';
+                var boundaries = getCurrentBoundaries();
+                document.getElementById('minVal').value = boundaries.low;
+                document.getElementById('maxVal').value = boundaries.high;
+                renderAll();
+                event.target.value = '';
+                alert('进度恢复成功！');
+                addHistory('📂 恢复进度', '文件: ' + file.name);
+                notifyChange();
+            } catch (err) {
+                alert('恢复进度失败：' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ================================================================
+    // 其他功能
+    // ================================================================
+    function analyzeTest() {
+        var horiz = parseFloat(document.getElementById('testHoriz').value);
+        var vert = parseFloat(document.getElementById('testVert').value);
+        var param = currentParam;
+        var theo = THEORY[param];
+        var msg = '';
+        if (param.indexOf('horizontal') !== -1) {
+            if (isNaN(horiz)) { msg = '请填入水平位移实测值（格）'; }
+            else {
+                var expected = theo * 4.97;
+                var diff = horiz - expected;
+                var ratio = diff / expected;
+                if (Math.abs(ratio) < 0.02) msg = '✅ 实测与理论非常接近，无需调整。';
+                else if (ratio > 0) msg = '⬆️ 实测偏大 ' + (ratio*100).toFixed(1) + '%，建议将 ' + param + ' 降低 ' + (Math.abs(diff)/4.97).toFixed(4) + ' 左右。';
+                else msg = '⬇️ 实测偏小 ' + (Math.abs(ratio)*100).toFixed(1) + '%，建议将 ' + param + ' 提高 ' + (Math.abs(diff)/4.97).toFixed(4) + ' 左右。';
+            }
+        } else if (param.indexOf('vertical') !== -1) {
+            if (isNaN(vert)) { msg = '请填入垂直高度实测值（格）'; }
+            else {
+                var expected2 = theo * 2.6774;
+                var diff2 = vert - expected2;
+                var ratio2 = diff2 / expected2;
+                if (Math.abs(ratio2) < 0.02) msg = '✅ 实测与理论非常接近，无需调整。';
+                else if (ratio2 > 0) msg = '⬆️ 实测偏高 ' + (ratio2*100).toFixed(1) + '%，建议将 ' + param + ' 降低 ' + (Math.abs(diff2)/2.6774).toFixed(4) + ' 左右。';
+                else msg = '⬇️ 实测偏低 ' + (Math.abs(ratio2)*100).toFixed(1) + '%，建议将 ' + param + ' 提高 ' + (Math.abs(diff2)/2.6774).toFixed(4) + ' 左右。';
+            }
+        } else {
+            msg = '该参数暂不支持实测反推（请选择 h 或 v 类参数）';
+        }
+        document.getElementById('suggestion').textContent = '💡 ' + msg;
+    }
+
+    function toggleMode() {
+        var checkbox = document.getElementById('independentModeToggle');
+        independentMode = checkbox.checked;
+        document.getElementById('modeStatus').textContent = independentMode ? '开启 (其他参数锁定为理论值)' : '关闭 (其他参数保持当前值)';
+        renderAll();
+        notifyChange();
+    }
+
+    function toggleGuide() {
+        var guide = document.getElementById('guideContent');
+        guide.style.display = (guide.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function toggleFeedback() {
+        var content = document.getElementById('feedbackContent');
+        var arrow = document.getElementById('feedbackArrow');
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            arrow.textContent = '▼';
+        } else {
+            content.classList.add('collapsed');
+            arrow.textContent = '▶';
+        }
+    }
+
+    // ================================================================
+    // 新手导览（保留）
+    // ================================================================
+    var tourSteps = [
+        { selector: '#step-param', title: '步骤 1：选择参数', desc: '从下拉列表中选择你想要调整的击退参数。' },
+        { selector: '#step-range', title: '步骤 2：设定搜索范围', desc: '输入下限和上限，这是你猜测该参数可能处于的区间。' },
+        { selector: '#btnTheory', title: '步骤 3：快速填充理论值', desc: '点击“理论值”按钮，工具自动填入范围。' },
+        { selector: '#btnStart', title: '步骤 4：开始二分测试', desc: '点击“开始”按钮，生成方案A和B。' },
+        { selector: '#step-configs', title: '步骤 5：测试两种配置', desc: '在游戏内分别测试方案A和B。' },
+        { selector: '#btnA', title: '步骤 6：反馈更接近的一方', desc: '点击“A更接近”或“B更接近”，工具自动缩小区间。' },
+        { selector: '#step-feedback', title: '步骤 7：可选辅助', desc: '可输入实测数据获取建议。' },
+        { selector: '#step-history', title: '步骤 8：历史记录与恢复', desc: '点击历史条目可恢复状态。' }
+    ];
+    var tourIndex = 0, tourActive = false, tourTarget = null;
+
+    function startTour() {
+        if (tourActive) return;
+        tourActive = true;
+        tourIndex = 0;
+        document.getElementById('tourHighlight').style.display = 'block';
+        document.getElementById('tourTip').style.display = 'block';
+        document.getElementById('tourPrev').style.display = 'none';
+        window.addEventListener('scroll', updateTourPosition);
+        window.addEventListener('resize', updateTourPosition);
+        window.addEventListener('orientationchange', function() { setTimeout(updateTourPosition, 300); });
+        showTourStep(tourIndex);
+    }
+    function showTourStep(index) {
+        var step = tourSteps[index];
+        if (!step) { endTour(); return; }
+        var target = document.querySelector(step.selector);
+        if (!target) { endTour(); return; }
+        tourTarget = target;
+        document.getElementById('tourTitle').textContent = step.title;
+        document.getElementById('tourDesc').textContent = step.desc;
+        document.getElementById('tourPrev').style.display = (index === 0) ? 'none' : 'inline-block';
+        document.getElementById('tourNext').textContent = (index === tourSteps.length - 1) ? '完成' : '下一步';
+        updateTourPosition();
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    function updateTourPosition() {
+        if (!tourActive || !tourTarget) return;
+        var rect = tourTarget.getBoundingClientRect();
+        var highlight = document.getElementById('tourHighlight');
+        highlight.style.left = (rect.left - 4) + 'px';
+        highlight.style.top = (rect.top - 4) + 'px';
+        highlight.style.width = (rect.width + 8) + 'px';
+        highlight.style.height = (rect.height + 8) + 'px';
+        var tip = document.getElementById('tourTip');
+        var tipWidth = 300, tipHeight = 180, gap = 15;
+        var positions = [
+            { x: rect.right + gap, y: rect.top },
+            { x: rect.left - tipWidth - gap, y: rect.top },
+            { x: rect.left, y: rect.bottom + gap },
+            { x: rect.left, y: rect.top - tipHeight - gap }
+        ];
+        var chosen = null;
+        var viewW = window.innerWidth, viewH = window.innerHeight;
+        for (var i = 0; i < positions.length; i++) {
+            var p = positions[i];
+            if (p.x >= 0 && p.y >= 0 && p.x + tipWidth <= viewW && p.y + tipHeight <= viewH) {
+                chosen = p;
+                break;
+            }
+        }
+        if (!chosen) {
+            var first = positions[0];
+            var fx = Math.max(10, Math.min(first.x, viewW - tipWidth - 10));
+            var fy = Math.max(10, Math.min(first.y, viewH - tipHeight - 10));
+            chosen = { x: fx, y: fy };
+        }
+        tip.style.left = chosen.x + 'px';
+        tip.style.top = chosen.y + 'px';
+    }
+    function tourNext() {
+        if (tourIndex < tourSteps.length - 1) { tourIndex++; showTourStep(tourIndex); }
+        else endTour();
+    }
+    function tourPrev() {
+        if (tourIndex > 0) { tourIndex--; showTourStep(tourIndex); }
+    }
+    function endTour() {
+        tourActive = false;
+        tourTarget = null;
+        document.getElementById('tourHighlight').style.display = 'none';
+        document.getElementById('tourTip').style.display = 'none';
+        window.removeEventListener('scroll', updateTourPosition);
+        window.removeEventListener('resize', updateTourPosition);
+    }
+
+    // ================================================================
+    // 初始化
+    // ================================================================
+    window.onload = function() {
+        var restored = autoRestoreState();
+        if (restored) {
+            document.getElementById('paramSelect').value = currentParam;
+            document.getElementById('independentModeToggle').checked = independentMode;
+            document.getElementById('modeStatus').textContent = independentMode ? '开启 (其他参数锁定为理论值)' : '关闭 (其他参数保持当前值)';
+            var boundaries = getCurrentBoundaries();
+            document.getElementById('minVal').value = boundaries.low;
+            document.getElementById('maxVal').value = boundaries.high;
+            renderAll();
+            enableButtons(true);
+            var state = getCurrentState();
+            if (!state.initialized) {
+                enableButtons(false);
+                document.getElementById('configADetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
+                document.getElementById('configBDetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
+            }
+            addHistory('🔄 自动恢复', '从本地存储恢复之前的状态');
+        } else {
+            for (var k in THEORY) {
+                schemeA[k] = THEORY[k];
+                schemeB[k] = THEORY[k];
+            }
+            currentParam = document.getElementById('paramSelect').value;
+            var state = getCurrentState();
+            state.initialized = false;
+            state.low = 0.4;
+            state.high = 0.6;
+            state.mid = 0.5;
+            state.iter = 0;
+            document.getElementById('minVal').value = '0.4';
+            document.getElementById('maxVal').value = '0.6';
+            // 初始化 yLimitSettings 默认值
+            yLimitSettings.enabled = true;
+            yLimitSettings.max_y_height = 0.675;
+            yLimitSettings.vertical_kb_after_limit = 0.0;
+            document.getElementById('yLimitEnabled').checked = true;
+            document.getElementById('yLimitMaxHeight').value = 0.675;
+            document.getElementById('yLimitAfterKb').value = 0.0;
+            renderAll();
+            enableButtons(false);
+            document.getElementById('configADetails').innerHTML = '<div style="color:#666;">点击“理论值”或“开始”</div>';
+            document.getElementById('configBDetails').innerHTML = '<div style="color:#666;">点击“理论值”或“开始”</div>';
+            document.getElementById('feedbackContent').classList.add('collapsed');
+            document.getElementById('feedbackArrow').textContent = '▶';
+            renderPresets();
+            addHistory('欢迎', '使用“理论值”快速开始');
+        }
+    };
+
+    // 暴露全局
+    window.loadTheory = loadTheory;
+    window.initBisect = initBisect;
+    window.chooseA = chooseA;
+    window.chooseB = chooseB;
+    window.confirmChoice = confirmChoice;
+    window.closeModal = closeModal;
+    window.analyzeTest = analyzeTest;
+    window.resetCurrentParam = resetCurrentParam;
+    window.toggleMode = toggleMode;
+    window.toggleGuide = toggleGuide;
+    window.toggleFeedback = toggleFeedback;
+    window.toggleAdvanced = toggleAdvanced;
+    window.onExtraConfigChange = onExtraConfigChange;
+    window.onYLimitChange = onYLimitChange;
+    window.restoreHistory = restoreHistory;
+    window.exportConfig = exportConfig;
+    window.importGlobalConfig = importGlobalConfig;
+    window.saveProgress = saveProgress;
+    window.restoreProgress = restoreProgress;
+    window.savePreset = savePreset;
+    window.loadPreset = loadPreset;
+    window.deletePreset = deletePreset;
+    window.saveSchemeAsPreset = saveSchemeAsPreset;
+    window.loadPresetToScheme = loadPresetToScheme;
+    window.loadPresetToSchemeFromTag = loadPresetToSchemeFromTag;
+    window.importYamlToScheme = importYamlToScheme;
+    window.startTour = startTour;
+    window.tourNext = tourNext;
+    window.tourPrev = tourPrev;
+    window.endTour = endTour;
+    window.onParamChange = onParamChange;
+</script>
+</body>
+</html>

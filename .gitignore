@@ -1,0 +1,22 @@
+# 二进制与构建产物
+*.jar
+*.tar
+*.tar.gz
+*.zip
+*.7z
+
+# 构建输出
+编译后文件/
+**/target/
+
+# 工具（本地下载的构建工具，不上传）
+tools/
+
+# 旧版源码参考（已被 项目/WindSpigot-KB 取代的原始包）
+WindSpigot-2.1.4/
+
+# IDE / 系统
+.idea/
+.vscode/
+*.iml
+Thumbs.db

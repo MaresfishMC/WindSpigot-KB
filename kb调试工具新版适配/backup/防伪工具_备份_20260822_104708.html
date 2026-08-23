@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>KBM 配置防伪验证工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="layout">
+    <main class="main">
+        <div class="container">
+            <div class="page-header">
+                <h1 style="margin:0;">🛡 配置防伪验证工具</h1>
+                <a class="back-link" href="kbm调试仪.html">← 返回主工具</a>
+            </div>
+            <div class="env-tip">
+                <span>零宽字符隐藏标识 · 内容哈希校验 · 记事本不可见</span>
+            </div>
+
+            <blockquote class="md-blockquote">
+                <p>此工具免费供大家调KB，如果有人倒卖KB，将以法律责任追究到底</p>
+                <p>此工具的初衷只是为了让玩家更好的调试KB，而不是说作为盈利的工具</p>
+                <footer>— 作者按</footer>
+            </blockquote>
+
+            <div class="section" style="margin-top:14px;">
+                <div class="module-head"><span>🔍 查证：验证配置文件真伪</span></div>
+                <p style="color:var(--text2); font-size:0.85rem;">
+                    选择用本工具导出的 YAML 配置文件，将解析隐藏的防伪标识并校验内容是否被篡改。
+                    标识采用零宽字符写入，记事本等编辑器中完全不可见。
+                </p>
+                <div class="action-bar" style="justify-content:flex-start;">
+                    <button class="btn btn-primary" onclick="document.getElementById('wzVerifyInput').click()">📂 选择配置文件</button>
+                    <input type="file" id="wzVerifyInput" accept=".yml,.yaml,.txt" style="display:none;" onchange="wzVerifyFile(event)">
+                </div>
+                <div class="fit-result" id="wzResult" style="min-height:60px; color:var(--text2);">选择文件后显示验证结果。</div>
+            </div>
+
+            <div class="two-col">
+                <div class="section">
+                    <div class="module-head"><span>✍️ 写入 / 更新防伪标识</span></div>
+                    <p style="color:var(--text2); font-size:0.85rem;">
+                        对任意 YAML 配置文件写入官方防伪标识（会同步更新内容哈希），下载已签名的文件。
+                    </p>
+                    <div class="action-bar" style="justify-content:flex-start;">
+                        <button class="btn btn-info" onclick="document.getElementById('wzEmbedInput').click()">📂 选择配置并写入</button>
+                        <input type="file" id="wzEmbedInput" accept=".yml,.yaml" style="display:none;" onchange="wzEmbedFile(event)">
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="module-head"><span>🗑 移除防伪标识</span></div>
+                    <p style="color:var(--text2); font-size:0.85rem;">
+                        移除配置文件中隐藏的防伪标识（仅作者用于撤销授权的场景），下载纯净文件。
+                    </p>
+                    <div class="action-bar" style="justify-content:flex-start;">
+                        <button class="btn btn-danger" onclick="document.getElementById('wzRemoveInput').click()">📂 选择配置并移除</button>
+                        <input type="file" id="wzRemoveInput" accept=".yml,.yaml" style="display:none;" onchange="wzRemoveFile(event)">
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align:center; color:var(--text2); font-size:0.85rem; margin-top:6px;">
+                💡 主工具导出的所有 YAML 配置已自动携带防伪标识
+            </div>
+        </div>
+    </main>
+</div>
+
+<div id="toasts"></div>
+
+<script src="wztool.js"></script>
+</body>
+</html>

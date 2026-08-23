@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>KBM 微调工具 · 单界面四模块版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="打开控制面板">☰ 控制面板</button>
+
+<div class="layout" id="layout">
+    <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+    <!-- ===== 侧边栏抽屉 ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+            <span>⚙️ 控制面板</span>
+            <button class="close-btn" onclick="toggleSidebar()" title="收起侧边栏">✕</button>
+        </div>
+
+        <div class="section-title">📌 模块切换</div>
+        <a class="side-link active" id="sideModuleClassic" onclick="showModule('classic')">🎯 经典二分调试</a>
+        <a class="side-link" id="sideModuleGolden" onclick="showModule('golden')">🥇 黄金分割搜索</a>
+        <a class="side-link" id="sideModuleFit" onclick="showModule('fit')">📈 插值反推</a>
+        <a class="side-link" id="sideModuleCompare" onclick="showModule('compare')">🗂 候选对比</a>
+        <a class="side-link" id="sideModuleAbout" onclick="showModule('about')">📜 关于 / 声明</a>
+
+        <div id="sidebarClassicControls">
+            <div class="section-title">📌 参数选择</div>
+            <div class="row row-inline">
+                <label style="min-width:70px;">🔒 独立模式</label>
+                <input type="checkbox" id="independentModeToggle" checked onchange="toggleMode()" style="width:auto; flex:0 0 auto;">
+                <span id="modeStatus" style="color:var(--text2); font-size:0.8rem;">开启</span>
+            </div>
+            <div class="row" id="step-param">
+                <label>参数</label>
+                <select id="paramSelect" onchange="onParamChange()">
+                    <option value="horizontal.ground">h.ground</option>
+                    <option value="horizontal.air">h.air</option>
+                    <option value="horizontal.sprint_extra">h.sprint_extra</option>
+                    <option value="vertical.ground">v.ground</option>
+                    <option value="vertical.air">v.air</option>
+                    <option value="vertical.sprint_extra">v.sprint_extra</option>
+                    <option value="packet.misplace.distance">packet.misplace.distance</option>
+                    <option value="packet.delay.ticks">packet.delay.ticks</option>
+                    <option value="projectile.horizontal_multiplier">projectile.h_multiplier</option>
+                    <option value="projectile.vertical_multiplier">projectile.v_multiplier</option>
+                    <option value="potion.horizontal_multiplier">potion.h_multiplier</option>
+                    <option value="potion.vertical_multiplier">potion.v_multiplier</option>
+                    <option value="potion.compensation_multiplier">potion.comp_multiplier</option>
+                    <option value="hit_delay">hit_delay</option>
+                    <option value="y_limit.max_y_height">y_limit.max_y_height</option>
+                    <option value="y_limit.vertical_kb_after_limit">y_limit.vertical_kb_after</option>
+                </select>
+            </div>
+            <div class="row" id="step-range">
+                <label>下限 (A)</label>
+                <input type="number" id="minVal" step="0.001" value="0.4">
+                <label>上限 (B)</label>
+                <input type="number" id="maxVal" step="0.001" value="0.6">
+            </div>
+            <div class="row row-inline">
+                <button class="btn btn-primary" onclick="loadTheory()" id="btnTheory">📐 理论值</button>
+                <button class="btn btn-primary" onclick="initBisect()" id="btnStart">开始</button>
+                <button class="btn btn-danger" onclick="resetCurrentParam()" id="btnResetParam">重置</button>
+            </div>
+        </div>
+
+        <div class="section-title">📂 导入 / 导出</div>
+        <div class="row row-inline" style="gap:4px;">
+            <button class="btn btn-info" onclick="exportConfig()">💾 导出YAML</button>
+            <button class="btn btn-info" onclick="document.getElementById('importFileInput').click()">📂 导入YAML</button>
+            <input type="file" id="importFileInput" accept=".yml,.yaml" multiple style="display:none;" onchange="importGlobalConfig(event)">
+        </div>
+        <div class="row row-inline" style="gap:4px;">
+            <button class="btn btn-info" onclick="saveProgress()">💾 保存进度</button>
+            <button class="btn btn-info" onclick="document.getElementById('restoreFileInput').click()">📂 恢复进度</button>
+            <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="restoreProgress(event)">
+        </div>
+
+        <div class="section-title">📌 预设管理</div>
+        <div class="row row-inline">
+            <input type="text" id="presetName" placeholder="预设名称" style="background:#0a0a18; border:1px solid var(--border); color:#fff; padding:4px 8px; border-radius:4px; flex:1;">
+            <button class="btn btn-info" onclick="savePreset()" style="flex:0 0 auto;">保存</button>
+        </div>
+        <div class="preset-list" id="presetList"></div>
+
+        <div class="section-title">⚙️ 高级设置</div>
+        <div class="foldable-header" onclick="toggleAdvanced()">
+            <span class="arrow" id="advancedArrow">▶</span>
+            <span>packet.misplace / y_limit</span>
+        </div>
+        <div class="foldable-content collapsed" id="advancedContent">
+            <div style="color:var(--accent); font-weight:600; margin-top:6px;">📦 packet.misplace</div>
+            <div class="row row-inline">
+                <label>启用 misplace</label>
+                <input type="checkbox" id="packetMisplaceEnabled" onchange="onExtraConfigChange()" style="width:auto; flex:0 0 auto;">
+            </div>
+            <div class="row row-inline">
+                <label>距离 (格)</label>
+                <input type="number" id="packetMisplaceDistance" step="0.01" value="0.1" onchange="onExtraConfigChange()" style="flex:0 1 100px;">
+                <span style="color:var(--text2); font-size:0.75rem;">≤ 0.2</span>
+            </div>
+            <div style="color:var(--text2); font-size:0.75rem; margin-bottom:8px;">注：此设置与服务器端命中检测不兼容。</div>
+
+            <div style="color:var(--accent); font-weight:600; margin-top:10px;">⏱️ packet.delay</div>
+            <div class="row row-inline">
+                <label>启用 delay</label>
+                <input type="checkbox" id="packetDelayEnabled" onchange="onDelayChange()" style="width:auto; flex:0 0 auto;">
+            </div>
+            <div class="row row-inline">
+                <label>延迟 tick 数</label>
+                <input type="number" id="packetDelayTicks" step="1" min="0" value="2" onchange="onDelayChange()" style="flex:0 1 100px;">
+                <span style="color:var(--text2); font-size:0.75rem;">整数</span>
+            </div>
+
+            <div style="color:var(--accent); font-weight:600; margin-top:10px;">📐 Y轴高度限制 (y_limit)</div>
+            <div class="row row-inline">
+                <label>启用</label>
+                <input type="checkbox" id="yLimitEnabled" onchange="onYLimitChange()" style="width:auto; flex:0 0 auto;">
+            </div>
+            <div class="row row-inline">
+                <label>最大高度 (格)</label>
+                <input type="number" id="yLimitMaxHeight" step="0.0001" value="0.675" onchange="onYLimitChange()" style="flex:0 1 100px;">
+            </div>
+            <div class="row row-inline">
+                <label>超出后垂直击退</label>
+                <input type="number" id="yLimitAfterKb" step="0.01" value="0.0" onchange="onYLimitChange()" style="flex:0 1 100px;">
+                <span style="color:var(--text2); font-size:0.75rem;">≤ 0</span>
+            </div>
+        </div>
+
+        <div class="section-title">🔒 固定参数预览</div>
+        <div class="foldable-header" onclick="toggleFixed()">
+            <span class="arrow" id="fixedArrow">▶</span>
+            <span>查看全部固定参数</span>
+        </div>
+        <div class="foldable-content collapsed" id="fixedContent">
+            <div id="fixedConfigDisplay" style="display:table; width:100%; font-size:0.8rem; margin-top:6px;"></div>
+        </div>
+
+        <div class="section-title">📋 历史</div>
+        <button class="btn btn-info" style="width:100%;" id="btnHistoryOpen" onclick="openHistoryModal()">📋 历史记录</button>
+    </aside>
+
+    <!-- ===== 主内容 ===== -->
+    <main class="main">
+        <div class="container">
+            <div class="env-tip">
+                <span>✅ 单界面五模块 · 自动保存</span>
+                <a onclick="startTour()">🎓 新手导览</a>
+                <a onclick="openHistoryModal()">📋 历史记录</a>
+                <a onclick="toggleTheme()" id="themeToggle">🌞 日间模式</a>
+            </div>
+            <h1>🔧 KBM 微调工具</h1>
+            <div class="sub">☰ 侧边栏切换模块：经典二分 · 黄金分割 · 插值反推 · 候选对比</div>
+
+            <div id="mainContent">
+                <!-- ===== 模块1: 经典二分调试(可弹出悬浮窗) ===== -->
+                <div class="section module-panel" id="panel-classic">
+                    <div class="module-head">
+                        <span>🎯 经典二分调试（感受评分逼近）</span>
+                        <button class="btn btn-ghost" id="popupClassicBtn" onclick="popupClassic()" title="弹出为可拖动悬浮窗">🗔 弹出窗口</button>
+                    </div>
+                    <div id="classicInline">
+                        <div class="info-panel" id="infoPanel">
+                            <div class="info-cell">参数：<span class="value" id="currentParamName">-</span></div>
+                            <div class="info-cell">迭代：<span class="value" id="iterCount">0</span></div>
+                            <div class="info-cell">区间：<span class="value" id="currentLow">-</span> ~ <span class="value" id="currentHigh">-</span></div>
+                            <div class="info-cell">推荐值：<span class="value" id="currentBest">-</span></div>
+                            <div class="info-cell">宽度：<span class="value" id="currentWidth">-</span></div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button class="btn btn-ghost" onclick="undoLast()">↩ 撤销上一步</button>
+                            <button class="btn btn-info" onclick="keepCandidate()">📌 保留当前推荐值</button>
+                        </div>
+
+                        <div class="configs-grid" id="step-configs">
+                            <div class="section" style="padding:6px 10px; margin-bottom:0;">
+                                <div class="config-card" id="configA">
+                                    <b style="color:var(--accent);">🔵 方案 A（下限）</b>
+                                    <div id="configADetails"></div>
+                                    <div class="choice-buttons">
+                                        <button class="btn btn-primary" onclick="chooseA()" id="btnA">✅ A 更接近</button>
+                                        <input type="text" id="noteA" class="choice-note" placeholder="备注(可选) 例: 平地起跳">
+                                    </div>
+                                    <div class="scheme-actions">
+                                        <button class="btn btn-info" onclick="saveSchemeAsPreset('A')">💾 保存A为预设</button>
+                                        <button class="btn btn-ghost" onclick="document.getElementById('importYamlA').click()">📂 从YAML导入A</button>
+                                        <input type="file" id="importYamlA" accept=".yml,.yaml" style="display:none;" onchange="importYamlToScheme(event, 'A')">
+                                        <select id="presetSelectA"></select>
+                                        <button class="btn btn-ghost" onclick="loadPresetToScheme('A')">加载</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="section" style="padding:6px 10px; margin-bottom:0;">
+                                <div class="config-card" id="configB">
+                                    <b style="color:var(--accent);">🔴 方案 B（上限）</b>
+                                    <div id="configBDetails"></div>
+                                    <div class="choice-buttons">
+                                        <button class="btn btn-primary" onclick="chooseB()" id="btnB">✅ B 更接近</button>
+                                        <input type="text" id="noteB" class="choice-note" placeholder="备注(可选) 例: 疾跑状态">
+                                    </div>
+                                    <div class="scheme-actions">
+                                        <button class="btn btn-info" onclick="saveSchemeAsPreset('B')">💾 保存B为预设</button>
+                                        <button class="btn btn-ghost" onclick="document.getElementById('importYamlB').click()">📂 从YAML导入B</button>
+                                        <input type="file" id="importYamlB" accept=".yml,.yaml" style="display:none;" onchange="importYamlToScheme(event, 'B')">
+                                        <select id="presetSelectB"></select>
+                                        <button class="btn btn-ghost" onclick="loadPresetToScheme('B')">加载</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section" id="step-feedback" style="padding:10px 14px;">
+                            <div class="foldable-header" onclick="toggleFeedback()">
+                                <span class="arrow" id="feedbackArrow">▶</span>
+                                <span>📊 实测数据辅助（可选）</span>
+                                <span style="color:var(--text2); font-weight:normal; font-size:0.8rem;">点击展开</span>
+                            </div>
+                            <div class="foldable-content collapsed" id="feedbackContent">
+                                <div style="color:var(--text2); font-size:0.9rem; margin:8px 0;">
+                                    输入实测位移，获取量化调整建议；也可直接凭手感选择 A/B，无需填写。
+                                </div>
+                                <div class="row">
+                                    <label>水平位移(格)</label>
+                                    <input type="number" id="testHoriz" step="any" placeholder="例: 2.62">
+                                </div>
+                                <div class="row">
+                                    <label>垂直高度(格)</label>
+                                    <input type="number" id="testVert" step="any" placeholder="例: 0.94">
+                                </div>
+                                <button class="btn btn-warning" onclick="analyzeTest()" id="btnAnalyze">📈 分析</button>
+                                <div class="suggestion-box" id="suggestion">💡 填入数据后点击“分析”获取建议。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="classicDockedBar" style="display:none; text-align:center; padding:12px; border:1px dashed var(--border); border-radius:8px;">
+                        <span style="color:var(--text2);">🎯 调试窗口已弹出（可拖动，不会随页面滚动）</span>
+                        <button class="btn btn-info" onclick="dockClassic()" style="margin-left:10px;">⤓ 还原到页面</button>
+                    </div>
+                </div>
+
+                <!-- ===== 模块2/3: 黄金分割 + 插值反推(桌面端并列) ===== -->
+                <div id="moduleTwoCol">
+                    <div class="section module-panel hidden" id="panel-golden">
+                        <div class="module-head"><span>🥇 黄金分割搜索（0.618 法）</span></div>
+                        <p style="color:var(--text2); font-size:0.85rem;">
+                            每次测试后区间收缩为原来的 <b style="color:var(--gold);">61.8%</b>，比普通二分（50%）保留更多信息，
+                            配合确信程度分级可更快逼近最优值。
+                        </p>
+                        <div class="row">
+                            <label>参数</label>
+                            <select id="gsParam">
+                                <option value="horizontal.ground">h.ground</option>
+                                <option value="horizontal.air">h.air</option>
+                                <option value="horizontal.sprint_extra">h.sprint_extra</option>
+                                <option value="vertical.ground">v.ground</option>
+                                <option value="vertical.air">v.air</option>
+                                <option value="vertical.sprint_extra">v.sprint_extra</option>
+                                <option value="packet.misplace.distance">packet.misplace.distance</option>
+                                <option value="packet.delay.ticks">packet.delay.ticks</option>
+                                <option value="projectile.horizontal_multiplier">projectile.h_multiplier</option>
+                                <option value="projectile.vertical_multiplier">projectile.v_multiplier</option>
+                                <option value="potion.horizontal_multiplier">potion.h_multiplier</option>
+                                <option value="potion.vertical_multiplier">potion.v_multiplier</option>
+                                <option value="potion.compensation_multiplier">potion.comp_multiplier</option>
+                                <option value="hit_delay">hit_delay</option>
+                                <option value="y_limit.max_y_height">y_limit.max_y_height</option>
+                                <option value="y_limit.vertical_kb_after_limit">y_limit.vertical_kb_after</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <label>下限 (A)</label>
+                            <input type="number" id="gsMin" step="0.001" value="0.4">
+                            <label>上限 (B)</label>
+                            <input type="number" id="gsMax" step="0.001" value="0.6">
+                        </div>
+                        <div class="row">
+                            <label>确信程度</label>
+                            <select id="gsLevel">
+                                <option value="mild">略微（收缩至61.8%）</option>
+                                <option value="medium">中等（收缩至38.2%）</option>
+                                <option value="strong">明显（收缩至23.6%）</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <button class="btn btn-primary" onclick="gsTheory()">📐 理论值</button>
+                            <button class="btn btn-primary" onclick="gsStart()">开始</button>
+                            <button class="btn btn-ghost" onclick="gsUndo()">↩ 撤销</button>
+                            <button class="btn btn-danger" onclick="gsReset()">重置</button>
+                        </div>
+                        <div class="gs-info">
+                            <div class="info-cell">参数：<span class="value" id="gsParamName">-</span></div>
+                            <div class="info-cell">区间：<span class="value" id="gsLow">-</span> ~ <span class="value" id="gsHigh">-</span></div>
+                            <div class="info-cell">推荐：<span class="value" id="gsBest">-</span></div>
+                            <div class="info-cell">宽度：<span class="value" id="gsWidth">-</span></div>
+                            <div class="info-cell">迭代：<span class="value" id="gsIter">0</span></div>
+                        </div>
+                        <div class="choice-buttons">
+                            <button class="btn btn-primary" onclick="gsChoose('A')" id="gsBtnA">✅ A（下限）更接近</button>
+                            <button class="btn btn-primary" onclick="gsChoose('B')" id="gsBtnB">✅ B（上限）更接近</button>
+                        </div>
+                        <div class="row" style="margin-top:8px;">
+                            <button class="btn btn-info" onclick="gsCopyBest()">📋 复制当前推荐值</button>
+                        </div>
+                        <div class="history" style="margin-top:10px; max-height:140px;" id="gsHistory"></div>
+                    </div>
+
+                    <div class="section module-panel hidden" id="panel-fit">
+                        <div class="module-head"><span>📈 实测插值反推</span></div>
+                        <p style="color:var(--text2); font-size:0.85rem;">
+                            取 3 个不同参数值，实测各自位移（格），用线性或抛物线拟合出「参数 → 位移」关系，
+                            反推出达到目标位移所需的精确参数值。
+                        </p>
+                        <div class="row">
+                            <label>参数值 k₁</label>
+                            <input type="number" id="fitK1" step="any" placeholder="例: 0.510">
+                            <label>实测 D₁</label>
+                            <input type="number" id="fitD1" step="any" placeholder="例: 2.45">
+                        </div>
+                        <div class="row">
+                            <label>参数值 k₂</label>
+                            <input type="number" id="fitK2" step="any" placeholder="例: 0.528">
+                            <label>实测 D₂</label>
+                            <input type="number" id="fitD2" step="any" placeholder="例: 2.62">
+                        </div>
+                        <div class="row">
+                            <label>参数值 k₃</label>
+                            <input type="number" id="fitK3" step="any" placeholder="例: 0.545">
+                            <label>实测 D₃</label>
+                            <input type="number" id="fitD3" step="any" placeholder="例: 2.71">
+                        </div>
+                        <div class="row">
+                            <label>目标位移</label>
+                            <input type="number" id="fitTarget" step="any" placeholder="例: 2.62">
+                            <label>拟合方式</label>
+                            <select id="fitMode" style="flex:0 1 140px;">
+                                <option value="quadratic">抛物线（推荐）</option>
+                                <option value="linear">线性</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <button class="btn btn-warning" onclick="fitCompute()">🧮 计算</button>
+                            <button class="btn btn-ghost" onclick="fitFillExample()">💡 填示例</button>
+                        </div>
+                        <div class="fit-result" id="fitResult" style="min-height:40px; color:var(--text2);">填写数据后点击“计算”。</div>
+                    </div>
+                </div>
+
+                <!-- ===== 模块4: 候选对比 ===== -->
+                <div class="section module-panel hidden" id="panel-compare">
+                    <div class="module-head"><span>🗂 候选对比 · 分模块组合调试</span></div>
+                    <p style="color:var(--text2); font-size:0.85rem;">
+                        不同情景 KB 相似时，在经典模块点「📌 保留当前推荐值」留存候选；在此每个参数勾选一个最优值，
+                        组合成完整 YAML 直接导出。
+                    </p>
+                    <div class="action-bar" style="justify-content:flex-start; margin:6px 0;">
+                        <button class="btn btn-ghost" onclick="document.getElementById('candidateFileInput').click()">📂 导入候选</button>
+                        <input type="file" id="candidateFileInput" accept=".json" style="display:none;" onchange="importCandidates(event)">
+                        <button class="btn btn-ghost" onclick="exportCandidates()">💾 导出候选</button>
+                    </div>
+                    <table class="cmp-table">
+                        <thead>
+                            <tr><th>选择</th><th>参数</th><th>候选值</th><th>备注 / 信息</th></tr>
+                        </thead>
+                        <tbody id="cmpBody"></tbody>
+                    </table>
+                    <div style="margin-top:10px;">
+                        <div style="color:var(--text2); font-size:0.85rem; margin-bottom:4px;">组合 YAML 预览：</div>
+                        <textarea class="yaml-preview" id="cmpPreview" readonly></textarea>
+                    </div>
+                    <div class="action-bar" style="justify-content:flex-start; margin-top:8px;">
+                        <button class="btn btn-primary" onclick="cmpExport()">💾 导出组合 YAML</button>
+                        <button class="btn btn-info" onclick="cmpCopy()">📋 复制 YAML</button>
+                    </div>
+                </div>
+
+                <!-- ===== 模块5: 关于 / 声明 ===== -->
+                <div class="section module-panel hidden" id="panel-about">
+                    <div class="module-head"><span>📜 关于本工具</span></div>
+                    <blockquote class="md-blockquote">
+                        <p>此工具免费供大家调KB，如果有人倒卖KB，将以法律责任追究到底</p>
+                        <p>此工具的初衷只是为了让玩家更好的调试KB，而不是说作为盈利的工具</p>
+                        <footer>— 作者按</footer>
+                    </blockquote>
+                    <div style="margin-top:14px; color:var(--text2); font-size:0.9rem; line-height:1.9;">
+                        <p>🔧 <b>KBM 微调工具</b> · 单界面五模块版</p>
+                        <p>🎯 经典二分调试 · 🥇 黄金分割搜索 · 📈 插值反推 · 🗂 候选对比 · 📜 关于/声明</p>
+                        <p>所有调试均在本地进行，数据自动保存于浏览器；侧边栏可随时切换模块或收起。</p>
+                        <p>🔌 KnockbackManager 由 dw1e 编写，基于 ProtocolLib。</p>
+                        <p>🛡 <a href="防伪工具.html" target="_blank" style="color:var(--accent); text-decoration:none;">配置防伪验证工具</a>：验证导出配置的真伪与是否被篡改</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 调参指南 -->
+            <div id="guideContent" style="display:none; margin-top:16px;">
+                <div class="section">
+                    <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">📖 如何使用</h2>
+                    <p style="color:var(--text2);">本工具集成 <b>五个模块</b>，点击屏幕左缘「☰ 控制面板」呼出侧边栏，在「📌 模块切换」中自由切换，无需打开其他页面。</p>
+                    <p style="color:var(--text2);"><b>🎯 经典二分调试</b>：二分法 + 感受评分逼近最佳参数；支持 <b>「🗔 弹出窗口」</b> 变为可拖动悬浮窗。</p>
+                    <ol style="color:var(--text2); padding-left:20px;">
+                        <li><b>选择参数</b> → 侧边栏选择参数，点击 <b>“理论值”</b> 自动填入范围。</li>
+                        <li><b>测试方案</b> → 在游戏内分别测试方案 A 和 B（桌面端两卡片并列显示）。</li>
+                        <li><b>打分反馈</b> → 点击 <b>“A更接近”</b> 或 <b>“B更接近”</b>，为两个方案打 0-10 感受分，工具按分差自动缩小区间。</li>
+                        <li><b>保留候选</b> → 不同情景下 KB 相似时，点击 <b>“📌 保留”</b> 留存，在候选对比模块统一调整。</li>
+                        <li><b>迭代</b> → 重复直至区间宽度足够小，每次操作都有提示反馈。</li>
+                    </ol>
+                    <p style="color:var(--text2);"><b>🥇 黄金分割</b>：每次收缩 61.8%，配合确信程度（61.8% / 38.2% / 23.6%）。</p>
+                    <p style="color:var(--text2);"><b>📈 插值反推</b>：3 个参数实测位移，拟合出目标参数精确值与建议二分范围。</p>
+                    <p style="color:var(--text2);"><b>🗂 候选对比</b>：每个参数挑一个最优候选，组合导出完整 YAML。</p>
+                    <p style="color:var(--text2);"><b>📋 历史记录</b>：弹窗式展示，可拖动窗口，点击条目恢复、可撤销上一步，均有反馈。</p>
+                    <p style="color:var(--text2);"><b>📂 多文件导入</b>：全局导入支持选择多个 YAML 文件，工具根据文件名自动识别分配到方案 A 或 B。</p>
+                    <p style="color:var(--text2);"><b>💾 自动保存</b>：所有修改自动保存在浏览器中，刷新页面不会丢失。</p>
+                </div>
+                <div class="section">
+                    <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">🔌 插件信息</h2>
+                    <p style="color:var(--text2);">KnockbackManager 由 dw1e 编写，基于 ProtocolLib。</p>
+                    <p>📦 GitHub: <a class="guide-link" href="https://github.com/dw1e/KnockbackManager" target="_blank">github.com/dw1e/KnockbackManager</a></p>
+                </div>
+                <div class="section">
+                    <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">❓ 常见问题</h2>
+                    <p style="color:var(--text2);"><b>Q: 模块怎么切换？</b><br>A: 点击左缘「☰ 控制面板」呼出侧边栏 → 「📌 模块切换」选择四个模块之一，主界面立即切换，不用另开页面。</p>
+                    <p style="color:var(--text2);"><b>Q: 撤销后为什么没反应？</b><br>A: 撤销/恢复均有右上角 Toast 提示，若提示“已是该状态”说明当前与目标状态一致。</p>
+                    <p style="color:var(--text2);"><b>Q: 导入多个文件如何分配？</b><br>A: 根据文件名自动识别，包含 "A"/"下限"/"low" 等→方案A，包含 "B"/"上限"/"high" 等→方案B，无法识别时弹窗让您选择。</p>
+                    <p style="color:var(--text2);"><b>Q: 刷新页面数据会丢失吗？</b><br>A: 不会，自动保存到浏览器 localStorage，重新打开自动恢复。</p>
+                </div>
+            </div>
+
+            <div style="text-align:center; margin-top:14px;">
+                <button class="btn btn-ghost" onclick="toggleGuide()">📖 显示/隐藏调参指南</button>
+                <button class="btn btn-info" onclick="startTour()">🎓 新手导览</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 感受评分弹窗 -->
+<div class="modal-overlay" id="confidenceModal">
+    <div class="modal-box wide">
+        <h2>🔍 感受评分</h2>
+        <p id="modalMessage">哪个方案更接近目标手感？</p>
+        <div class="score-row">
+            <label>方案A（下限）评分</label>
+            <input type="range" id="scoreA" min="0" max="10" step="1" value="5" oninput="scoreChanged()">
+            <span class="score-val" id="scoreAVal">5</span>
+        </div>
+        <div class="score-row">
+            <label>方案B（上限）评分</label>
+            <input type="range" id="scoreB" min="0" max="10" step="1" value="5" oninput="scoreChanged()">
+            <span class="score-val" id="scoreBVal">5</span>
+        </div>
+        <p style="color:var(--text2); font-size:0.8rem; margin:0;">0 = 完全不对，10 = 完美目标手感</p>
+        <div class="quick-scores">
+            <button class="btn btn-mild" onclick="setQuickScore('A','mild')">A 略微</button>
+            <button class="btn btn-strong" onclick="setQuickScore('A','strong')">A 明显</button>
+            <button class="btn btn-mild" onclick="setQuickScore('B','mild')">B 略微</button>
+            <button class="btn btn-strong" onclick="setQuickScore('B','strong')">B 明显</button>
+        </div>
+        <p id="scoreHint" style="color:var(--gold); font-size:0.85rem; min-height:18px; margin:6px 0 12px;"></p>
+        <div class="modal-buttons">
+            <button class="btn btn-primary" onclick="confirmScore()">✅ 确认</button>
+            <button class="btn btn-cancel" onclick="closeScoreModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 历史记录弹窗(可拖动) -->
+<div class="history-modal-overlay" id="historyModal">
+    <div class="history-dialog" id="historyDialog">
+        <div class="history-dialog-head" id="historyDialogHead">
+            <span>📋 历史记录（拖动此处可移动窗口）</span>
+            <button class="close-btn" onclick="closeHistoryModal()" title="关闭">✕</button>
+        </div>
+        <div class="history-dialog-body">
+            <div class="history" id="historyLog"><span style="color:var(--text2);">暂无记录</span></div>
+        </div>
+        <div class="history-dialog-foot">
+            <button class="btn btn-ghost" onclick="undoLast()">↩ 撤销上一步</button>
+            <button class="btn btn-danger" onclick="clearHistory()">🗑 清空</button>
+        </div>
+    </div>
+</div>
+
+<!-- 经典调试悬浮窗(弹出式) -->
+<div class="floating-window" id="classicPopup">
+    <div class="floating-head" id="classicPopupHead">
+        <span>🎯 经典二分调试</span>
+        <button class="close-btn" onclick="dockClassic()" title="还原到页面">✕</button>
+    </div>
+    <div class="floating-body" id="classicPopupBody"></div>
+</div>
+
+<!-- 导览浮层 -->
+<div class="tour-highlight" id="tourHighlight"></div>
+<div class="tour-tip" id="tourTip">
+    <div class="title" id="tourTitle">步骤 1</div>
+    <div class="desc" id="tourDesc">描述</div>
+    <div class="btn-group">
+        <button class="btn btn-ghost" onclick="tourPrev()" id="tourPrev">上一步</button>
+        <button class="btn btn-primary" onclick="tourNext()" id="tourNext">下一步</button>
+        <button class="btn btn-danger" onclick="endTour()" id="tourEnd">结束</button>
+    </div>
+</div>
+
+<div id="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
