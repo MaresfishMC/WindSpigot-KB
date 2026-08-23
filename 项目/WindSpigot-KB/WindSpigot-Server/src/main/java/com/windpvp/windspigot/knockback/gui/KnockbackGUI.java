@@ -2,24 +2,29 @@ package com.windpvp.windspigot.knockback.gui;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitTask;
 
 import com.windpvp.windspigot.CorePluginBridge;
 import com.windpvp.windspigot.knockback.CraftKnockbackProfile;
@@ -28,6 +33,10 @@ import com.windpvp.windspigot.knockback.KnockbackEngineSettings;
 import com.windpvp.windspigot.knockback.KnockbackEngineSettings.Param;
 
 import dev.cobblesword.nachospigot.knockback.KnockbackProfile;
+import net.minecraft.server.BlockPosition;
+import net.minecraft.server.PacketPlayOutOpenSignEditor;
+import net.minecraft.server.TileEntity;
+import net.minecraft.server.TileEntitySign;
 
 /**
  * 击退参数箱子 GUI（可直接点击编辑，改动即时生效并写回配置文件）。
@@ -45,37 +54,67 @@ public class KnockbackGUI implements Listener {
 	private static final KnockbackGUI INSTANCE = new KnockbackGUI();
 	private static boolean registered = false;
 
-	/** 正在铁砧界面输入新模式名称的玩家 */
-	private static final Set<UUID> pendingAnvil = new HashSet<>();
+	/** 正在告示牌界面输入新模式名称的玩家会话 */
+	private static final Map<UUID, SignSession> pendingSigns = new HashMap<>();
+
+	private static final class SignSession {
+		final org.bukkit.World world;
+		final BlockPosition pos;
+		final int origTypeId;
+		final byte origData;
+		final BukkitTask timeoutTask;
+
+		SignSession(org.bukkit.World world, BlockPosition pos, int origTypeId, byte origData,
+				BukkitTask timeoutTask) {
+			this.world = world;
+			this.pos = pos;
+			this.origTypeId = origTypeId;
+			this.origData = origData;
+			this.timeoutTask = timeoutTask;
+		}
+	}
 
 	private KnockbackGUI() {
 	}
 
-	/** 惰性注册监听器（确保 PluginManager 已就绪）。
+	/** 注册全部监听器（启动时由 WindSpigot 调用，GUI 打开时兜底调用）。
 	 *  注意: 不能用 registerEvents()（它会调用 plugin.getPluginLoader()），
 	 *  核心内嵌插件桥没有 PluginLoader，因此用 registerEvent 直接注册。 */
-	private static synchronized void ensureRegistered() {
-		if (!registered) {
-			Bukkit.getPluginManager().registerEvent(InventoryClickEvent.class, INSTANCE, EventPriority.NORMAL,
-					(listener, event) -> {
-						if (event instanceof InventoryClickEvent) {
-							INSTANCE.onClick((InventoryClickEvent) event);
-						}
-					}, CorePluginBridge.get());
-			Bukkit.getPluginManager().registerEvent(InventoryDragEvent.class, INSTANCE, EventPriority.NORMAL,
-					(listener, event) -> {
-						if (event instanceof InventoryDragEvent) {
-							INSTANCE.onDrag((InventoryDragEvent) event);
-						}
-					}, CorePluginBridge.get());
-			Bukkit.getPluginManager().registerEvent(InventoryCloseEvent.class, INSTANCE, EventPriority.NORMAL,
-					(listener, event) -> {
-						if (event instanceof InventoryCloseEvent) {
-							pendingAnvil.remove(((InventoryCloseEvent) event).getPlayer().getUniqueId());
-						}
-					}, CorePluginBridge.get());
-			registered = true;
+	public static synchronized void registerAll() {
+		if (registered) {
+			return;
 		}
+		Bukkit.getPluginManager().registerEvent(InventoryClickEvent.class, INSTANCE, EventPriority.NORMAL,
+				(listener, event) -> {
+					if (event instanceof InventoryClickEvent) {
+						INSTANCE.onClick((InventoryClickEvent) event);
+					}
+				}, CorePluginBridge.get());
+		Bukkit.getPluginManager().registerEvent(InventoryDragEvent.class, INSTANCE, EventPriority.NORMAL,
+				(listener, event) -> {
+					if (event instanceof InventoryDragEvent) {
+						INSTANCE.onDrag((InventoryDragEvent) event);
+					}
+				}, CorePluginBridge.get());
+		Bukkit.getPluginManager().registerEvent(SignChangeEvent.class, INSTANCE, EventPriority.NORMAL,
+				(listener, event) -> {
+					if (event instanceof SignChangeEvent) {
+						INSTANCE.onSignChange((SignChangeEvent) event);
+					}
+				}, CorePluginBridge.get());
+		Bukkit.getPluginManager().registerEvent(PlayerQuitEvent.class, INSTANCE, EventPriority.NORMAL,
+				(listener, event) -> {
+					if (event instanceof PlayerQuitEvent) {
+						restoreSign(((PlayerQuitEvent) event).getPlayer().getUniqueId());
+					}
+				}, CorePluginBridge.get());
+		Bukkit.getPluginManager().registerEvent(PlayerChangedWorldEvent.class, INSTANCE, EventPriority.NORMAL,
+				(listener, event) -> {
+					if (event instanceof PlayerChangedWorldEvent) {
+						KnockbackConfig.applyWorldProfile(((PlayerChangedWorldEvent) event).getPlayer());
+					}
+				}, CorePluginBridge.get());
+		registered = true;
 	}
 
 	// ==================== 页面标识 ====================
@@ -98,7 +137,7 @@ public class KnockbackGUI implements Listener {
 	// ==================== 打开页面 ====================
 
 	public static void openMain(Player player) {
-		ensureRegistered();
+		registerAll();
 		Inventory inv = Bukkit.createInventory(new GUIHolder(null), 27, "§8击退引擎参数 · 分类");
 
 		List<String> cats = KnockbackEngineSettings.categories();
@@ -122,7 +161,7 @@ public class KnockbackGUI implements Listener {
 	}
 
 	public static void openCategory(Player player, String category) {
-		ensureRegistered();
+		registerAll();
 		List<Param> params = KnockbackEngineSettings.byCategory(category);
 		Inventory inv = Bukkit.createInventory(new GUIHolder(category), 54, "§8击退参数 · " + category);
 
@@ -144,7 +183,7 @@ public class KnockbackGUI implements Listener {
 
 	/** 模式管理页：每个模式一个物品 */
 	private static void openModes(Player player) {
-		ensureRegistered();
+		registerAll();
 		Inventory inv = Bukkit.createInventory(new GUIHolder(PAGE_MODES), 54, "§8击退模式管理");
 
 		String current = KnockbackConfig.getCurrentKb().getName();
@@ -215,11 +254,6 @@ public class KnockbackGUI implements Listener {
 	// ==================== 点击处理 ====================
 
 	public void onClick(InventoryClickEvent event) {
-		// 铁砧新建模式流程
-		if (handleAnvilClick(event)) {
-			return;
-		}
-
 		if (!(event.getInventory().getHolder() instanceof GUIHolder)) {
 			return;
 		}
@@ -265,7 +299,7 @@ public class KnockbackGUI implements Listener {
 		} else if (slot == 20) {
 			openModes(player);
 		} else if (slot == 24) {
-			openCreateAnvil(player);
+			openCreateSign(player);
 		} else if (slot == 26) {
 			KnockbackEngineSettings.resetAll();
 			KnockbackConfig.saveEngineSettings();
@@ -333,7 +367,7 @@ public class KnockbackGUI implements Listener {
 			return;
 		}
 		if (slot == 49) {
-			openCreateAnvil(player);
+			openCreateSign(player);
 			return;
 		}
 		if (slot == 53) {
@@ -406,64 +440,94 @@ public class KnockbackGUI implements Listener {
 		return name;
 	}
 
-	// ==================== 铁砧新建模式 ====================
+	// ==================== 告示牌新建模式 ====================
+	// 相比铁砧 GUI：不依赖占位物品、天然支持文本输入、触发事件明确。
+	// 原理：在玩家所在区块 y=255 临时放置真实告示牌（1.8.8 中 SignChangeEvent 需要服务端存在
+	// 对应 TileEntitySign），发送打开编辑器数据包；完成/超时/退出后恢复原方块。
 
-	private static void openCreateAnvil(Player player) {
-		pendingAnvil.add(player.getUniqueId());
-		Inventory anvil = Bukkit.createInventory(player, InventoryType.ANVIL);
-		anvil.setItem(0, item(Material.PAPER, "新模式名称"));
-		player.openInventory(anvil);
-		player.sendMessage("§e请在铁砧中输入新模式名称（以当前全局模式 §f"
+	private static void openCreateSign(Player player) {
+		UUID uuid = player.getUniqueId();
+		if (pendingSigns.containsKey(uuid)) {
+			player.sendMessage("§c你已有进行中的新建模式操作");
+			return;
+		}
+
+		int x = player.getLocation().getBlockX();
+		int z = player.getLocation().getBlockZ();
+		Block block = player.getWorld().getBlockAt(x, 255, z);
+		int origTypeId = block.getTypeId();
+		byte origData = block.getData();
+
+		// 放置临时告示牌并标记可编辑（1.8.8 需要，否则 SignChangeEvent 不会触发）
+		block.setTypeIdAndData(Material.SIGN_POST.getId(), (byte) 0, false);
+		BlockPosition pos = new BlockPosition(x, 255, z);
+		TileEntity tile = ((CraftWorld) player.getWorld()).getHandle().getTileEntity(pos);
+		if (!(tile instanceof TileEntitySign)) {
+			block.setTypeIdAndData(origTypeId, origData, false);
+			player.sendMessage("§c打开编辑器失败，请重试");
+			return;
+		}
+		((TileEntitySign) tile).a(((CraftPlayer) player).getHandle());
+
+		// 打开告示牌编辑器
+		((CraftPlayer) player).getHandle().playerConnection.sendPacket(new PacketPlayOutOpenSignEditor(pos));
+
+		// 60 秒超时自动恢复（玩家按 Esc 关闭编辑器时不触发 SignChangeEvent）
+		BukkitTask timeout = Bukkit.getScheduler().runTaskLater(CorePluginBridge.get(), () -> restoreSign(uuid),
+				1200L);
+		pendingSigns.put(uuid, new SignSession(player.getWorld(), pos, origTypeId, origData, timeout));
+
+		player.sendMessage("§e请在告示牌第一行输入新模式名称（以当前全局模式 §f"
 				+ KnockbackConfig.getCurrentKb().getName() + " §e为模板）");
 	}
 
-	/** 处理铁砧点击，返回 true 表示事件已被消费 */
-	private boolean handleAnvilClick(InventoryClickEvent event) {
-		if (!(event.getWhoClicked() instanceof Player)) {
-			return false;
+	/** 恢复临时告示牌处的原方块（完成/超时/退出时调用） */
+	private static void restoreSign(UUID uuid) {
+		SignSession session = pendingSigns.remove(uuid);
+		if (session == null) {
+			return;
 		}
-		Player player = (Player) event.getWhoClicked();
-		if (!pendingAnvil.contains(player.getUniqueId())) {
-			return false;
+		session.timeoutTask.cancel();
+		Block block = session.world.getBlockAt(session.pos.getX(), session.pos.getY(), session.pos.getZ());
+		if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN) {
+			block.setTypeIdAndData(session.origTypeId, session.origData, false);
 		}
-		if (event.getInventory().getType() != InventoryType.ANVIL) {
-			return false;
+	}
+
+	public void onSignChange(SignChangeEvent event) {
+		Player player = event.getPlayer();
+		SignSession session = pendingSigns.get(player.getUniqueId());
+		if (session == null) {
+			return;
+		}
+		if (!session.pos.equals(new BlockPosition(event.getBlock().getX(), event.getBlock().getY(),
+				event.getBlock().getZ()))) {
+			return; // 不是我们的告示牌
 		}
 		event.setCancelled(true);
-		if (event.getRawSlot() != 2) { // 结果槽
-			return true;
-		}
-		ItemStack result = event.getCurrentItem();
-		if (result == null || !result.hasItemMeta() || !result.getItemMeta().hasDisplayName()) {
-			return true;
-		}
-		pendingAnvil.remove(player.getUniqueId());
-		player.closeInventory();
+		restoreSign(player.getUniqueId());
 
-		String name = result.getItemMeta().getDisplayName().replaceAll("[^\\w\\u4e00-\\u9fa5-]", "");
-		if (name.isEmpty() || name.equals("新模式名称")) {
+		String name = event.getLine(0);
+		if (name == null || name.trim().isEmpty()) {
+			player.sendMessage("§c模式名称不能为空！");
+			return;
+		}
+		name = org.bukkit.ChatColor.stripColor(name).trim().replaceAll("[^\\w\\u4e00-\\u9fa5-]", "");
+		if (name.isEmpty()) {
 			player.sendMessage("§c模式名称无效");
-			return true;
+			return;
 		}
 		if (KnockbackConfig.getKbProfileByName(name) != null) {
 			player.sendMessage("§c模式已存在: " + name);
-			return true;
+			return;
 		}
 
-		// 以当前全局模式为模板复制文件
-		java.io.File src = KnockbackConfig.profileFile(KnockbackConfig.getCurrentKb().getName());
-		java.io.File dest = KnockbackConfig.profileFile(name);
-		try {
-			if (src.exists()) {
-				java.nio.file.Files.copy(src.toPath(), dest.toPath());
-			} else {
-				new CraftKnockbackProfile(name).save(true);
-			}
-			KnockbackConfig.reload();
-			player.sendMessage("§a已创建模式: §f" + name + " §7(模板: " + KnockbackConfig.getCurrentKb().getName() + ")");
-		} catch (IOException ex) {
-			player.sendMessage("§c创建失败: " + ex.getMessage());
+		// 三层合并模板（默认值 -> 当前全局模式 -> 完整参数写出）
+		String template = KnockbackConfig.getCurrentKb().getName();
+		if (KnockbackConfig.createProfileFromTemplate(template, name)) {
+			player.sendMessage("§a已创建模式: §f" + name + " §7(模板: " + template + "，含全部参数)");
+		} else {
+			player.sendMessage("§c创建失败，详情见控制台");
 		}
-		return true;
 	}
 }

@@ -86,6 +86,59 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		engineOverrides.clear();
 	}
 
+	/** 复制另一个配置的所有字段到本配置（含引擎覆盖） */
+	public void copyFrom(CraftKnockbackProfile other) {
+		this.name = other.name;
+		// 基础
+		this.horizontal = other.horizontal;
+		this.vertical = other.vertical;
+		this.verticalMin = other.verticalMin;
+		this.verticalMax = other.verticalMax;
+		this.extraHorizontal = other.extraHorizontal;
+		this.extraVertical = other.extraVertical;
+		this.frictionHorizontal = other.frictionHorizontal;
+		this.frictionVertical = other.frictionVertical;
+		this.stopSprint = other.stopSprint;
+		// 投射物
+		this.rodHorizontal = other.rodHorizontal;
+		this.rodVertical = other.rodVertical;
+		this.arrowHorizontal = other.arrowHorizontal;
+		this.arrowVertical = other.arrowVertical;
+		this.pearlHorizontal = other.pearlHorizontal;
+		this.pearlVertical = other.pearlVertical;
+		this.snowballHorizontal = other.snowballHorizontal;
+		this.snowballVertical = other.snowballVertical;
+		this.eggHorizontal = other.eggHorizontal;
+		this.eggVertical = other.eggVertical;
+		// W-Tap
+		this.wTapHorizontal = other.wTapHorizontal;
+		this.wTapVertical = other.wTapVertical;
+		// 附加
+		this.addHorizontal = other.addHorizontal;
+		this.addVertical = other.addVertical;
+		// 疾跑宽松判定
+		this.sprintHorizontalMultiplier = other.sprintHorizontalMultiplier;
+		this.sprintVerticalMultiplier = other.sprintVerticalMultiplier;
+		this.sprintLenientEnabled = other.sprintLenientEnabled;
+		// 空中/地面
+		this.airHorizontalMultiplier = other.airHorizontalMultiplier;
+		this.airVerticalMultiplier = other.airVerticalMultiplier;
+		this.groundHorizontalMultiplier = other.groundHorizontalMultiplier;
+		this.groundVerticalMultiplier = other.groundVerticalMultiplier;
+		// 动态Misplay
+		this.dynamicMisplayEnabled = other.dynamicMisplayEnabled;
+		this.targetMisplay = other.targetMisplay;
+		this.misplayCompensation = other.misplayCompensation;
+		// 引擎覆盖
+		this.engineOverrides.clear();
+		this.engineOverrides.putAll(other.engineOverrides);
+	}
+
+	/** 获取引擎覆盖映射（只读副本） */
+	public java.util.Map<String, Object> getEngineOverrides() {
+		return java.util.Collections.unmodifiableMap(engineOverrides);
+	}
+
 	public CraftKnockbackProfile(String name) {
 		this.name = name;
 	}
@@ -148,6 +201,10 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 			yml.set("projectiles.snowball.vertical", this.snowballVertical);
 			yml.set("projectiles.egg.horizontal", this.eggHorizontal);
 			yml.set("projectiles.egg.vertical", this.eggVertical);
+			// 引擎参数覆盖（模式文件中的引擎键对该模式受害者优先生效）
+			for (java.util.Map.Entry<String, Object> entry : this.engineOverrides.entrySet()) {
+				yml.set(entry.getKey(), entry.getValue());
+			}
 		}
 
 		try {

@@ -54,6 +54,9 @@ public class KnockbackConfig {
 	private static volatile KnockbackProfile currentKb;
 	private static volatile Set<KnockbackProfile> kbProfiles = new HashSet<>();
 
+	// 世界 -> 该世界使用的配置名（玩家切换世界时自动切换手感）
+	private static final Map<String, String> worldProfiles = new ConcurrentHashMap<>();
+
 	// 玩家个人击退配置缓存
 	private static final Map<String, KnockbackProfile> playerProfiles = new ConcurrentHashMap<>();
 
@@ -107,6 +110,9 @@ public class KnockbackConfig {
 
 		// 击退引擎全局参数（kb配置文件/ 多文件 + 调试工具导入层）
 		loadEngineSettings();
+
+		// 世界 -> 配置映射
+		loadWorlds();
 
 		// 设置当前使用的击退配置
 		currentKb = getKbProfileByName(getString("knockback.current", "kohi"));
@@ -263,6 +269,32 @@ public class KnockbackConfig {
 	}
 
 	/**
+	 * 基于模板创建新配置（三层合并：硬编码默认值 → 模板文件值 → 完整写出）。
+	 * 硬编码默认值在 CraftKnockbackProfile 构造器中体现，loadProfileFromFile 补全缺键，
+	 * 因此只需加载模板后 copyFrom 即可得到全部参数的完整副本。
+	 * @return 成功返回 true
+	 */
+	public static boolean createProfileFromTemplate(String templateName, String newName) {
+		KnockbackProfile tpl = getKbProfileByName(templateName);
+		if (!(tpl instanceof CraftKnockbackProfile)) {
+			LOGGER.error("模板不存在或类型错误: " + templateName);
+			return false;
+		}
+		CraftKnockbackProfile source = (CraftKnockbackProfile) tpl;
+		CraftKnockbackProfile target = new CraftKnockbackProfile(newName);
+		target.copyFrom(source);
+		target.setName(newName);
+		try {
+			target.save(true); // 写出全部参数 + 引擎覆盖
+			reload();
+			return true;
+		} catch (Exception ex) {
+			LOGGER.error("创建配置失败: " + newName, ex);
+			return false;
+		}
+	}
+
+	/**
 	 * 从模式文件加载单个击退配置（键为扁平结构，不含 knockback.profiles 前缀）
 	 */
 	private static void loadProfileFromFile(File file) {
@@ -339,6 +371,20 @@ public class KnockbackConfig {
 				profile.setEngineOverride(p.path, yml.getBoolean(p.path));
 				break;
 			}
+		}
+
+		// 一致性自检：检查模式文件是否包含所有基础参数键
+		List<String> requiredLegacyKeys = Arrays.asList("stop-sprint", "friction-horizontal", "friction-vertical",
+				"horizontal", "vertical", "vertical-max", "vertical-min", "extra-horizontal", "extra-vertical");
+		List<String> missing = new ArrayList<>();
+		for (String k : requiredLegacyKeys) {
+			if (!yml.contains(k)) {
+				missing.add(k);
+			}
+		}
+		if (!missing.isEmpty()) {
+			LOGGER.warn("模式 '" + key + "' 缺失 " + missing.size() + " 个基础参数键: " + missing
+					+ "，已使用默认值。建议补全后保存");
 		}
 	}
 
@@ -470,6 +516,47 @@ public class KnockbackConfig {
 	public static void clearPlayerProfile(Player player) {
 		playerProfiles.remove(player.getName().toLowerCase());
 		set("knockback.players." + player.getName().toLowerCase(), null);
+	}
+
+	// ==================== 世界配置映射 ====================
+
+	/**
+	 * 加载 knockback.worlds 映射: world_name -> profile_name
+	 * 格式: knockback.worlds.world_pvp: windpvp
+	 */
+	private static void loadWorlds() {
+		worldProfiles.clear();
+		if (!config.isConfigurationSection("knockback.worlds")) {
+			return;
+		}
+		for (String worldName : config.getConfigurationSection("knockback.worlds").getKeys(false)) {
+			String profileName = config.getString("knockback.worlds." + worldName, null);
+			if (profileName != null && !profileName.isEmpty()) {
+				worldProfiles.put(worldName, profileName);
+			}
+		}
+		if (!worldProfiles.isEmpty()) {
+			WindSpigot.LOGGER.info("已加载 " + worldProfiles.size() + " 个世界配置映射: " + worldProfiles);
+		}
+	}
+
+	/**
+	 * 玩家切换世界时自动切换击退配置
+	 * 由 KnockbackGUI.registerAll() 中注册的 PlayerChangedWorldEvent 处理器调用
+	 */
+	public static void applyWorldProfile(Player player) {
+		String worldName = player.getWorld().getName();
+		String profileName = worldProfiles.get(worldName);
+		if (profileName != null) {
+			KnockbackProfile profile = getKbProfileByName(profileName);
+			if (profile != null) {
+				playerProfiles.put(player.getName().toLowerCase(), profile);
+				return;
+			}
+			LOGGER.warn("世界 '" + worldName + "' 映射的配置 '" + profileName + "' 不存在");
+		}
+		// 无映射时清除玩家的个人配置，回退到全局
+		playerProfiles.remove(player.getName().toLowerCase());
 	}
 
 	// ==================== 基础方法 ====================
