@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>KB 内核微调工具 · 单界面四模块版</title>
+    <title>KBM 微调工具 · 单界面四模块版</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,22 +19,11 @@
             <button class="close-btn" onclick="toggleSidebar()" title="收起侧边栏">✕</button>
         </div>
 
-        <div class="section-title">🔄 KB 模式（双模式并行）</div>
-        <div class="row row-inline" style="gap:4px;">
-            <button class="btn btn-info" id="modeTabLegacy" onclick="switchMode('legacy')">🔙 原版kbm</button>
-            <button class="btn btn-warning" id="modeTabCore" onclick="switchMode('core')">🔧 新核心KB ●</button>
-        </div>
-        <div style="color:var(--text2); font-size:0.75rem; margin:2px 0 6px;" id="modeStatusTip"></div>
-        <div class="row row-inline" style="gap:4px;">
-            <button class="btn btn-warning" onclick="convertLegacyToCore()" style="width:100%;">🔄 旧kbm配置 → 新核心KB</button>
-        </div>
-
         <div class="section-title">📌 模块切换</div>
         <a class="side-link active" id="sideModuleClassic" onclick="showModule('classic')">🎯 经典二分调试</a>
         <a class="side-link" id="sideModuleGolden" onclick="showModule('golden')">🥇 黄金分割搜索</a>
         <a class="side-link" id="sideModuleFit" onclick="showModule('fit')">📈 插值反推</a>
         <a class="side-link" id="sideModuleCompare" onclick="showModule('compare')">🗂 候选对比</a>
-        <a class="side-link" id="sideModuleAbout" onclick="showModule('about')">📜 关于 / 声明</a>
 
         <div id="sidebarClassicControls">
             <div class="section-title">📌 参数选择</div>
@@ -45,7 +34,24 @@
             </div>
             <div class="row" id="step-param">
                 <label>参数</label>
-                <select id="paramSelect" onchange="onParamChange()"></select>
+                <select id="paramSelect" onchange="onParamChange()">
+                    <option value="horizontal.ground">h.ground</option>
+                    <option value="horizontal.air">h.air</option>
+                    <option value="horizontal.sprint_extra">h.sprint_extra</option>
+                    <option value="vertical.ground">v.ground</option>
+                    <option value="vertical.air">v.air</option>
+                    <option value="vertical.sprint_extra">v.sprint_extra</option>
+                    <option value="packet.misplace.distance">packet.misplace.distance</option>
+                    <option value="packet.delay.ticks">packet.delay.ticks</option>
+                    <option value="projectile.horizontal_multiplier">projectile.h_multiplier</option>
+                    <option value="projectile.vertical_multiplier">projectile.v_multiplier</option>
+                    <option value="potion.horizontal_multiplier">potion.h_multiplier</option>
+                    <option value="potion.vertical_multiplier">potion.v_multiplier</option>
+                    <option value="potion.compensation_multiplier">potion.comp_multiplier</option>
+                    <option value="hit_delay">hit_delay</option>
+                    <option value="y_limit.max_y_height">y_limit.max_y_height</option>
+                    <option value="y_limit.vertical_kb_after_limit">y_limit.vertical_kb_after</option>
+                </select>
             </div>
             <div class="row" id="step-range">
                 <label>下限 (A)</label>
@@ -82,66 +88,9 @@
         <div class="section-title">⚙️ 高级设置</div>
         <div class="foldable-header" onclick="toggleAdvanced()">
             <span class="arrow" id="advancedArrow">▶</span>
-            <span id="advancedHeadTitle">功能开关 (knockback.yml)</span>
+            <span>packet.misplace / y_limit</span>
         </div>
         <div class="foldable-content collapsed" id="advancedContent">
-            <div style="color:var(--text2); font-size:0.8rem; margin-top:6px;">与内核 knockback.yml 中的布尔开关一一对应，导出时一并写入。</div>
-            <div class="row row-inline">
-                <label>pvp.enabled (对刀独立参数)</label>
-                <input type="checkbox" id="bool_pvp_enabled" checked onchange="onBoolChange('pvp.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>stop-sprint (命中后中断疾跑)</label>
-                <input type="checkbox" id="bool_stop_sprint" checked onchange="onBoolChange('stop-sprint', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>damage-increment (无敌帧伤害增量)</label>
-                <input type="checkbox" id="bool_damage_increment" checked onchange="onBoolChange('damage-increment', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>iframe-knockback (无敌帧仍击退)</label>
-                <input type="checkbox" id="bool_iframe_knockback" checked onchange="onBoolChange('iframe-knockback', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>y-limit.enabled (防连击飞天)</label>
-                <input type="checkbox" id="bool_y_limit_enabled" checked onchange="onBoolChange('y-limit.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>range-reduction.enabled (距离衰减)</label>
-                <input type="checkbox" id="bool_range_reduction_enabled" onchange="onBoolChange('range-reduction.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>combo.enabled (连击递增)</label>
-                <input type="checkbox" id="bool_combo_enabled" onchange="onBoolChange('combo.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>sprint-reach.enabled (疾跑宽判)</label>
-                <input type="checkbox" id="bool_sprint_reach_enabled" onchange="onBoolChange('sprint-reach.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>lag-compensation.enabled (延迟补偿)</label>
-                <input type="checkbox" id="bool_lag_compensation_enabled" onchange="onBoolChange('lag-compensation.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>server-side-kb (服务端权威击退)</label>
-                <input type="checkbox" id="bool_server_side_kb" onchange="onBoolChange('server-side-kb', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>dynamic-misplay.enabled (动态misplay)</label>
-                <input type="checkbox" id="bool_dynamic_misplay_enabled" onchange="onBoolChange('dynamic-misplay.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-            <div class="row row-inline">
-                <label>dynamic-misplay.anti-cheat (反作弊兼容)</label>
-                <input type="checkbox" id="bool_dynamic_misplay_anti_cheat_compatible" checked onchange="onBoolChange('dynamic-misplay.anti-cheat-compatible', this.checked)" style="width:auto; flex:0 0 auto;">
-            </div>
-        </div>
-
-        <!-- 原版kbm 高级面板(与旧版kb调试工具一致, 仅原版kbm模式显示) -->
-        <div class="foldable-header" onclick="toggleAdvancedLegacy()">
-            <span class="arrow" id="advancedLegacyArrow">▶</span>
-            <span id="advancedLegacyHeadTitle">packet.misplace / y_limit</span>
-        </div>
-        <div class="foldable-content collapsed" id="advancedLegacyContent" style="display:none;">
             <div style="color:var(--accent); font-weight:600; margin-top:6px;">📦 packet.misplace</div>
             <div class="row row-inline">
                 <label>启用 misplace</label>
@@ -198,13 +147,12 @@
     <main class="main">
         <div class="container">
             <div class="env-tip">
-                <span>✅ 单界面五模块 · 双模式并行 · 自动保存</span>
+                <span>✅ 单界面四模块 · 自动保存</span>
                 <a onclick="startTour()">🎓 新手导览</a>
                 <a onclick="openHistoryModal()">📋 历史记录</a>
-                <a onclick="toggleTheme()" id="themeToggle">🌞 日间模式</a>
             </div>
-            <h1>🔧 KB 内核微调工具</h1>
-            <div class="sub">☰ 侧边栏切换模块：经典二分 · 黄金分割 · 插值反推 · 候选对比；🔄 侧边栏顶部切换 原版kbm / 新核心KB 双模式（状态互不干扰）</div>
+            <h1>🔧 KBM 微调工具</h1>
+            <div class="sub">☰ 侧边栏切换模块：经典二分 · 黄金分割 · 插值反推 · 候选对比</div>
 
             <div id="mainContent">
                 <!-- ===== 模块1: 经典二分调试(可弹出悬浮窗) ===== -->
@@ -303,7 +251,24 @@
                         </p>
                         <div class="row">
                             <label>参数</label>
-                            <select id="gsParam"></select>
+                            <select id="gsParam">
+                                <option value="horizontal.ground">h.ground</option>
+                                <option value="horizontal.air">h.air</option>
+                                <option value="horizontal.sprint_extra">h.sprint_extra</option>
+                                <option value="vertical.ground">v.ground</option>
+                                <option value="vertical.air">v.air</option>
+                                <option value="vertical.sprint_extra">v.sprint_extra</option>
+                                <option value="packet.misplace.distance">packet.misplace.distance</option>
+                                <option value="packet.delay.ticks">packet.delay.ticks</option>
+                                <option value="projectile.horizontal_multiplier">projectile.h_multiplier</option>
+                                <option value="projectile.vertical_multiplier">projectile.v_multiplier</option>
+                                <option value="potion.horizontal_multiplier">potion.h_multiplier</option>
+                                <option value="potion.vertical_multiplier">potion.v_multiplier</option>
+                                <option value="potion.compensation_multiplier">potion.comp_multiplier</option>
+                                <option value="hit_delay">hit_delay</option>
+                                <option value="y_limit.max_y_height">y_limit.max_y_height</option>
+                                <option value="y_limit.vertical_kb_after_limit">y_limit.vertical_kb_after</option>
+                            </select>
                         </div>
                         <div class="row">
                             <label>下限 (A)</label>
@@ -355,15 +320,15 @@
                             <input type="number" id="fitD1" step="any" placeholder="例: 2.45">
                         </div>
                         <div class="row">
-                            <label>参数值 k₁</label>
+                            <label>参数值 k₂</label>
                             <input type="number" id="fitK2" step="any" placeholder="例: 0.528">
-                            <label>实测 D₁</label>
+                            <label>实测 D₂</label>
                             <input type="number" id="fitD2" step="any" placeholder="例: 2.62">
                         </div>
                         <div class="row">
-                            <label>参数值 k₁</label>
+                            <label>参数值 k₃</label>
                             <input type="number" id="fitK3" step="any" placeholder="例: 0.545">
-                            <label>实测 D₁</label>
+                            <label>实测 D₃</label>
                             <input type="number" id="fitD3" step="any" placeholder="例: 2.71">
                         </div>
                         <div class="row">
@@ -410,30 +375,13 @@
                         <button class="btn btn-info" onclick="cmpCopy()">📋 复制 YAML</button>
                     </div>
                 </div>
-
-                <!-- ===== 模块5: 关于 / 声明 ===== -->
-                <div class="section module-panel hidden" id="panel-about">
-                    <div class="module-head"><span>📜 关于本工具</span></div>
-                    <blockquote class="md-blockquote">
-                        <p>此工具免费供大家调KB，如果有人倒卖KB，将以法律责任追究到底</p>
-                        <p>此工具的初衷只是为了让玩家更好的调试KB，而不是说作为盈利的工具</p>
-                        <footer>— 作者按</footer>
-                    </blockquote>
-                    <div style="margin-top:14px; color:var(--text2); font-size:0.9rem; line-height:1.9;">
-                        <p>🔧 <b>KB 内核微调工具</b> · 单界面五模块版</p>
-                        <p>🎯 经典二分调试 · 🥇 黄金分割搜索 · 📈 插值反推 · 🗂 候选对比 · 📜 关于/声明</p>
-                        <p>所有调试均在本地进行，数据自动保存于浏览器；侧边栏可随时切换模块或收起。</p>
-                        <p>🖥 适配服务器内核 knockback.yml（内核嵌入式 KB 系统，/kb reload 热重载）。</p>
-                        <p>🛡 <a href="防伪工具.html" target="_blank" style="color:var(--accent); text-decoration:none;">配置防伪验证工具</a>：验证导出配置的真伪与是否被篡改</p>
-                    </div>
-                </div>
             </div>
 
             <!-- 调参指南 -->
             <div id="guideContent" style="display:none; margin-top:16px;">
                 <div class="section">
                     <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">📖 如何使用</h2>
-                    <p style="color:var(--text2);">本工具集成 <b>五个模块</b>，点击屏幕左缘「☰ 控制面板」呼出侧边栏，在「📌 模块切换」中自由切换，无需打开其他页面。</p>
+                    <p style="color:var(--text2);">本工具集成 <b>四个模块</b>，点击屏幕左缘「☰ 控制面板」呼出侧边栏，在「📌 模块切换」中自由切换，无需打开其他页面。</p>
                     <p style="color:var(--text2);"><b>🎯 经典二分调试</b>：二分法 + 感受评分逼近最佳参数；支持 <b>「🗔 弹出窗口」</b> 变为可拖动悬浮窗。</p>
                     <ol style="color:var(--text2); padding-left:20px;">
                         <li><b>选择参数</b> → 侧边栏选择参数，点击 <b>“理论值”</b> 自动填入范围。</li>
@@ -450,8 +398,9 @@
                     <p style="color:var(--text2);"><b>💾 自动保存</b>：所有修改自动保存在浏览器中，刷新页面不会丢失。</p>
                 </div>
                 <div class="section">
-                    <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">🖥 内核信息</h2>
-                    <p style="color:var(--text2);">本工具导出/导入的 YAML 直接对应服务器内核的 knockback.yml，放入服务端根目录后执行 /kb reload 即可生效。</p>
+                    <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">🔌 插件信息</h2>
+                    <p style="color:var(--text2);">KnockbackManager 由 dw1e 编写，基于 ProtocolLib。</p>
+                    <p>📦 GitHub: <a class="guide-link" href="https://github.com/dw1e/KnockbackManager" target="_blank">github.com/dw1e/KnockbackManager</a></p>
                 </div>
                 <div class="section">
                     <h2 style="color:var(--accent); font-weight:normal; border-bottom:1px solid var(--border); padding-bottom:4px;">❓ 常见问题</h2>

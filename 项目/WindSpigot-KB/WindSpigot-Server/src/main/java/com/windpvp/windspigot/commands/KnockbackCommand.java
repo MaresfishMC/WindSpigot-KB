@@ -97,7 +97,7 @@ public class KnockbackCommand extends Command {
 					sender.sendMessage("§c未知分类: " + joinTail(args) + " §7(可选: " + categoryList() + ")");
 					return true;
 				}
-				KnockbackGUI.openCategory((Player) sender, cat);
+				KnockbackGUI.openCategory((Player) sender, cat, 0);
 			} else {
 				KnockbackGUI.openMain((Player) sender);
 			}

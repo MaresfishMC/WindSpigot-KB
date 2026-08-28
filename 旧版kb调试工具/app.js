@@ -3,75 +3,9 @@
 // ================================================================
 
 // ================================================================
-// 核心数据结构（双模式并行：原版kbm / 新核心KB，两模式状态完全隔离）
-// 可二分调试的数值参数(与服务器内核 knockback.yml 键名一致, 默认值为内核默认值)
-// 最终击退 = base-kb × multiplier; sprint-extra 为绝对值累加
+// 核心数据结构
 // ================================================================
-var KB_MODE = 'core'; // 'core' | 'legacy'
-var MODES = { core: null, legacy: null };
-
-// ---- 新核心KB 参数(与内核键名一致) ----
-var CORE_THEORY = {
-    "base-kb.horizontal.ground": 0.4,
-    "base-kb.horizontal.air": 0.4,
-    "base-kb.vertical.ground": 0.4,
-    "base-kb.vertical.air": 0.4,
-    "base-kb.vertical-limit": 0.4,
-    "base-kb.horizontal-momentum": 0.5,
-    "base-kb.vertical-momentum": 0.5,
-    "multiplier.horizontal.ground": 1.0,
-    "multiplier.horizontal.air": 1.0,
-    "multiplier.vertical.ground": 1.0,
-    "multiplier.vertical.air": 1.0,
-    "multiplier.vertical-limit": 1.0,
-    "multiplier.horizontal-momentum": 1.0,
-    "multiplier.vertical-momentum": 1.0,
-    "horizontal.sprint-extra": 0.0,
-    "vertical.sprint-extra": 0.0,
-    "pvp.multiplier.horizontal.ground": 1.0,
-    "pvp.multiplier.horizontal.air": 1.0,
-    "pvp.multiplier.vertical.ground": 1.0,
-    "pvp.multiplier.vertical.air": 1.0,
-    "pvp.multiplier.vertical-limit": 1.0,
-    "pvp.multiplier.horizontal-momentum": 1.0,
-    "pvp.multiplier.vertical-momentum": 1.0,
-    "pvp.horizontal.sprint-extra": 0.0,
-    "pvp.vertical.sprint-extra": 0.0,
-    "hit-delay": 0,
-    "y-limit.max-y-height": 1.25,
-    "y-limit.vertical-kb-after-limit": 0.1,
-    "range-reduction.start-range": 3.0,
-    "range-reduction.factor": 0.035,
-    "range-reduction.max-reduction": 0.4,
-    "combo.increment": 0.05,
-    "combo.max": 0.4,
-    "combo.reset-ticks": 40,
-    "gravity.value": 0.08,
-    "gravity.air-resistance": 0.98,
-    "sprint-reach.grace-ticks": 5,
-    "sprint-reach.extra": 0.5,
-    "dynamic-misplay.target": 0.0,
-    "dynamic-misplay.compensation": 0.5
-};
-
-// 布尔开关参数(高级设置面板中切换)
-var CORE_BOOLS = {
-    "pvp.enabled": true,
-    "stop-sprint": true,
-    "damage-increment": true,
-    "iframe-knockback": true,
-    "server-side-kb": false,
-    "y-limit.enabled": true,
-    "range-reduction.enabled": false,
-    "combo.enabled": false,
-    "sprint-reach.enabled": false,
-    "lag-compensation.enabled": false,
-    "dynamic-misplay.enabled": false,
-    "dynamic-misplay.anti-cheat-compatible": true
-};
-
-// ---- 原版kbm 参数(旧工具 schema, 与 旧版kb调试工具 完全一致, 保持原风格) ----
-var LEGACY_THEORY = {
+var THEORY = {
     "horizontal.ground": 0.5275653923541247,
     "horizontal.air": 0.50459547,
     "horizontal.sprint_extra": 0.3253521126760563,
@@ -89,8 +23,7 @@ var LEGACY_THEORY = {
     "y_limit.max_y_height": 0.675,
     "y_limit.vertical_kb_after_limit": 0.0
 };
-
-var LEGACY_FIXED = {
+var fixedParams = {
     "projectile.enabled": false,
     "projectile.direction_override": false,
     "stop_sprint": true,
@@ -99,424 +32,156 @@ var LEGACY_FIXED = {
     "modern.netherite_kb_resistance": true
 };
 
-var LEGACY_EXTRA_DEFAULT = {
+// 二分调试各参数的默认搜索偏移
+function getParamOffset(param) {
+    if (param === 'packet.misplace.distance') return 0.02;
+    if (param === 'vertical.sprint_extra') return 0.02;
+    if (param === 'packet.delay.ticks') return 0.5;
+    if (param === 'hit_delay') return 2;
+    if (param.indexOf('y_limit.') === 0) return 0.05;
+    if (param.indexOf('multiplier') !== -1) return 0.05;
+    return 0.015;
+}
+
+// 二分调试某参数时自动启用其依赖的开关
+function autoEnableForParam(param) {
+    if (param === 'packet.misplace.distance') {
+        extraConfig['packet.misplace.enabled'] = true;
+        document.getElementById('packetMisplaceEnabled').checked = true;
+    }
+    if (param === 'packet.delay.ticks') {
+        extraConfig['packet.delay.enabled'] = true;
+        document.getElementById('packetDelayEnabled').checked = true;
+    }
+    if (param.indexOf('projectile.') === 0) {
+        fixedParams['projectile.enabled'] = true;
+    }
+    if (param.indexOf('potion.') === 0) {
+        fixedParams['potion.enabled'] = true;
+    }
+    if (param.indexOf('y_limit.') === 0) {
+        yLimitSettings.enabled = true;
+        document.getElementById('yLimitEnabled').checked = true;
+    }
+}
+
+// 理论范围下限允许负数的参数(如超出后垂直击退 ≤ 0)
+function paramAllowsNegative(param) {
+    return param === 'y_limit.vertical_kb_after_limit';
+}
+
+var extraConfig = {
     "packet.misplace.enabled": false,
     "packet.misplace.distance": 0.1,
     "packet.delay.enabled": false,
     "packet.delay.ticks": 2
 };
 
-var LEGACY_YLIMIT_DEFAULT = {
+var yLimitSettings = {
     enabled: true,
     max_y_height: 0.675,
     vertical_kb_after_limit: 0.0
 };
 
-// 原版kbm 参数下拉框显示名(与旧工具一致)
-var LEGACY_LABELS = {
-    "horizontal.ground": "h.ground",
-    "horizontal.air": "h.air",
-    "horizontal.sprint_extra": "h.sprint_extra",
-    "vertical.ground": "v.ground",
-    "vertical.air": "v.air",
-    "vertical.sprint_extra": "v.sprint_extra",
-    "packet.misplace.distance": "packet.misplace.distance",
-    "packet.delay.ticks": "packet.delay.ticks",
-    "projectile.horizontal_multiplier": "projectile.h_multiplier",
-    "projectile.vertical_multiplier": "projectile.v_multiplier",
-    "potion.horizontal_multiplier": "potion.h_multiplier",
-    "potion.vertical_multiplier": "potion.v_multiplier",
-    "potion.compensation_multiplier": "potion.comp_multiplier",
-    "hit_delay": "hit_delay",
-    "y_limit.max_y_height": "y_limit.max_y_height",
-    "y_limit.vertical_kb_after_limit": "y_limit.vertical_kb_after"
-};
-
-// ---- 活动引用: 所有渲染/导出函数读这两个变量, 切换模式时整体替换 ----
-var THEORY = CORE_THEORY;
-var BOOLS = CORE_BOOLS;
-var fixedParams = {};
-var extraConfig = {};
-var yLimitSettings = {};
-
-// 导出 YAML 时的键顺序(与内核生成的 knockback.yml 模板一致)
-var YAML_ORDER = [
-    "base-kb.horizontal.ground", "base-kb.horizontal.air",
-    "base-kb.vertical.ground", "base-kb.vertical.air",
-    "base-kb.vertical-limit", "base-kb.horizontal-momentum", "base-kb.vertical-momentum",
-    "multiplier.horizontal.ground", "multiplier.horizontal.air",
-    "multiplier.vertical.ground", "multiplier.vertical.air",
-    "multiplier.vertical-limit", "multiplier.horizontal-momentum", "multiplier.vertical-momentum",
-    "horizontal.sprint-extra", "vertical.sprint-extra",
-    "pvp.enabled",
-    "pvp.multiplier.horizontal.ground", "pvp.multiplier.horizontal.air",
-    "pvp.multiplier.vertical.ground", "pvp.multiplier.vertical.air",
-    "pvp.multiplier.vertical-limit", "pvp.multiplier.horizontal-momentum", "pvp.multiplier.vertical-momentum",
-    "pvp.horizontal.sprint-extra", "pvp.vertical.sprint-extra",
-    "stop-sprint", "damage-increment", "iframe-knockback", "server-side-kb",
-    "y-limit.enabled", "y-limit.max-y-height", "y-limit.vertical-kb-after-limit",
-    "sprint-reach.enabled", "sprint-reach.grace-ticks", "sprint-reach.extra",
-    "lag-compensation.enabled",
-    "range-reduction.enabled", "range-reduction.start-range", "range-reduction.factor", "range-reduction.max-reduction",
-    "hit-delay",
-    "combo.enabled", "combo.increment", "combo.max", "combo.reset-ticks",
-    "gravity.value", "gravity.air-resistance",
-    "dynamic-misplay.enabled", "dynamic-misplay.target", "dynamic-misplay.compensation",
-    "dynamic-misplay.max-compensation", "dynamic-misplay.anti-cheat-compatible"
-];
-
-// 整数类型的参数(导出时取整)
-var INT_KEYS = ["hit-delay", "combo.reset-ticks", "sprint-reach.grace-ticks"];
-
-function boolId(key) {
-    return 'bool_' + key.replace(/\./g, '_').replace(/-/g, '_');
-}
-
-// 参数是否有依赖的布尔开关(如 y-limit.max-y-height -> y-limit.enabled)
-function depBoolForParam(param) {
-    for (var b in BOOLS) {
-        if (!b.endsWith('.enabled')) continue;
-        var prefix = b.slice(0, -'.enabled'.length);
-        if (param.indexOf(prefix + '.') === 0) return b;
-    }
-    return null;
-}
-
-// 二分调试各参数的默认搜索偏移(新旧两套键名合并, 按模式区分 multiplier 偏移)
-function getParamOffset(param) {
-    if (param === 'packet.misplace.distance') return 0.02;
-    if (param === 'vertical.sprint_extra' || param === 'vertical.sprint-extra') return 0.02;
-    if (param === 'packet.delay.ticks') return 0.5;
-    if (param === 'hit_delay') return 2;
-    if (param === 'hit-delay') return 1;
-    if (param.indexOf('y_limit.') === 0) return 0.05;
-    if (param === 'combo.reset-ticks') return 5;
-    if (param === 'sprint-reach.grace-ticks') return 2;
-    if (param === 'sprint-reach.extra') return 0.05;
-    if (param.indexOf('momentum') !== -1) return 0.1;
-    if (param.indexOf('multiplier') !== -1) return (KB_MODE === 'legacy') ? 0.05 : 0.03;
-    if (param.indexOf('gravity') !== -1) return 0.005;
-    if (param.indexOf('vertical-limit') !== -1) return 0.02;
-    if (param.indexOf('range-reduction.start-range') !== -1) return 0.25;
-    if (param === 'range-reduction.factor') return 0.005;
-    if (param === 'range-reduction.max-reduction') return 0.05;
-    if (param === 'y-limit.max-y-height') return 0.25;
-    if (param.indexOf('y-limit.') === 0) return 0.05;
-    return 0.015;
-}
-
-// 二分调试某参数时自动启用其依赖的开关(两模式各自处理)
-function autoEnableForParam(param) {
-    if (KB_MODE === 'legacy') {
-        if (param === 'packet.misplace.distance') {
-            extraConfig['packet.misplace.enabled'] = true;
-            document.getElementById('packetMisplaceEnabled').checked = true;
-        }
-        if (param === 'packet.delay.ticks') {
-            extraConfig['packet.delay.enabled'] = true;
-            document.getElementById('packetDelayEnabled').checked = true;
-        }
-        if (param.indexOf('projectile.') === 0) {
-            fixedParams['projectile.enabled'] = true;
-        }
-        if (param.indexOf('potion.') === 0) {
-            fixedParams['potion.enabled'] = true;
-        }
-        if (param.indexOf('y_limit.') === 0) {
-            yLimitSettings.enabled = true;
-            document.getElementById('yLimitEnabled').checked = true;
-        }
-        return;
-    }
-    var dep = depBoolForParam(param);
-    if (dep) {
-        BOOLS[dep] = true;
-        var el = document.getElementById(boolId(dep));
-        if (el) el.checked = true;
-    }
-}
-
-// 理论范围下限允许负数的参数(新旧两套键名)
-function paramAllowsNegative(param) {
-    return param === 'y_limit.vertical_kb_after_limit' || param === 'y-limit.vertical-kb-after-limit';
-}
-
 var independentMode = true;
-var currentParam = 'base-kb.horizontal.ground';
-var schemeA = JSON.parse(JSON.stringify(CORE_THEORY));
-var schemeB = JSON.parse(JSON.stringify(CORE_THEORY));
+var currentParam = 'horizontal.ground';
+var schemeA = JSON.parse(JSON.stringify(THEORY));
+var schemeB = JSON.parse(JSON.stringify(THEORY));
 var paramsState = {};
 var MIN_WIDTH = 1e-7;
 var pendingChoice = null;
 var pendingNote = '';
-var presets = JSON.parse(localStorage.getItem('kbcore_presets') || '{}');
-var candidates = JSON.parse(localStorage.getItem('kbcore_candidates') || '[]');
+var presets = JSON.parse(localStorage.getItem('kbm_presets') || '{}');
+var candidates = JSON.parse(localStorage.getItem('kbm_candidates') || '[]');
 
 // ================================================================
-// 双模式: 原版kbm ↔ 新核心KB(状态完全隔离, 切换即保存/恢复, 互不污染)
+// Toast 正反馈通知
 // ================================================================
-function modeKey(base) {
-    return (KB_MODE === 'legacy') ? ('kbm_' + base) : ('kbcore_' + base);
+function showToast(msg, type) {
+    var box = document.getElementById('toasts');
+    if (!box) return;
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type || 'success');
+    t.textContent = msg;
+    box.appendChild(t);
+    setTimeout(function() {
+        if (t.parentNode) t.parentNode.removeChild(t);
+    }, 2600);
 }
 
-function legacyStateDefaults() {
-    return {
-        currentParam: 'horizontal.ground',
-        schemeA: JSON.parse(JSON.stringify(LEGACY_THEORY)),
-        schemeB: JSON.parse(JSON.stringify(LEGACY_THEORY)),
-        paramsState: {},
-        presets: JSON.parse(localStorage.getItem('kbm_presets') || '{}'),
-        candidates: JSON.parse(localStorage.getItem('kbm_candidates') || '[]'),
-        extraConfig: JSON.parse(JSON.stringify(LEGACY_EXTRA_DEFAULT)),
-        yLimitSettings: JSON.parse(JSON.stringify(LEGACY_YLIMIT_DEFAULT)),
-        fixedParams: JSON.parse(JSON.stringify(LEGACY_FIXED))
-    };
-}
-
-function coreStateDefaults() {
-    return {
-        currentParam: 'base-kb.horizontal.ground',
-        schemeA: JSON.parse(JSON.stringify(CORE_THEORY)),
-        schemeB: JSON.parse(JSON.stringify(CORE_THEORY)),
-        paramsState: {},
-        presets: JSON.parse(localStorage.getItem('kbcore_presets') || '{}'),
-        candidates: JSON.parse(localStorage.getItem('kbcore_candidates') || '[]'),
-        extraConfig: {},
-        yLimitSettings: {},
-        fixedParams: {},
-        bools: JSON.parse(JSON.stringify(CORE_BOOLS))
-    };
-}
-
-function loadModeBundle(mode) {
+function saveCandidates() {
     try {
-        var raw = localStorage.getItem('kbm_mode_' + mode);
-        if (!raw) return null;
-        var b = JSON.parse(raw);
-        if (!b || !b.schemeA) return null;
-        return b;
-    } catch (e) {
-        return null;
-    }
-}
-
-function saveModeBundle() {
-    MODES[KB_MODE].presets = presets;
-    MODES[KB_MODE].candidates = candidates;
-    try {
-        localStorage.setItem('kbm_mode_' + KB_MODE, JSON.stringify(MODES[KB_MODE]));
+        localStorage.setItem('kbm_candidates', JSON.stringify(candidates));
     } catch (e) { /* 忽略存储错误 */ }
 }
 
-function applyModeGlobals(b) {
-    currentParam = b.currentParam || Object.keys(THEORY)[0];
-    independentMode = (b.independentMode !== undefined) ? b.independentMode : true;
-    schemeA = b.schemeA;
-    schemeB = b.schemeB;
-    paramsState = b.paramsState || {};
-    presets = b.presets || {};
-    candidates = b.candidates || [];
-    extraConfig = b.extraConfig || {};
-    yLimitSettings = b.yLimitSettings || {};
-    fixedParams = b.fixedParams || {};
-    if (KB_MODE === 'legacy') {
-        for (var f in LEGACY_FIXED) {
-            if (typeof fixedParams[f] !== 'boolean') fixedParams[f] = LEGACY_FIXED[f];
-        }
-        for (var e in LEGACY_EXTRA_DEFAULT) {
-            if (extraConfig[e] === undefined) extraConfig[e] = LEGACY_EXTRA_DEFAULT[e];
-        }
-        if (!yLimitSettings || typeof yLimitSettings.enabled !== 'boolean') {
-            yLimitSettings = JSON.parse(JSON.stringify(LEGACY_YLIMIT_DEFAULT));
-        }
-    } else if (b.bools) {
-        for (var k in BOOLS) {
-            if (typeof b.bools[k] === 'boolean') BOOLS[k] = b.bools[k];
-        }
-    }
-}
-
-// 旧版进度迁移(kbm_auto_save → legacy 包, kbcore_auto_save → core 包)
-function migrateLegacyProgress() {
+// ================================================================
+// 自动保存与恢复
+// ================================================================
+function autoSaveState() {
+    var state = {
+        version: '1.5',
+        timestamp: new Date().toISOString(),
+        currentParam: currentParam,
+        independentMode: independentMode,
+        schemeA: schemeA,
+        schemeB: schemeB,
+        paramsState: paramsState,
+        presets: presets,
+        extraConfig: extraConfig,
+        yLimitSettings: yLimitSettings
+    };
     try {
-        if (!localStorage.getItem('kbm_mode_legacy') && localStorage.getItem('kbm_auto_save')) {
-            var old = JSON.parse(localStorage.getItem('kbm_auto_save'));
-            if (old && old.schemeA) {
-                var bundle = {
-                    currentParam: old.currentParam || 'horizontal.ground',
-                    independentMode: (old.independentMode !== undefined) ? old.independentMode : true,
-                    schemeA: old.schemeA,
-                    schemeB: old.schemeB,
-                    paramsState: old.paramsState || {},
-                    presets: JSON.parse(localStorage.getItem('kbm_presets') || '{}'),
-                    candidates: JSON.parse(localStorage.getItem('kbm_candidates') || '[]'),
-                    extraConfig: old.extraConfig || JSON.parse(JSON.stringify(LEGACY_EXTRA_DEFAULT)),
-                    yLimitSettings: old.yLimitSettings || JSON.parse(JSON.stringify(LEGACY_YLIMIT_DEFAULT)),
-                    fixedParams: JSON.parse(JSON.stringify(LEGACY_FIXED))
-                };
-                for (var k in LEGACY_THEORY) {
-                    if (typeof bundle.schemeA[k] !== 'number') bundle.schemeA[k] = LEGACY_THEORY[k];
-                    if (typeof bundle.schemeB[k] !== 'number') bundle.schemeB[k] = LEGACY_THEORY[k];
-                }
-                localStorage.setItem('kbm_mode_legacy', JSON.stringify(bundle));
-            }
-        }
-        if (!localStorage.getItem('kbm_mode_core') && localStorage.getItem('kbcore_auto_save')) {
-            var oldC = JSON.parse(localStorage.getItem('kbcore_auto_save'));
-            if (oldC && oldC.schemeA) {
-                var coreBundle = {
-                    currentParam: oldC.currentParam || 'base-kb.horizontal.ground',
-                    independentMode: (oldC.independentMode !== undefined) ? oldC.independentMode : true,
-                    schemeA: oldC.schemeA,
-                    schemeB: oldC.schemeB,
-                    paramsState: oldC.paramsState || {},
-                    presets: JSON.parse(localStorage.getItem('kbcore_presets') || '{}'),
-                    candidates: JSON.parse(localStorage.getItem('kbcore_candidates') || '[]'),
-                    extraConfig: {},
-                    yLimitSettings: {},
-                    fixedParams: {},
-                    bools: oldC.bools || JSON.parse(JSON.stringify(CORE_BOOLS))
-                };
-                for (var k2 in CORE_THEORY) {
-                    if (typeof coreBundle.schemeA[k2] !== 'number') coreBundle.schemeA[k2] = CORE_THEORY[k2];
-                    if (typeof coreBundle.schemeB[k2] !== 'number') coreBundle.schemeB[k2] = CORE_THEORY[k2];
-                }
-                localStorage.setItem('kbm_mode_core', JSON.stringify(coreBundle));
-            }
-        }
-    } catch (e) { /* 忽略 */ }
+        localStorage.setItem('kbm_auto_save', JSON.stringify(state));
+    } catch (e) { /* 忽略存储错误 */ }
 }
 
-function initModeSystem() {
-    migrateLegacyProgress();
+function autoRestoreState() {
     try {
-        var saved = localStorage.getItem('kbm_kb_mode');
-        if (saved === 'legacy' || saved === 'core') KB_MODE = saved;
-    } catch (e) { /* 忽略 */ }
-    THEORY = (KB_MODE === 'legacy') ? LEGACY_THEORY : CORE_THEORY;
-    BOOLS = (KB_MODE === 'legacy') ? {} : CORE_BOOLS;
-    var bundle = loadModeBundle(KB_MODE);
-    if (!bundle) {
-        bundle = (KB_MODE === 'legacy') ? legacyStateDefaults() : coreStateDefaults();
+        var raw = localStorage.getItem('kbm_auto_save');
+        if (!raw) return false;
+        var state = JSON.parse(raw);
+        if (!state.version) return false;
+        currentParam = state.currentParam || 'horizontal.ground';
+        independentMode = (state.independentMode !== undefined) ? state.independentMode : true;
+        if (state.schemeA) schemeA = state.schemeA;
+        if (state.schemeB) schemeB = state.schemeB;
+        if (state.paramsState) paramsState = state.paramsState;
+        if (state.presets) {
+            presets = state.presets;
+            localStorage.setItem('kbm_presets', JSON.stringify(presets));
+        }
+        if (state.extraConfig) {
+            extraConfig = state.extraConfig;
+            document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+            document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+        }
+        // 迁移:旧存档补全 delay 默认值
+        if (extraConfig['packet.delay.enabled'] === undefined) extraConfig['packet.delay.enabled'] = false;
+        if (extraConfig['packet.delay.ticks'] === undefined) extraConfig['packet.delay.ticks'] = 2;
+        document.getElementById('packetDelayEnabled').checked = extraConfig['packet.delay.enabled'] || false;
+        document.getElementById('packetDelayTicks').value = extraConfig['packet.delay.ticks'] || 2;
+        if (state.yLimitSettings) {
+            yLimitSettings = state.yLimitSettings;
+            document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+            document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+            document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
+        }
+        // 迁移:确保新旧存档都包含全部可调参数(如 packet.misplace.distance)
+        for (var k in THEORY) {
+            if (typeof schemeA[k] !== 'number') schemeA[k] = THEORY[k];
+            if (typeof schemeB[k] !== 'number') schemeB[k] = THEORY[k];
+        }
+        return true;
+    } catch (e) {
+        return false;
     }
-    MODES[KB_MODE] = bundle;
-    applyModeGlobals(bundle);
 }
 
-function renderParamSelects() {
-    var keys = Object.keys(THEORY);
-    var html = '';
-    for (var i = 0; i < keys.length; i++) {
-        var label = (KB_MODE === 'legacy' && LEGACY_LABELS[keys[i]]) ? LEGACY_LABELS[keys[i]] : keys[i];
-        html += '<option value="' + keys[i] + '">' + label + '</option>';
-    }
-    var sel = document.getElementById('paramSelect');
-    var sel2 = document.getElementById('gsParam');
-    if (sel) {
-        sel.innerHTML = html;
-        if (THEORY[currentParam] !== undefined) sel.value = currentParam;
-    }
-    if (sel2) {
-        sel2.innerHTML = html;
-        if (THEORY[GS.param] !== undefined) sel2.value = GS.param;
-    }
+function notifyChange() {
+    autoSaveState();
 }
 
-function renderModeUI() {
-    var corePanel = document.getElementById('advancedContent');
-    var legacyPanel = document.getElementById('advancedLegacyContent');
-    var coreHead = document.getElementById('advancedHeadTitle');
-    var legacyHead = document.getElementById('advancedLegacyHeadTitle');
-    if (corePanel) corePanel.style.display = (KB_MODE === 'core') ? '' : 'none';
-    if (legacyPanel) legacyPanel.style.display = (KB_MODE === 'legacy') ? '' : 'none';
-    if (coreHead) coreHead.textContent = '功能开关 (knockback.yml)';
-    if (legacyHead) legacyHead.textContent = 'packet.misplace / y_limit';
-    var tabL = document.getElementById('modeTabLegacy');
-    var tabC = document.getElementById('modeTabCore');
-    if (tabL) {
-        tabL.className = (KB_MODE === 'legacy') ? 'btn btn-warning' : 'btn btn-info';
-        tabL.textContent = (KB_MODE === 'legacy') ? '🔙 原版kbm ●' : '🔙 原版kbm';
-    }
-    if (tabC) {
-        tabC.className = (KB_MODE === 'core') ? 'btn btn-warning' : 'btn btn-info';
-        tabC.textContent = (KB_MODE === 'core') ? '🔧 新核心KB ●' : '🔧 新核心KB';
-    }
-    var tip = document.getElementById('modeStatusTip');
-    if (tip) {
-        tip.textContent = (KB_MODE === 'legacy')
-            ? '原版kbm模式: horizontal.*/y_limit.*/packet.* 参数(与旧版kb调试工具一致)'
-            : '新核心模式: base-kb.*/multiplier.*/y-limit.* 参数(导出 knockback.yml)';
-    }
-    renderParamSelects();
-    renderBoolPanel();
-    renderLegacyPanel();
-    renderAll();
-}
-
-function switchMode(mode) {
-    if (mode === KB_MODE) return;
-    // 保存当前模式状态
-    MODES[KB_MODE].currentParam = currentParam;
-    MODES[KB_MODE].independentMode = independentMode;
-    MODES[KB_MODE].schemeA = schemeA;
-    MODES[KB_MODE].schemeB = schemeB;
-    MODES[KB_MODE].paramsState = paramsState;
-    MODES[KB_MODE].presets = presets;
-    MODES[KB_MODE].candidates = candidates;
-    if (KB_MODE === 'legacy') {
-        MODES.legacy.extraConfig = extraConfig;
-        MODES.legacy.yLimitSettings = yLimitSettings;
-        MODES.legacy.fixedParams = fixedParams;
-    } else {
-        MODES.core.bools = JSON.parse(JSON.stringify(BOOLS));
-    }
-    try { localStorage.setItem('kbm_mode_' + KB_MODE, JSON.stringify(MODES[KB_MODE])); } catch (e) {}
-
-    KB_MODE = mode;
-    try { localStorage.setItem('kbm_kb_mode', KB_MODE); } catch (e) {}
-    THEORY = (KB_MODE === 'legacy') ? LEGACY_THEORY : CORE_THEORY;
-    BOOLS = (KB_MODE === 'legacy') ? {} : CORE_BOOLS;
-
-    var bundle = loadModeBundle(KB_MODE);
-    if (!bundle) {
-        bundle = (KB_MODE === 'legacy') ? legacyStateDefaults() : coreStateDefaults();
-    }
-    MODES[KB_MODE] = bundle;
-    applyModeGlobals(bundle);
-
-    // 切换后重置黄金分割到当前模式的首个参数(旧参数可能不存在)
-    if (THEORY[GS.param] === undefined) {
-        GS.param = Object.keys(THEORY)[0];
-        GS.low = 0.4;
-        GS.high = 0.6;
-        GS.iter = 0;
-        GS.history = [];
-        gsSave();
-    }
-    document.getElementById('paramSelect').value = currentParam;
-    document.getElementById('independentModeToggle').checked = independentMode;
-    document.getElementById('modeStatus').textContent = independentMode ? '开启' : '关闭';
-    var boundaries = getCurrentBoundaries();
-    document.getElementById('minVal').value = boundaries.low;
-    document.getElementById('maxVal').value = boundaries.high;
-    renderModeUI();
-    var state = getCurrentState();
-    enableButtons(state.initialized);
-    showToast((KB_MODE === 'legacy') ? '🔙 已切换到 原版kbm 模式(状态与新版完全隔离)' : '🔧 已切换到 新核心KB 模式(状态与旧版完全隔离)', 'success');
-}
-
-function renderLegacyPanel() {
-    if (KB_MODE !== 'legacy') return;
-    document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
-    document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
-    document.getElementById('packetDelayEnabled').checked = extraConfig['packet.delay.enabled'] || false;
-    document.getElementById('packetDelayTicks').value = extraConfig['packet.delay.ticks'] || 2;
-    document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
-    document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
-    document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
-}
-
-// ---- 原版kbm 高级面板事件(与旧工具行为一致) ----
 function onExtraConfigChange() {
     extraConfig['packet.misplace.enabled'] = document.getElementById('packetMisplaceEnabled').checked;
     var dist = parseFloat(document.getElementById('packetMisplaceDistance').value);
@@ -544,167 +209,6 @@ function onYLimitChange() {
     var afterKb = parseFloat(document.getElementById('yLimitAfterKb').value);
     if (!isNaN(afterKb)) {
         yLimitSettings.vertical_kb_after_limit = afterKb;
-    }
-    notifyChange();
-}
-
-// ---- 旧kbm配置 → 新核心KB 一键转换 ----
-var LEGACY_TO_CORE_MAP = {
-    'horizontal.ground': 'base-kb.horizontal.ground',
-    'horizontal.air': 'base-kb.horizontal.air',
-    'vertical.ground': 'base-kb.vertical.ground',
-    'vertical.air': 'base-kb.vertical.air',
-    'horizontal.sprint_extra': 'horizontal.sprint-extra',
-    'vertical.sprint_extra': 'vertical.sprint-extra',
-    'hit_delay': 'hit-delay',
-    'y_limit.max_y_height': 'y-limit.max-y-height',
-    'y_limit.vertical_kb_after_limit': 'y-limit.vertical-kb-after-limit',
-    'packet.delay.ticks': 'hit-delay',
-    'packet.misplace.distance': 'dynamic-misplay.target'
-};
-
-function convertLegacyToCore() {
-    if (KB_MODE === 'core') {
-        saveModeBundle(); // 先保存当前新核心模式未落盘的进度
-    }
-    var legacy = loadModeBundle('legacy');
-    if (!legacy) {
-        legacy = legacyStateDefaults();
-    }
-    var unmapped = [];
-    var mappedCount = 0;
-    var targetA = JSON.parse(JSON.stringify(CORE_THEORY));
-    var targetB = JSON.parse(JSON.stringify(CORE_THEORY));
-
-    for (var k in LEGACY_THEORY) {
-        var newKey = LEGACY_TO_CORE_MAP[k];
-        if (newKey && CORE_THEORY[newKey] !== undefined) {
-            targetA[newKey] = (typeof legacy.schemeA[k] === 'number') ? legacy.schemeA[k] : LEGACY_THEORY[k];
-            targetB[newKey] = (typeof legacy.schemeB[k] === 'number') ? legacy.schemeB[k] : LEGACY_THEORY[k];
-            mappedCount++;
-        } else if (k === 'packet.misplace.enabled' || k === 'packet.delay.enabled') {
-            // 开关类无对应, 忽略
-        } else {
-            unmapped.push(k + '(无对应新核心键)');
-        }
-    }
-    for (var f in LEGACY_FIXED) {
-        if (f === 'stop_sprint') continue; // 下方布尔映射处理
-        unmapped.push(f + '(无对应新核心键)');
-    }
-
-    // 布尔映射
-    var bools = JSON.parse(JSON.stringify(CORE_BOOLS));
-    var legacyExtra = legacy.extraConfig || LEGACY_EXTRA_DEFAULT;
-    var legacyY = legacy.yLimitSettings || LEGACY_YLIMIT_DEFAULT;
-    if (legacyY && typeof legacyY.enabled === 'boolean') bools['y-limit.enabled'] = legacyY.enabled;
-    if (legacy.fixedParams && typeof legacy.fixedParams['stop_sprint'] === 'boolean') {
-        bools['stop-sprint'] = legacy.fixedParams['stop_sprint'];
-    }
-    if (legacyExtra && legacyExtra['packet.delay.enabled'] === true) {
-        // packet.delay 语义近似 hit-delay, 仅当 ticks 有效时提示
-        unmapped.push('packet.delay.enabled(语义近似, 已映射 ticks→hit-delay)');
-    }
-
-    var core = loadModeBundle('core') || coreStateDefaults();
-    core.schemeA = targetA;
-    core.schemeB = targetB;
-    core.paramsState = {};
-    core.bools = bools;
-    core.currentParam = 'base-kb.horizontal.ground';
-    core.extraConfig = {};
-    core.yLimitSettings = {};
-    core.fixedParams = {};
-    localStorage.setItem('kbm_mode_core', JSON.stringify(core));
-
-    if (KB_MODE !== 'core') {
-        switchMode('core');
-    } else {
-        MODES.core = core;
-        applyModeGlobals(core);
-        renderModeUI();
-    }
-    showToast('🔄 转换完成: ' + mappedCount + ' 个参数已映射', 'success');
-    if (unmapped.length > 0) {
-        setTimeout(function() {
-            showToast('⚠️ 未映射: ' + unmapped.join('、'), 'warn');
-        }, 700);
-    }
-}
-
-// ================================================================
-// Toast 正反馈通知
-// ================================================================
-function showToast(msg, type) {
-    var box = document.getElementById('toasts');
-    if (!box) return;
-    var t = document.createElement('div');
-    t.className = 'toast ' + (type || 'success');
-    t.textContent = msg;
-    box.appendChild(t);
-    setTimeout(function() {
-        if (t.parentNode) t.parentNode.removeChild(t);
-    }, 2600);
-}
-
-function saveCandidates() {
-    try {
-        localStorage.setItem(modeKey('candidates'), JSON.stringify(candidates));
-    } catch (e) { /* 忽略存储错误 */ }
-}
-
-// ================================================================
-// 自动保存与恢复(双模式: 状态存 kbm_mode_legacy / kbm_mode_core, 互不污染)
-// ================================================================
-function autoSaveState() {
-    var b = MODES[KB_MODE];
-    if (!b) {
-        b = (KB_MODE === 'legacy') ? legacyStateDefaults() : coreStateDefaults();
-        MODES[KB_MODE] = b;
-    }
-    b.currentParam = currentParam;
-    b.independentMode = independentMode;
-    b.schemeA = schemeA;
-    b.schemeB = schemeB;
-    b.paramsState = paramsState;
-    b.presets = presets;
-    b.candidates = candidates;
-    if (KB_MODE === 'legacy') {
-        b.extraConfig = extraConfig;
-        b.yLimitSettings = yLimitSettings;
-        b.fixedParams = fixedParams;
-    } else {
-        b.bools = JSON.parse(JSON.stringify(BOOLS));
-    }
-    try {
-        localStorage.setItem('kbm_mode_' + KB_MODE, JSON.stringify(b));
-    } catch (e) { /* 忽略存储错误 */ }
-}
-
-function autoRestoreState() {
-    // 兼容旧调用: 双模式初始化统一走 initModeSystem()
-    initModeSystem();
-    return true;
-}
-
-function notifyChange() {
-    autoSaveState();
-}
-
-// 布尔开关面板:同步界面复选框到 BOOLS
-function renderBoolPanel() {
-    for (var b in BOOLS) {
-        var el = document.getElementById(boolId(b));
-        if (el) el.checked = BOOLS[b];
-    }
-}
-
-function onBoolChange(key, checked) {
-    if (typeof checked === 'boolean') {
-        BOOLS[key] = checked;
-    } else {
-        var el = document.getElementById(boolId(key));
-        if (el) BOOLS[key] = el.checked;
     }
     notifyChange();
 }
@@ -819,7 +323,7 @@ function renderFixed() {
             td2.textContent = displayVal;
         }
         if (k === current) {
-            tr.style.background = 'rgba(111,191,115,0.12)';
+            tr.style.background = '#1a2a2a';
             td1.style.color = '#6fbf73';
         }
         tr.appendChild(td1);
@@ -834,21 +338,17 @@ function renderFixed() {
     extraCell.style.color = '#555';
     extraCell.style.fontSize = '0.8rem';
     var fixedStr = '';
-    if (KB_MODE === 'legacy') {
-        fixedStr += 'packet.misplace.enabled: ' + extraConfig['packet.misplace.enabled'] + ' ';
-        fixedStr += 'packet.misplace.distance: ' + extraConfig['packet.misplace.distance'] + ' ';
-        fixedStr += 'packet.delay.enabled: ' + extraConfig['packet.delay.enabled'] + ' ';
-        fixedStr += 'packet.delay.ticks: ' + extraConfig['packet.delay.ticks'] + ' ';
-        fixedStr += 'y_limit: ' + JSON.stringify(yLimitSettings) + ' ';
-        for (var f in fixedParams) {
-            var fv = fixedParams[f];
-            if (typeof fv === 'object') fv = JSON.stringify(fv);
-            fixedStr += f + ': ' + fv + ' ';
+    fixedStr += 'packet.misplace.enabled: ' + extraConfig['packet.misplace.enabled'] + ' ';
+    fixedStr += 'packet.misplace.distance: ' + extraConfig['packet.misplace.distance'] + ' ';
+    fixedStr += 'packet.delay.enabled: ' + extraConfig['packet.delay.enabled'] + ' ';
+    fixedStr += 'packet.delay.ticks: ' + extraConfig['packet.delay.ticks'] + ' ';
+    fixedStr += 'y_limit: ' + JSON.stringify(yLimitSettings) + ' ';
+    for (var f in fixedParams) {
+        var val = fixedParams[f];
+        if (typeof val === 'object') {
+            val = JSON.stringify(val);
         }
-    } else {
-        for (var b in BOOLS) {
-            fixedStr += b + ': ' + BOOLS[b] + '  ';
-        }
+        fixedStr += f + ': ' + val + ' ';
     }
     extraCell.textContent = fixedStr;
     extra.appendChild(extraCell);
@@ -917,49 +417,34 @@ function renderTest() {
 function makeConfigForScheme(scheme) {
     var cfg = {};
     var values = (scheme === 'A') ? schemeA : schemeB;
-    if (KB_MODE === 'legacy') {
-        // 原版kbm: 与旧工具完全一致(独立模式锁其它参数为理论值)
-        for (var k in THEORY) {
-            if (independentMode && k !== currentParam) {
-                cfg[k] = THEORY[k];
-            } else {
-                cfg[k] = values[k];
-            }
-        }
-        for (var f in fixedParams) {
-            cfg[f] = fixedParams[f];
-        }
-        cfg['y_limit'] = {
-            enabled: (currentParam.indexOf('y_limit.') === 0) ? true : yLimitSettings.enabled,
-            max_y_height: (currentParam === 'y_limit.max_y_height') ? values['y_limit.max_y_height'] : yLimitSettings.max_y_height,
-            vertical_kb_after_limit: (currentParam === 'y_limit.vertical_kb_after_limit') ? values['y_limit.vertical_kb_after_limit'] : yLimitSettings.vertical_kb_after_limit
-        };
-        if (currentParam.indexOf('projectile.') === 0) cfg['projectile.enabled'] = true;
-        if (currentParam.indexOf('potion.') === 0) cfg['potion.enabled'] = true;
-        cfg['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
-        if (currentParam !== 'packet.misplace.distance') {
-            cfg['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
-        }
-        cfg['packet.delay.enabled'] = (currentParam === 'packet.delay.ticks') ? true : extraConfig['packet.delay.enabled'];
-        if (currentParam !== 'packet.delay.ticks') {
-            cfg['packet.delay.ticks'] = extraConfig['packet.delay.ticks'];
-        }
-        return cfg;
-    }
-    // 新核心KB
-    for (var ck in THEORY) {
-        if (independentMode && ck !== currentParam) {
-            cfg[ck] = THEORY[ck];
+    for (var k in THEORY) {
+        if (independentMode && k !== currentParam) {
+            cfg[k] = THEORY[k];
         } else {
-            cfg[ck] = values[ck];
+            cfg[k] = values[k];
         }
     }
-    for (var b in BOOLS) {
-        cfg[b] = BOOLS[b];
+    for (var f in fixedParams) {
+        cfg[f] = fixedParams[f];
     }
-    // 正在二分调试某参数时,自动启用其依赖的开关
-    var dep = depBoolForParam(currentParam);
-    if (dep) cfg[dep] = true;
+    // 正在二分调试 y_limit 数值时使用方案值;正在调试其任意子项时自动启用
+    cfg['y_limit'] = {
+        enabled: (currentParam.indexOf('y_limit.') === 0) ? true : yLimitSettings.enabled,
+        max_y_height: (currentParam === 'y_limit.max_y_height') ? values['y_limit.max_y_height'] : yLimitSettings.max_y_height,
+        vertical_kb_after_limit: (currentParam === 'y_limit.vertical_kb_after_limit') ? values['y_limit.vertical_kb_after_limit'] : yLimitSettings.vertical_kb_after_limit
+    };
+    // 调试乘数类参数时自动启用对应开关
+    if (currentParam.indexOf('projectile.') === 0) cfg['projectile.enabled'] = true;
+    if (currentParam.indexOf('potion.') === 0) cfg['potion.enabled'] = true;
+    cfg['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
+    // 正在二分调试 misplace.distance 时,使用方案各自的 A/B 值(由上面的 THEORY 循环写入)
+    if (currentParam !== 'packet.misplace.distance') {
+        cfg['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
+    }
+    cfg['packet.delay.enabled'] = (currentParam === 'packet.delay.ticks') ? true : extraConfig['packet.delay.enabled'];
+    if (currentParam !== 'packet.delay.ticks') {
+        cfg['packet.delay.ticks'] = extraConfig['packet.delay.ticks'];
+    }
     return cfg;
 }
 
@@ -1138,7 +623,9 @@ function onParamChange() {
         renderHistory();
     }
     notifyChange();
-    if (depBoolForParam(newParam)) {
+    if (newParam === 'packet.misplace.distance' || newParam === 'packet.delay.ticks' ||
+        newParam.indexOf('projectile.') === 0 || newParam.indexOf('potion.') === 0 ||
+        newParam.indexOf('y_limit.') === 0) {
         setTimeout(function() {
             showToast('💡 点“理论值/开始”会自动启用对应功能开关', 'warn');
         }, 300);
@@ -1179,7 +666,9 @@ function initBisect() {
     if (low >= high) { showToast('⚠️ 下限必须小于上限', 'warn'); return; }
     setCurrentBoundaries(low, high);
     autoEnableForParam(param);
-    if (depBoolForParam(param)) {
+    if (param === 'packet.misplace.distance' || param === 'packet.delay.ticks' ||
+        param.indexOf('projectile.') === 0 || param.indexOf('potion.') === 0 ||
+        param.indexOf('y_limit.') === 0) {
         showToast('💡 已自动启用对应功能开关（调试该参数时需保持开启）', 'warn');
     }
     var state = getCurrentState();
@@ -1397,7 +886,14 @@ function loadCandidate(index) {
     state.history = [];
     document.getElementById('minVal').value = low;
     document.getElementById('maxVal').value = high;
-    autoEnableForParam(c.param);
+    if (c.param === 'packet.misplace.distance') {
+        extraConfig['packet.misplace.enabled'] = true;
+        document.getElementById('packetMisplaceEnabled').checked = true;
+    }
+    if (c.param === 'packet.delay.ticks') {
+        extraConfig['packet.delay.enabled'] = true;
+        document.getElementById('packetDelayEnabled').checked = true;
+    }
     addHistory('📌 载入候选', c.param + '=' + v.toFixed(6) + ' 范围[' + low.toFixed(4) + ', ' + high.toFixed(4) + ']');
     renderAll();
     enableButtons(true);
@@ -1504,7 +1000,25 @@ function importGlobalConfig(event) {
                     target = choice ? 'A' : 'B';
                 }
                 var targetObj = (target === 'A') ? schemeA : schemeB;
-                applyParsedValues(targetObj, values);
+                for (var k in values) {
+                    if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance' ||
+                        k === 'packet.delay.enabled' || k === 'packet.delay.ticks') {
+                        extraConfig[k] = values[k];
+                    } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+                        if (k === 'y_limit.enabled') yLimitSettings.enabled = values[k];
+                        if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = values[k];
+                        if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = values[k];
+                    } else {
+                        targetObj[k] = values[k];
+                    }
+                }
+                document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+                document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+                document.getElementById('packetDelayEnabled').checked = extraConfig['packet.delay.enabled'] || false;
+                document.getElementById('packetDelayTicks').value = extraConfig['packet.delay.ticks'] || 2;
+                document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+                document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+                document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
 
                 var presetName = file.name.replace(/\.[^.]+$/, '') + '_' + target;
                 if (presets[presetName]) {
@@ -1512,7 +1026,7 @@ function importGlobalConfig(event) {
                     presetName = presetName + '_' + ts;
                 }
                 presets[presetName] = JSON.parse(JSON.stringify(values));
-                localStorage.setItem(modeKey('presets'), JSON.stringify(presets));
+                localStorage.setItem('kbm_presets', JSON.stringify(presets));
                 addHistory('📂 全局导入', '文件: ' + file.name + ' -> 方案' + target + ' (预设: ' + presetName + ')');
                 var boundaries = getCurrentBoundaries();
                 document.getElementById('minVal').value = boundaries.low;
@@ -1548,7 +1062,25 @@ function importYamlToScheme(event, scheme) {
                 return;
             }
             var target = (scheme === 'A') ? schemeA : schemeB;
-            applyParsedValues(target, values);
+            for (var k in values) {
+                if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance' ||
+                    k === 'packet.delay.enabled' || k === 'packet.delay.ticks') {
+                    extraConfig[k] = values[k];
+                } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+                    if (k === 'y_limit.enabled') yLimitSettings.enabled = values[k];
+                    if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = values[k];
+                    if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = values[k];
+                } else {
+                    target[k] = values[k];
+                }
+            }
+            document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+            document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+            document.getElementById('packetDelayEnabled').checked = extraConfig['packet.delay.enabled'] || false;
+            document.getElementById('packetDelayTicks').value = extraConfig['packet.delay.ticks'] || 2;
+            document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+            document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+            document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
 
             var presetName = file.name.replace(/\.[^.]+$/, '') + '_' + scheme;
             if (presets[presetName]) {
@@ -1556,7 +1088,7 @@ function importYamlToScheme(event, scheme) {
                 presetName = presetName + '_' + ts;
             }
             presets[presetName] = JSON.parse(JSON.stringify(values));
-            localStorage.setItem(modeKey('presets'), JSON.stringify(presets));
+            localStorage.setItem('kbm_presets', JSON.stringify(presets));
             var boundaries = getCurrentBoundaries();
             document.getElementById('minVal').value = boundaries.low;
             document.getElementById('maxVal').value = boundaries.high;
@@ -1576,54 +1108,9 @@ function importYamlToScheme(event, scheme) {
 }
 
 // ================================================================
-// 解析YAML(按模式分发: 原版kbm 走旧工具解析器, 新核心 走内核键名解析器)
+// 解析YAML
 // ================================================================
 function parseYaml(content) {
-    return (KB_MODE === 'legacy') ? parseLegacyYaml(content) : parseCoreYaml(content);
-}
-
-function parseCoreYaml(content) {
-    var values = {};
-    var indents = [];
-    var keys = [];
-    var validKeys = Object.keys(THEORY).concat(Object.keys(BOOLS));
-    var lines = content.split('\n');
-    for (var i = 0; i < lines.length; i++) {
-        var raw = lines[i];
-        if (raw.indexOf('⁠') !== -1) continue;
-        var line = raw.trim();
-        if (line === '' || line.charAt(0) === '#') continue;
-        var indent = 0;
-        while (indent < raw.length && raw.charAt(indent) === ' ') indent++;
-        var match = line.match(/^([\w-]+):\s*(.*)$/);
-        if (!match) continue;
-        var key = match[1];
-        var val = match[2].replace(/\s+#.*$/, '').trim();
-
-        while (indents.length && indents[indents.length - 1] >= indent) {
-            indents.pop();
-            keys.pop();
-        }
-        if (val === '') {
-            indents.push(indent);
-            keys.push(key);
-            continue;
-        }
-        var fullKey = keys.concat([key]).join('.');
-        if (validKeys.indexOf(fullKey) === -1) continue;
-
-        if (val === 'true') values[fullKey] = true;
-        else if (val === 'false') values[fullKey] = false;
-        else {
-            var numVal = parseFloat(val);
-            if (!isNaN(numVal)) values[fullKey] = numVal;
-        }
-    }
-    return values;
-}
-
-// 原版kbm 解析器(与旧版kb调试工具完全一致: horizontal/vertical/packet/y_limit 分节)
-function parseLegacyYaml(content) {
     var lines = content.split('\n');
     var values = {};
     var currentSection = '';
@@ -1678,41 +1165,13 @@ function parseLegacyYaml(content) {
             } else {
                 fullKey = currentSection ? (currentSection + '.' + key) : key;
             }
-            var validKeys = Object.keys(LEGACY_THEORY).concat(['packet.misplace.enabled', 'packet.delay.enabled', 'y_limit.enabled']);
+            var validKeys = Object.keys(THEORY).concat(['packet.misplace.enabled', 'packet.delay.enabled', 'y_limit.enabled']);
             if (validKeys.includes(fullKey)) {
                 values[fullKey] = finalVal;
             }
         }
     }
     return values;
-}
-
-// 按模式把解析结果写入方案/开关
-function applyParsedValues(target, values) {
-    if (KB_MODE === 'legacy') {
-        for (var k in values) {
-            if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance' ||
-                k === 'packet.delay.enabled' || k === 'packet.delay.ticks') {
-                extraConfig[k] = values[k];
-            } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
-                if (k === 'y_limit.enabled') yLimitSettings.enabled = values[k];
-                if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = values[k];
-                if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = values[k];
-            } else {
-                target[k] = values[k];
-            }
-        }
-        renderLegacyPanel();
-    } else {
-        for (var k2 in values) {
-            if (k2 in BOOLS) {
-                BOOLS[k2] = values[k2];
-            } else {
-                target[k2] = values[k2];
-            }
-        }
-        renderBoolPanel();
-    }
 }
 
 // ================================================================
@@ -1724,24 +1183,15 @@ function saveSchemeAsPreset(scheme) {
     name = name.trim();
     var target = (scheme === 'A') ? schemeA : schemeB;
     var data = JSON.parse(JSON.stringify(target));
-    if (KB_MODE === 'legacy') {
-        data['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
-        data['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
-        data['packet.delay.enabled'] = extraConfig['packet.delay.enabled'];
-        data['packet.delay.ticks'] = extraConfig['packet.delay.ticks'];
-        data['y_limit.enabled'] = yLimitSettings.enabled;
-        data['y_limit.max_y_height'] = yLimitSettings.max_y_height;
-        data['y_limit.vertical_kb_after_limit'] = yLimitSettings.vertical_kb_after_limit;
-        for (var f in fixedParams) {
-            data[f] = fixedParams[f];
-        }
-    } else {
-        for (var b in BOOLS) {
-            data[b] = BOOLS[b];
-        }
-    }
+    data['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
+    data['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
+    data['packet.delay.enabled'] = extraConfig['packet.delay.enabled'];
+    data['packet.delay.ticks'] = extraConfig['packet.delay.ticks'];
+    data['y_limit.enabled'] = yLimitSettings.enabled;
+    data['y_limit.max_y_height'] = yLimitSettings.max_y_height;
+    data['y_limit.vertical_kb_after_limit'] = yLimitSettings.vertical_kb_after_limit;
     presets[name] = data;
-    localStorage.setItem(modeKey('presets'), JSON.stringify(presets));
+    localStorage.setItem('kbm_presets', JSON.stringify(presets));
     renderPresets();
     addHistory('💾 保存方案' + scheme, '预设: ' + name);
     showToast('✅ 方案 ' + scheme + ' 已保存为预设 "' + name + '"', 'success');
@@ -1766,7 +1216,25 @@ function applyPresetToScheme(name, scheme) {
         return;
     }
     var target = (scheme === 'A') ? schemeA : schemeB;
-    applyParsedValues(target, data);
+    for (var k in data) {
+        if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance' ||
+            k === 'packet.delay.enabled' || k === 'packet.delay.ticks') {
+            extraConfig[k] = data[k];
+        } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+            if (k === 'y_limit.enabled') yLimitSettings.enabled = data[k];
+            if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = data[k];
+            if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = data[k];
+        } else {
+            target[k] = data[k];
+        }
+    }
+    document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+    document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+    document.getElementById('packetDelayEnabled').checked = extraConfig['packet.delay.enabled'] || false;
+    document.getElementById('packetDelayTicks').value = extraConfig['packet.delay.ticks'] || 2;
+    document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+    document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+    document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
 
     var boundaries = getCurrentBoundaries();
     document.getElementById('minVal').value = boundaries.low;
@@ -1798,24 +1266,15 @@ function savePreset() {
         return;
     }
     var data = JSON.parse(JSON.stringify(schemeA));
-    if (KB_MODE === 'legacy') {
-        data['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
-        data['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
-        data['packet.delay.enabled'] = extraConfig['packet.delay.enabled'];
-        data['packet.delay.ticks'] = extraConfig['packet.delay.ticks'];
-        data['y_limit.enabled'] = yLimitSettings.enabled;
-        data['y_limit.max_y_height'] = yLimitSettings.max_y_height;
-        data['y_limit.vertical_kb_after_limit'] = yLimitSettings.vertical_kb_after_limit;
-        for (var f in fixedParams) {
-            data[f] = fixedParams[f];
-        }
-    } else {
-        for (var b in BOOLS) {
-            data[b] = BOOLS[b];
-        }
-    }
+    data['packet.misplace.enabled'] = extraConfig['packet.misplace.enabled'];
+    data['packet.misplace.distance'] = extraConfig['packet.misplace.distance'];
+    data['packet.delay.enabled'] = extraConfig['packet.delay.enabled'];
+    data['packet.delay.ticks'] = extraConfig['packet.delay.ticks'];
+    data['y_limit.enabled'] = yLimitSettings.enabled;
+    data['y_limit.max_y_height'] = yLimitSettings.max_y_height;
+    data['y_limit.vertical_kb_after_limit'] = yLimitSettings.vertical_kb_after_limit;
     presets[name] = data;
-    localStorage.setItem(modeKey('presets'), JSON.stringify(presets));
+    localStorage.setItem('kbm_presets', JSON.stringify(presets));
     renderPresets();
     document.getElementById('presetName').value = '';
     addHistory('📌 保存预设', name);
@@ -1827,7 +1286,25 @@ function loadPreset(name) {
     if (!confirm('加载预设 "' + name + '" 将覆盖方案A的值，确认？')) return;
     var data = presets[name];
     if (!data) return;
-    applyParsedValues(schemeA, data);
+    for (var k in data) {
+        if (k === 'packet.misplace.enabled' || k === 'packet.misplace.distance' ||
+            k === 'packet.delay.enabled' || k === 'packet.delay.ticks') {
+            extraConfig[k] = data[k];
+        } else if (k === 'y_limit.enabled' || k === 'y_limit.max_y_height' || k === 'y_limit.vertical_kb_after_limit') {
+            if (k === 'y_limit.enabled') yLimitSettings.enabled = data[k];
+            if (k === 'y_limit.max_y_height') yLimitSettings.max_y_height = data[k];
+            if (k === 'y_limit.vertical_kb_after_limit') yLimitSettings.vertical_kb_after_limit = data[k];
+        } else {
+            schemeA[k] = data[k];
+        }
+    }
+    document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+    document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+    document.getElementById('packetDelayEnabled').checked = extraConfig['packet.delay.enabled'] || false;
+    document.getElementById('packetDelayTicks').value = extraConfig['packet.delay.ticks'] || 2;
+    document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+    document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+    document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
 
     var boundaries = getCurrentBoundaries();
     document.getElementById('minVal').value = boundaries.low;
@@ -1843,7 +1320,7 @@ function loadPreset(name) {
 function deletePreset(name) {
     if (!confirm('删除预设 "' + name + '" ？')) return;
     delete presets[name];
-    localStorage.setItem(modeKey('presets'), JSON.stringify(presets));
+    localStorage.setItem('kbm_presets', JSON.stringify(presets));
     renderPresets();
     showToast('🗑 预设 "' + name + '" 已删除', 'success');
     notifyChange();
@@ -1916,18 +1393,6 @@ function toggleAdvanced() {
     }
 }
 
-function toggleAdvancedLegacy() {
-    var content = document.getElementById('advancedLegacyContent');
-    var arrow = document.getElementById('advancedLegacyArrow');
-    if (content.classList.contains('collapsed')) {
-        content.classList.remove('collapsed');
-        arrow.textContent = '▼';
-    } else {
-        content.classList.add('collapsed');
-        arrow.textContent = '▶';
-    }
-}
-
 function toggleFeedback() {
     var content = document.getElementById('feedbackContent');
     var arrow = document.getElementById('feedbackArrow');
@@ -1944,7 +1409,7 @@ function toggleFeedback() {
 // 单界面模块切换(经典 / 黄金分割 / 插值 / 候选对比)
 // ================================================================
 function showModule(name) {
-    var panels = { classic: 'panel-classic', golden: 'panel-golden', fit: 'panel-fit', compare: 'panel-compare', about: 'panel-about' };
+    var panels = { classic: 'panel-classic', golden: 'panel-golden', fit: 'panel-fit', compare: 'panel-compare' };
     if (!panels[name]) name = 'classic';
     var keys = Object.keys(panels);
     for (var i = 0; i < keys.length; i++) {
@@ -2416,45 +1881,6 @@ function cmpSelected() {
     return sel;
 }
 
-// ================================================================
-// 通用 YAML 生成器: 按 YAML_ORDER 输出嵌套结构
-// valueForKey(key) 返回该键的值(数值/布尔), 仅输出有值的键
-// ================================================================
-function fmtYamlVal(key, v) {
-    if (typeof v === 'boolean') return v ? 'true' : 'false';
-    if (INT_KEYS.indexOf(key) !== -1) return String(Math.round(Number(v)));
-    return String(Number(Number(v).toFixed(6)));
-}
-
-function emitYamlLines(valueForKey, noteForKey) {
-    var lines = [];
-    var pathStack = [];
-    for (var i = 0; i < YAML_ORDER.length; i++) {
-        var key = YAML_ORDER[i];
-        var v = valueForKey(key);
-        if (v === undefined || v === null || (typeof v === 'number' && isNaN(v))) continue;
-        var parts = key.split('.');
-        var parent = parts.slice(0, -1);
-        var common = 0;
-        while (common < pathStack.length && common < parent.length && pathStack[common] === parent[common]) common++;
-        pathStack.length = common;
-        for (var d = common; d < parent.length; d++) {
-            var pad = '';
-            for (var s = 0; s < d * 2; s++) pad += ' ';
-            lines.push(pad + parent[d] + ':');
-            pathStack.push(parent[d]);
-        }
-        var indent = '';
-        for (var t = 0; t < (parts.length - 1) * 2; t++) indent += ' ';
-        lines.push(indent + parts[parts.length - 1] + ': ' + fmtYamlVal(key, v));
-        if (noteForKey) {
-            var noteStr = String(noteForKey(key) || '').replace(/[\r\n]+/g, ' ').replace(/#/g, '＃').trim();
-            if (noteStr) lines.push(indent + '# ' + noteStr);
-        }
-    }
-    return lines;
-}
-
 function cmpPreview() {
     var sel = cmpSelected();
     var keys = Object.keys(sel);
@@ -2463,21 +1889,38 @@ function cmpPreview() {
         return;
     }
     var lines = [];
-    lines.push(KB_MODE === 'legacy'
-        ? '# KBM 组合配置（来自保留候选）'
-        : '# knockback.yml 组合配置（来自保留候选）');
+    lines.push('# KBM 组合配置（来自保留候选）');
     lines.push('# 生成时间: ' + new Date().toLocaleString());
     lines.push('');
-    var body = emitYamlLines(function(key) {
-        if (key in BOOLS) return BOOLS[key];
-        return sel[key] ? Number(sel[key].value) : undefined;
-    }, function(key) {
-        return sel[key] ? sel[key].note : '';
-    });
-    lines = lines.concat(body);
-    document.getElementById('cmpPreview').value = (KB_MODE === 'legacy')
-        ? lines.join('\n')
-        : kbmSignContent(lines.join('\n'));
+    var inHorizontal = false, inVertical = false, inPacket = false, inMisplace = false, inDelay = false;
+    for (var i = 0; i < keys.length; i++) {
+        var p = keys[i];
+        var v = Number(sel[p].value);
+        var noteStr = String(sel[p].note || '').replace(/[\r\n]+/g, ' ').replace(/#/g, '＃').trim();
+        var parts = p.split('.');
+        if (parts[0] === 'horizontal') {
+            if (!inHorizontal) { lines.push('horizontal:'); inHorizontal = true; }
+            lines.push('  ' + parts[1] + ': ' + v.toFixed(10));
+            if (noteStr) lines.push('    # ' + noteStr);
+        } else if (parts[0] === 'vertical') {
+            if (!inVertical) { lines.push('vertical:'); inVertical = true; }
+            lines.push('  ' + parts[1] + ': ' + v.toFixed(10));
+            if (noteStr) lines.push('    # ' + noteStr);
+        } else if (p === 'packet.misplace.distance') {
+            if (!inPacket) { lines.push('packet:'); inPacket = true; }
+            if (!inMisplace) { lines.push('  misplace:'); inMisplace = true; }
+            lines.push('    enabled: true');
+            lines.push('    distance: ' + v.toFixed(2));
+            if (noteStr) lines.push('    # ' + noteStr);
+        } else if (p === 'packet.delay.ticks') {
+            if (!inPacket) { lines.push('packet:'); inPacket = true; }
+            if (!inDelay) { lines.push('  delay:'); inDelay = true; }
+            lines.push('    enabled: true');
+            lines.push('    ticks: ' + Math.round(v));
+            if (noteStr) lines.push('    # ' + noteStr);
+        }
+    }
+    document.getElementById('cmpPreview').value = lines.join('\n');
 }
 
 function cmpExport() {
@@ -2489,7 +1932,7 @@ function cmpExport() {
     var blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
     var link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = (KB_MODE === 'legacy') ? 'kbm_combined.yml' : 'knockback.yml'; // 新核心: 放入服务端根目录后 /kb reload 生效
+    link.download = 'kbm_combined.yml';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -2536,93 +1979,12 @@ function exportValue(key) {
 }
 
 // ================================================================
-// 防伪标识(零宽字符隐藏编码,记事本等编辑器不可见)
-// 用法: 导出 YAML 时自动写入;用 防伪工具.html 验证真伪 / 检测篡改 / 写入移除
-// 注意: 与 wztool.js 中的实现保持一致
-// ================================================================
-var KBM_MARK = '墨渊/cnboxing/5090dv2所有，由墨渊主写，请勿倒卖，此配置文件仅适用于部署';
-var KBM_SIGN_VERSION = 'KBMSIGN1';
-
-// FNV-1a 32 位哈希(内容指纹)
-function _wzHash32(str) {
-    var h = 0x811c9dc5;
-    for (var i = 0; i < str.length; i++) {
-        h = Math.imul(h ^ str.charCodeAt(i), 0x01000193);
-    }
-    return ('0000000' + h.toString(16)).slice(-8);
-}
-
-// 文本 -> 零宽编码(U+2060 起始, U+200B=0, U+200C=1, U+200D 结束)
-function _wzEncode(payload) {
-    var bytes = encodeURIComponent(payload);
-    var bits = '';
-    for (var i = 0; i < bytes.length; i++) {
-        var code = bytes.charCodeAt(i);
-        for (var j = 7; j >= 0; j--) {
-            bits += ((code >> j) & 1) ? '\u200C' : '\u200B';
-        }
-    }
-    return '\u2060' + bits + '\u200D';
-}
-
-// 去掉所有含标识的行,并规范化末尾空行
-function _wzStripMarker(content) {
-    var arr = content.split('\n').filter(function(l) { return l.indexOf('\u2060') === -1; });
-    while (arr.length && arr[arr.length - 1].trim() === '') arr.pop();
-    return arr.join('\n');
-}
-
-// 写入防伪标识(内容哈希以标识文本加盐,防止把标识复制到别的文件上)
-function kbmSignContent(content) {
-    var clean = _wzStripMarker(content);
-    var hash = _wzHash32(KBM_MARK + '\n' + clean);
-    var payload = KBM_SIGN_VERSION + '|' + KBM_MARK + '|' + hash;
-    return clean + '\n#' + _wzEncode(payload);
-}
-
-// ================================================================
-// 导出配置（YAML）(双模式: 原版kbm 走旧格式, 新核心 走 knockback.yml)
+// 导出配置（YAML）
 // ================================================================
 function exportConfig() {
-    if (KB_MODE === 'legacy') {
-        exportLegacyConfig();
-        return;
-    }
-    var filename = prompt('请输入文件名（不含扩展名）：', 'knockback');
+    var filename = prompt('请输入文件名（不含扩展名）：', 'kbm_config');
     if (filename === null) return;
-    if (filename.trim() === '') filename = 'knockback';
-    var ext = '.yml';
-    var lines = [];
-    lines.push('# knockback.yml 配置导出 (方案A, 适用于内核 KB 系统)');
-    lines.push('# 导出时间: ' + new Date().toLocaleString());
-    lines.push('');
-    var body = emitYamlLines(function(key) {
-        if (key in BOOLS) {
-            var dep = depBoolForParam(currentParam);
-            if (key === dep) return true;
-            return BOOLS[key];
-        }
-        return exportValue(key);
-    }, null);
-    lines = lines.concat(body);
-    var content = kbmSignContent(lines.join('\n'));
-    var blob = new Blob([content], { type: 'text/yaml;charset=utf-8' });
-    var link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename + ext;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    addHistory('💾 导出', '文件: ' + filename + ext);
-    showToast('✅ 已导出 ' + filename + ext, 'success');
-}
-
-// 原版kbm 导出(与旧版kb调试工具格式完全一致, 无防伪标识)
-function exportLegacyConfig() {
-    var filename = prompt('请输入文件名（不含扩展名）：', 'kbm');
-    if (filename === null) return;
-    if (filename.trim() === '') filename = 'kbm';
+    if (filename.trim() === '') filename = 'kbm_config';
     var ext = '.yml';
     var lines = [];
     lines.push('# KBM 配置导出 (方案A)');
@@ -2639,24 +2001,40 @@ function exportLegacyConfig() {
     lines.push('');
     lines.push('packet:');
     lines.push('  misplace:');
-    var exportMisplaceEnabled = (currentParam === 'packet.misplace.distance') ? true : extraConfig['packet.misplace.enabled'];
-    var exportMisplaceDist = (currentParam === 'packet.misplace.distance') ? exportValue('packet.misplace.distance') : extraConfig['packet.misplace.distance'];
+    var exportMisplaceDist = extraConfig['packet.misplace.distance'];
+    var exportMisplaceEnabled = extraConfig['packet.misplace.enabled'];
+    if (currentParam === 'packet.misplace.distance') {
+        var exportBoundaries = getCurrentBoundaries();
+        if (isFinite(exportBoundaries.low) && isFinite(exportBoundaries.high)) {
+            exportMisplaceDist = (exportBoundaries.low + exportBoundaries.high) / 2;
+        }
+        exportMisplaceEnabled = true;
+    }
     lines.push('    enabled: ' + (exportMisplaceEnabled ? 'true' : 'false'));
     lines.push('    distance: ' + Number(exportMisplaceDist).toFixed(2));
     lines.push('  delay:');
-    var exportDelayEnabled = (currentParam === 'packet.delay.ticks') ? true : extraConfig['packet.delay.enabled'];
-    var exportDelayTicks = (currentParam === 'packet.delay.ticks') ? exportValue('packet.delay.ticks') : extraConfig['packet.delay.ticks'];
+    var exportDelayTicks = extraConfig['packet.delay.ticks'];
+    var exportDelayEnabled = extraConfig['packet.delay.enabled'];
+    if (currentParam === 'packet.delay.ticks') {
+        var delayBoundaries = getCurrentBoundaries();
+        if (isFinite(delayBoundaries.low) && isFinite(delayBoundaries.high)) {
+            exportDelayTicks = Math.round((delayBoundaries.low + delayBoundaries.high) / 2);
+        }
+        exportDelayEnabled = true;
+    }
     lines.push('    enabled: ' + (exportDelayEnabled ? 'true' : 'false'));
     lines.push('    ticks: ' + Number(exportDelayTicks));
     lines.push('');
-    lines.push('y_limit:');
+    // y_limit:正在调试其子项时自动启用,并导出推荐值
     var exportYEnabled = (currentParam.indexOf('y_limit.') === 0) ? true : yLimitSettings.enabled;
     var exportYMax = (currentParam === 'y_limit.max_y_height') ? exportValue('y_limit.max_y_height') : yLimitSettings.max_y_height;
     var exportYAfter = (currentParam === 'y_limit.vertical_kb_after_limit') ? exportValue('y_limit.vertical_kb_after_limit') : yLimitSettings.vertical_kb_after_limit;
+    lines.push('y_limit:');
     lines.push('  enabled: ' + (exportYEnabled ? 'true' : 'false'));
     lines.push('  max_y_height: ' + Number(exportYMax).toFixed(4));
     lines.push('  vertical_kb_after_limit: ' + Number(exportYAfter).toFixed(2));
     lines.push('');
+    // 乘数与延迟相关(可二分调试)
     lines.push('projectile:');
     lines.push('  enabled: ' + ((fixedParams['projectile.enabled'] || currentParam.indexOf('projectile.') === 0) ? 'true' : 'false'));
     lines.push('  horizontal_multiplier: ' + exportValue('projectile.horizontal_multiplier').toFixed(10));
@@ -2670,16 +2048,14 @@ function exportLegacyConfig() {
     lines.push('  compensation_multiplier: ' + exportValue('potion.compensation_multiplier').toFixed(10));
     lines.push('');
     lines.push('hit_delay: ' + Math.round(exportValue('hit_delay')));
-    lines.push('stop_sprint: ' + (fixedParams['stop_sprint'] ? 'true' : 'false'));
-    var fixedExtra = [];
-    for (var f in fixedParams) {
-        if (f === 'stop_sprint' || f === 'projectile.enabled' || f === 'projectile.direction_override' || f === 'potion.enabled') continue;
-        fixedExtra.push(f + ': ' + (fixedParams[f] ? 'true' : 'false'));
+    for (var k in fixedParams) {
+        var v = fixedParams[k];
+        if (k === 'projectile.enabled' || k === 'projectile.direction_override' || k === 'potion.enabled') continue;
+        if (typeof v === 'boolean') v = v ? 'true' : 'false';
+        lines.push(k + ': ' + v);
     }
-    for (var j = 0; j < fixedExtra.length; j++) {
-        lines.push(fixedExtra[j]);
-    }
-    var blob = new Blob([lines.join('\n')], { type: 'text/yaml;charset=utf-8' });
+    var content = lines.join('\n');
+    var blob = new Blob([content], { type: 'text/yaml;charset=utf-8' });
     var link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename + ext;
@@ -2695,12 +2071,12 @@ function exportLegacyConfig() {
 // 保存/恢复进度（JSON）
 // ================================================================
 function saveProgress() {
-    var filename = prompt('请输入进度文件名（不含扩展名）：', 'kb_progress');
+    var filename = prompt('请输入进度文件名（不含扩展名）：', 'kbm_progress');
     if (filename === null) return;
-    if (filename.trim() === '') filename = 'kb_progress';
+    if (filename.trim() === '') filename = 'kbm_progress';
     var ext = '.json';
     var progress = {
-        version: '2.0',
+        version: '1.5',
         timestamp: new Date().toISOString(),
         currentParam: currentParam,
         independentMode: independentMode,
@@ -2708,7 +2084,8 @@ function saveProgress() {
         schemeB: schemeB,
         paramsState: paramsState,
         presets: presets,
-        bools: BOOLS,
+        extraConfig: extraConfig,
+        yLimitSettings: yLimitSettings,
         candidates: candidates
     };
     var json = JSON.stringify(progress, null, 2);
@@ -2742,13 +2119,22 @@ function restoreProgress(event) {
             if (progress.paramsState) paramsState = progress.paramsState;
             if (progress.presets) {
                 presets = progress.presets;
-                localStorage.setItem(modeKey('presets'), JSON.stringify(presets));
+                localStorage.setItem('kbm_presets', JSON.stringify(presets));
             }
-            if (progress.bools) {
-                for (var b in BOOLS) {
-                    if (typeof progress.bools[b] === 'boolean') BOOLS[b] = progress.bools[b];
-                }
-                renderBoolPanel();
+            if (progress.extraConfig) {
+                extraConfig = progress.extraConfig;
+                document.getElementById('packetMisplaceEnabled').checked = extraConfig['packet.misplace.enabled'] || false;
+                document.getElementById('packetMisplaceDistance').value = extraConfig['packet.misplace.distance'] || 0.1;
+            }
+            if (extraConfig['packet.delay.enabled'] === undefined) extraConfig['packet.delay.enabled'] = false;
+            if (extraConfig['packet.delay.ticks'] === undefined) extraConfig['packet.delay.ticks'] = 2;
+            document.getElementById('packetDelayEnabled').checked = extraConfig['packet.delay.enabled'] || false;
+            document.getElementById('packetDelayTicks').value = extraConfig['packet.delay.ticks'] || 2;
+            if (progress.yLimitSettings) {
+                yLimitSettings = progress.yLimitSettings;
+                document.getElementById('yLimitEnabled').checked = yLimitSettings.enabled;
+                document.getElementById('yLimitMaxHeight').value = yLimitSettings.max_y_height;
+                document.getElementById('yLimitAfterKb').value = yLimitSettings.vertical_kb_after_limit;
             }
             if (progress.candidates) {
                 candidates = progress.candidates;
@@ -2786,7 +2172,7 @@ function analyzeTest() {
     var param = currentParam;
     var theo = THEORY[param];
     var msg = '';
-    if (param.indexOf('horizontal') !== -1) {
+    if (param.indexOf('horizontal.') === 0) {
         if (theo === 0) {
             msg = '该参数理论值为 0，无法用位移反推，请凭手感评分调整。';
         } else if (isNaN(horiz)) {
@@ -2799,7 +2185,7 @@ function analyzeTest() {
             else if (ratio > 0) msg = '⬆️ 实测偏大 ' + (ratio*100).toFixed(1) + '%，建议将 ' + param + ' 降低 ' + (Math.abs(diff)/4.97).toFixed(4) + ' 左右。';
             else msg = '⬇️ 实测偏小 ' + (Math.abs(ratio)*100).toFixed(1) + '%，建议将 ' + param + ' 提高 ' + (Math.abs(diff)/4.97).toFixed(4) + ' 左右。';
         }
-    } else if (param.indexOf('vertical') !== -1) {
+    } else if (param.indexOf('vertical.') === 0) {
         if (theo === 0) {
             msg = '该参数理论值为 0，无法用位移反推，请凭手感评分调整。';
         } else if (isNaN(vert)) {
@@ -2832,29 +2218,6 @@ function toggleGuide() {
 }
 
 // ================================================================
-// 日间 / 夜间模式切换
-// ================================================================
-function toggleTheme() {
-    var isLight = document.body.classList.toggle('light');
-    var btn = document.getElementById('themeToggle');
-    if (btn) btn.textContent = isLight ? '🌙 夜间模式' : '🌞 日间模式';
-    try { localStorage.setItem('kbm_theme', isLight ? 'light' : 'dark'); } catch (e) { /* 忽略 */ }
-    showToast(isLight ? '☀️ 已切换到日间模式' : '🌙 已切换到夜间模式', 'success');
-}
-
-function applySavedTheme() {
-    var saved = null;
-    try { saved = localStorage.getItem('kbm_theme'); } catch (e) {}
-    if (saved === 'light') {
-        document.body.classList.add('light');
-        var btn = document.getElementById('themeToggle');
-        if (btn) btn.textContent = '🌙 夜间模式';
-    } else {
-        document.body.classList.remove('light');
-    }
-}
-
-// ================================================================
 // 新手导览
 // ================================================================
 var tourSteps = [
@@ -2866,7 +2229,7 @@ var tourSteps = [
     { selector: '#btnA', title: '步骤 6：感受评分反馈', desc: '点击“A更接近”或“B更接近”，为两个方案打感受分，工具按分数收缩区间。' },
     { selector: '#step-feedback', title: '步骤 7：可选辅助', desc: '可输入实测数据获取建议。' },
     { selector: '#btnHistoryOpen', title: '步骤 8：历史记录与撤销', desc: '点击“历史记录”打开可拖动的弹窗，可恢复或撤销，均有提示。' },
-    { selector: '#sideModuleGolden', title: '步骤 9：模块切换', desc: '侧边栏「📌 模块切换」可在经典二分 / 黄金分割 / 插值反推 / 候选对比 / 关于之间自由切换，无需另开页面。' }
+    { selector: '#sideModuleGolden', title: '步骤 9：模块切换', desc: '侧边栏「📌 模块切换」可在经典二分 / 黄金分割 / 插值反推 / 候选对比之间自由切换，无需另开页面。' }
 ];
 var tourIndex = 0, tourActive = false, tourTarget = null;
 
@@ -2951,23 +2314,55 @@ function endTour() {
 // 初始化
 // ================================================================
 window.onload = function() {
-    // 双模式初始化: 原版kbm / 新核心KB(状态隔离, 恢复各自进度)
-    initModeSystem();
-    renderModeUI();
-
-    document.getElementById('paramSelect').value = currentParam;
-    document.getElementById('independentModeToggle').checked = independentMode;
-    document.getElementById('modeStatus').textContent = independentMode ? '开启' : '关闭';
-    var boundaries = getCurrentBoundaries();
-    document.getElementById('minVal').value = boundaries.low;
-    document.getElementById('maxVal').value = boundaries.high;
-    var state = getCurrentState();
-    if (!state.initialized) {
-        enableButtons(false);
-        document.getElementById('configADetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
-        document.getElementById('configBDetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
-    } else {
+    var restored = autoRestoreState();
+    if (restored) {
+        document.getElementById('paramSelect').value = currentParam;
+        document.getElementById('independentModeToggle').checked = independentMode;
+        document.getElementById('modeStatus').textContent = independentMode ? '开启' : '关闭';
+        var boundaries = getCurrentBoundaries();
+        document.getElementById('minVal').value = boundaries.low;
+        document.getElementById('maxVal').value = boundaries.high;
+        renderAll();
         enableButtons(true);
+        var state = getCurrentState();
+        if (!state.initialized) {
+            enableButtons(false);
+            document.getElementById('configADetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
+            document.getElementById('configBDetails').innerHTML = '<div style="color:#666;">请点击“理论值”或“开始”</div>';
+        }
+        showToast('✅ 已自动恢复上次状态', 'success');
+    } else {
+        for (var k in THEORY) {
+            schemeA[k] = THEORY[k];
+            schemeB[k] = THEORY[k];
+        }
+        currentParam = document.getElementById('paramSelect').value;
+        var state = getCurrentState();
+        state.initialized = false;
+        state.low = 0.4;
+        state.high = 0.6;
+        state.mid = 0.5;
+        state.iter = 0;
+        document.getElementById('minVal').value = '0.4';
+        document.getElementById('maxVal').value = '0.6';
+        yLimitSettings.enabled = true;
+        yLimitSettings.max_y_height = 0.675;
+        yLimitSettings.vertical_kb_after_limit = 0.0;
+        document.getElementById('yLimitEnabled').checked = true;
+        document.getElementById('yLimitMaxHeight').value = 0.675;
+        document.getElementById('yLimitAfterKb').value = 0.0;
+        extraConfig['packet.delay.enabled'] = false;
+        extraConfig['packet.delay.ticks'] = 2;
+        document.getElementById('packetDelayEnabled').checked = false;
+        document.getElementById('packetDelayTicks').value = 2;
+        renderAll();
+        enableButtons(false);
+        document.getElementById('configADetails').innerHTML = '<div style="color:#666;">点击“理论值”或“开始”</div>';
+        document.getElementById('configBDetails').innerHTML = '<div style="color:#666;">点击“理论值”或“开始”</div>';
+        document.getElementById('feedbackContent').classList.add('collapsed');
+        document.getElementById('feedbackArrow').textContent = '▶';
+        renderPresets();
+        addHistory('欢迎', '使用“理论值”快速开始');
     }
 
     // 侧边栏初始状态（默认收起，界面清爽；记忆用户偏好）
@@ -2986,9 +2381,6 @@ window.onload = function() {
 
     // 经典二分调试区折叠状态记忆（已废弃，保留兼容清理）
     try { localStorage.removeItem('kbm_debug_collapsed'); } catch (e) {}
-
-    // 恢复主题（日间/夜间）
-    applySavedTheme();
 
     // 恢复上次停留的模块
     var savedModule = null;
@@ -3158,10 +2550,8 @@ window.analyzeTest = analyzeTest;
 window.resetCurrentParam = resetCurrentParam;
 window.toggleMode = toggleMode;
 window.toggleGuide = toggleGuide;
-window.toggleTheme = toggleTheme;
 window.toggleFeedback = toggleFeedback;
 window.toggleAdvanced = toggleAdvanced;
-window.toggleAdvancedLegacy = toggleAdvancedLegacy;
 window.toggleFixed = toggleFixed;
 window.toggleSidebar = toggleSidebar;
 window.showModule = showModule;
@@ -3180,7 +2570,9 @@ window.cmpDelete = cmpDelete;
 window.cmpPreview = cmpPreview;
 window.cmpExport = cmpExport;
 window.cmpCopy = cmpCopy;
-window.onBoolChange = onBoolChange;
+window.onExtraConfigChange = onExtraConfigChange;
+window.onDelayChange = onDelayChange;
+window.onYLimitChange = onYLimitChange;
 window.restoreHistory = restoreHistory;
 window.undoLast = undoLast;
 window.clearHistory = clearHistory;
@@ -3208,9 +2600,3 @@ window.tourNext = tourNext;
 window.tourPrev = tourPrev;
 window.endTour = endTour;
 window.onParamChange = onParamChange;
-// 双模式(原版kbm/新核心KB)与旧配置转换
-window.switchMode = switchMode;
-window.convertLegacyToCore = convertLegacyToCore;
-window.onExtraConfigChange = onExtraConfigChange;
-window.onDelayChange = onDelayChange;
-window.onYLimitChange = onYLimitChange;

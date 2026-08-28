@@ -26,6 +26,15 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	// ==================== 基础击退参数 ====================
 	private double horizontal = 0.4D;
 	private double vertical = 0.4D;
+	// 近战基础击退: 地面/空中分离(配置文件作为基础KB)
+	// 缺分离键时由加载器回落旧键 horizontal/vertical; 两者皆无时引擎回落全局 base-kb
+	private double horizontalGround = 0.4D;
+	private double horizontalAir = 0.4D;
+	private double verticalGround = 0.4D;
+	private double verticalAir = 0.4D;
+	private boolean groundSplitSet = false;
+	// 模式文件显式包含 dynamic-misplay 字段(引擎优先读该模式值, 全局兜底)
+	private boolean misplayExplicit = false;
 	private double verticalMin = -1.0D;
 	private double verticalMax = 0.4D;
 	private double extraHorizontal = 0.5D;
@@ -92,6 +101,12 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		// 基础
 		this.horizontal = other.horizontal;
 		this.vertical = other.vertical;
+		this.horizontalGround = other.horizontalGround;
+		this.horizontalAir = other.horizontalAir;
+		this.verticalGround = other.verticalGround;
+		this.verticalAir = other.verticalAir;
+		this.groundSplitSet = other.groundSplitSet;
+		this.misplayExplicit = other.misplayExplicit;
 		this.verticalMin = other.verticalMin;
 		this.verticalMax = other.verticalMax;
 		this.extraHorizontal = other.extraHorizontal;
@@ -161,6 +176,11 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		yml.set("friction-vertical", this.frictionVertical);
 		yml.set("horizontal", this.horizontal);
 		yml.set("vertical", this.vertical);
+		// 近战基础击退: 地面/空中分离(配置文件作为基础KB)
+		yml.set("horizontal-ground", this.horizontalGround);
+		yml.set("horizontal-air", this.horizontalAir);
+		yml.set("vertical-ground", this.verticalGround);
+		yml.set("vertical-air", this.verticalAir);
 		yml.set("vertical-max", this.verticalMax);
 		yml.set("vertical-min", this.verticalMin);
 		yml.set("extra-horizontal", this.extraHorizontal);
@@ -244,6 +264,71 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	@Override
 	public void setVertical(double vertical) {
 		this.vertical = vertical;
+	}
+
+	// ==================== 近战基础击退: 地面/空中分离实现 ====================
+
+	@Override
+	public double getHorizontalGround() {
+		return horizontalGround;
+	}
+
+	@Override
+	public void setHorizontalGround(double horizontalGround) {
+		this.horizontalGround = horizontalGround;
+		this.groundSplitSet = true;
+	}
+
+	@Override
+	public double getHorizontalAir() {
+		return horizontalAir;
+	}
+
+	@Override
+	public void setHorizontalAir(double horizontalAir) {
+		this.horizontalAir = horizontalAir;
+		this.groundSplitSet = true;
+	}
+
+	@Override
+	public double getVerticalGround() {
+		return verticalGround;
+	}
+
+	@Override
+	public void setVerticalGround(double verticalGround) {
+		this.verticalGround = verticalGround;
+		this.groundSplitSet = true;
+	}
+
+	@Override
+	public double getVerticalAir() {
+		return verticalAir;
+	}
+
+	@Override
+	public void setVerticalAir(double verticalAir) {
+		this.verticalAir = verticalAir;
+		this.groundSplitSet = true;
+	}
+
+	@Override
+	public boolean isGroundSplitSet() {
+		return groundSplitSet;
+	}
+
+	@Override
+	public void setGroundSplitSet(boolean splitSet) {
+		this.groundSplitSet = splitSet;
+	}
+
+	/** 模式文件是否显式包含 dynamic-misplay 字段 */
+	public boolean isMisplayExplicit() {
+		return misplayExplicit;
+	}
+
+	public void setMisplayExplicit(boolean misplayExplicit) {
+		this.misplayExplicit = misplayExplicit;
 	}
 
 	@Override
@@ -573,6 +658,8 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	@Override
 	public String[] getKnockbackValues() {
 		return new String[] { "Horizontal§7: " + this.horizontal, "Vertical§7: " + this.vertical,
+				"H-Ground§7: " + this.horizontalGround, "H-Air§7: " + this.horizontalAir,
+				"V-Ground§7: " + this.verticalGround, "V-Air§7: " + this.verticalAir,
 				"Vertical-Max§7: " + this.verticalMax, "Vertical-Min§7: " + this.verticalMin,
 				"Extra-Horizontal§7: " + this.extraHorizontal, "Extra-Vertical§7: " + this.extraVertical,
 				"Friction-Horizontal§7: " + this.frictionHorizontal, "Friction-Vertical§7: " + this.frictionVertical,

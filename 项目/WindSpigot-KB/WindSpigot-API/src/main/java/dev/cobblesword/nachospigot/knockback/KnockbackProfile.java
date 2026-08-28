@@ -25,6 +25,21 @@ public interface KnockbackProfile {
 	void setHorizontal(double horizontal);
 	double getVertical();
 	void setVertical(double vertical);
+
+	// ==================== 近战基础击退: 地面/空中分离 ====================
+	// 配置文件作为基础KB(模式文件优先于全局 base-kb), 缺分离键时回落旧键 horizontal/vertical
+
+	double getHorizontalGround();
+	void setHorizontalGround(double horizontalGround);
+	double getHorizontalAir();
+	void setHorizontalAir(double horizontalAir);
+	double getVerticalGround();
+	void setVerticalGround(double verticalGround);
+	double getVerticalAir();
+	void setVerticalAir(double verticalAir);
+	/** 该模式是否定义了近战基础值(有任一水平/垂直键); 否则引擎回落全局 base-kb */
+	boolean isGroundSplitSet();
+	void setGroundSplitSet(boolean splitSet);
 	double getVerticalMin();
 	void setVerticalMin(double verticalMin);
 	double getVerticalMax();

@@ -206,8 +206,12 @@ public class KnockbackConfig {
 		}
 
 		if (!profileFile("windpvp").exists()) {
-			final KnockbackProfile windpvpProfile = new CraftKnockbackProfile("windpvp");
+			final CraftKnockbackProfile windpvpProfile = new CraftKnockbackProfile("windpvp");
 			windpvpProfile.setHorizontal(0.35);
+			windpvpProfile.setHorizontalGround(0.35);
+			windpvpProfile.setHorizontalAir(0.35);
+			windpvpProfile.setVerticalGround(0.35);
+			windpvpProfile.setVerticalAir(0.35);
 			windpvpProfile.setRodHorizontal(0.425);
 			windpvpProfile.setArrowHorizontal(0.425);
 			windpvpProfile.setPearlHorizontal(0.35);
@@ -227,15 +231,21 @@ public class KnockbackConfig {
 		}
 
 		if (!profileFile("hypixel").exists()) {
-			final KnockbackProfile hypixelProfile = new CraftKnockbackProfile("hypixel");
+			final CraftKnockbackProfile hypixelProfile = new CraftKnockbackProfile("hypixel");
 			hypixelProfile.setVertical(0.36);
+			hypixelProfile.setVerticalGround(0.36);
+			hypixelProfile.setVerticalAir(0.36);
 			hypixelProfile.setVerticalMax(0.43075);
 			hypixelProfile.save(true);
 		}
 
 		if (!profileFile("kohi").exists()) {
-			final KnockbackProfile kohiProfile = new CraftKnockbackProfile("kohi");
+			final CraftKnockbackProfile kohiProfile = new CraftKnockbackProfile("kohi");
 			kohiProfile.setHorizontal(0.35);
+			kohiProfile.setHorizontalGround(0.35);
+			kohiProfile.setHorizontalAir(0.35);
+			kohiProfile.setVerticalGround(0.35);
+			kohiProfile.setVerticalAir(0.35);
 			kohiProfile.setRodHorizontal(0.35);
 			kohiProfile.setArrowHorizontal(0.35);
 			kohiProfile.setPearlHorizontal(0.35);
@@ -313,6 +323,17 @@ public class KnockbackConfig {
 		profile.setFrictionVertical(yml.getDouble("friction-vertical", 2.0D));
 		profile.setHorizontal(yml.getDouble("horizontal", 0.4D));
 		profile.setVertical(yml.getDouble("vertical", 0.4D));
+		// 近战基础击退: 地面/空中分离(配置文件作为基础KB)
+		// 缺分离键时回落旧键 horizontal/vertical(地面=空中, 与旧版手感一致);
+		// 文件无任何水平/垂直键时 groundSplitSet=false, 引擎回落全局 base-kb
+		boolean hasBaseKeys = yml.contains("horizontal") || yml.contains("vertical")
+				|| yml.contains("horizontal-ground") || yml.contains("horizontal-air")
+				|| yml.contains("vertical-ground") || yml.contains("vertical-air");
+		profile.setHorizontalGround(yml.getDouble("horizontal-ground", yml.getDouble("horizontal", 0.4D)));
+		profile.setHorizontalAir(yml.getDouble("horizontal-air", yml.getDouble("horizontal", 0.4D)));
+		profile.setVerticalGround(yml.getDouble("vertical-ground", yml.getDouble("vertical", 0.4D)));
+		profile.setVerticalAir(yml.getDouble("vertical-air", yml.getDouble("vertical", 0.4D)));
+		profile.setGroundSplitSet(hasBaseKeys);
 		profile.setVerticalMax(yml.getDouble("vertical-max", 0.4D));
 		profile.setVerticalMin(yml.getDouble("vertical-min", -1.0D));
 		profile.setExtraHorizontal(yml.getDouble("extra-horizontal", 0.5D));
@@ -341,6 +362,9 @@ public class KnockbackConfig {
 		profile.setDynamicMisplayEnabled(yml.getBoolean("dynamic-misplay-enabled", false));
 		profile.setTargetMisplay(yml.getDouble("target-misplay", 0.0D));
 		profile.setMisplayCompensation(yml.getDouble("misplay-compensation", 0.5D));
+		// 模式文件显式包含 misplay 字段时, 引擎优先读该模式值(全局兜底)
+		profile.setMisplayExplicit(yml.contains("dynamic-misplay-enabled") || yml.contains("target-misplay")
+				|| yml.contains("misplay-compensation"));
 
 		// 投射物击退
 		profile.setRodHorizontal(yml.getDouble("projectiles.rod.horizontal", 0.4D));

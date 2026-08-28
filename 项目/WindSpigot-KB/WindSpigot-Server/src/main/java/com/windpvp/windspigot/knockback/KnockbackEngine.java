@@ -114,7 +114,18 @@ public final class KnockbackEngine {
 	 * @return 1.0 表示无补偿
 	 */
 	public static double getMisplayMultiplier(Entity victim) {
-		if (!KnockbackEngineSettings.b("dynamic-misplay.enabled") || !(victim instanceof EntityPlayer)) {
+		// 模式文件显式包含 misplay 字段时, 以模式值为准(配置文件作为基础KB); 全局兜底
+		KnockbackProfile profile = victim.getKnockbackProfile();
+		boolean enabled = KnockbackEngineSettings.b("dynamic-misplay.enabled");
+		double target = KnockbackEngineSettings.d("dynamic-misplay.target");
+		double compensation = KnockbackEngineSettings.d("dynamic-misplay.compensation");
+		if (profile instanceof CraftKnockbackProfile && ((CraftKnockbackProfile) profile).isMisplayExplicit()) {
+			CraftKnockbackProfile cp = (CraftKnockbackProfile) profile;
+			enabled = cp.isDynamicMisplayEnabled();
+			target = cp.getTargetMisplay();
+			compensation = cp.getMisplayCompensation();
+		}
+		if (!enabled || !(victim instanceof EntityPlayer)) {
 			return 1.0D;
 		}
 		// 反作弊兼容：目标正在水平碰撞（贴墙/被卡）时不补偿，避免误触发移动检测
@@ -124,11 +135,9 @@ public final class KnockbackEngine {
 		int ping = ((EntityPlayer) victim).ping;
 		// 100ms ping -> 1.0，封顶 1.0
 		double factor = Math.min(ping / 100.0D, 1.0D);
-		double target = KnockbackEngineSettings.d("dynamic-misplay.target");
 		if (target > 0) {
 			factor = Math.min(factor * (1.0D + target), 1.0D);
 		}
-		double compensation = KnockbackEngineSettings.d("dynamic-misplay.compensation");
 		double multiplier = 1.0D + target * compensation * factor;
 		// 反作弊兼容：补偿上限（默认 1.3 倍）
 		double maxMultiplier = 1.0D + KnockbackEngineSettings.d("dynamic-misplay.max-compensation");
@@ -164,11 +173,34 @@ public final class KnockbackEngine {
 				&& attacker != null;
 
 		// ---- 基础值 × 乘区（空中/地面分开，对刀走独立乘区，模式文件可覆盖） ----
+		// 配置文件作为基础KB: 模式文件定义了近战基础值(分离键或旧键)时优先,
+		// 否则回落全局 base-kb(引擎覆盖 -> 全局默认)
 		String state = air ? "air" : "ground";
 		String multPrefix = pvp ? "pvp.multiplier." : "multiplier.";
 
-		double horizontal = d(victim, "base-kb.horizontal." + state) * d(victim, multPrefix + "horizontal." + state);
-		double vertical = d(victim, "base-kb.vertical." + state) * d(victim, multPrefix + "vertical." + state);
+		KnockbackProfile kbProfile = victim.getKnockbackProfile();
+		CraftKnockbackProfile craft = kbProfile instanceof CraftKnockbackProfile
+				? (CraftKnockbackProfile) kbProfile : null;
+
+		double horizontal;
+		double vertical;
+		if (craft != null && craft.isGroundSplitSet()) {
+			horizontal = air ? craft.getHorizontalAir() : craft.getHorizontalGround();
+			vertical = air ? craft.getVerticalAir() : craft.getVerticalGround();
+		} else {
+			horizontal = d(victim, "base-kb.horizontal." + state);
+			vertical = d(victim, "base-kb.vertical." + state);
+		}
+
+		double multH = d(victim, multPrefix + "horizontal." + state);
+		double multV = d(victim, multPrefix + "vertical." + state);
+		// 原核心独有调整项: 模式空中/地面倍率乘入引擎
+		if (craft != null) {
+			multH *= air ? craft.getAirHorizontalMultiplier() : craft.getGroundHorizontalMultiplier();
+			multV *= air ? craft.getAirVerticalMultiplier() : craft.getGroundVerticalMultiplier();
+		}
+		horizontal *= multH;
+		vertical *= multV;
 
 		// ---- 距离衰减（借鉴 MMC：远距离命中减免击退） ----
 		if (KnockbackEngineSettings.b("range-reduction.enabled") && attacker != null) {
@@ -246,6 +278,11 @@ public final class KnockbackEngine {
 					: d(victim, "horizontal.sprint-extra");
 			double sprintExtraV = pvp ? d(victim, "pvp.vertical.sprint-extra")
 					: d(victim, "vertical.sprint-extra");
+			// 原核心独有调整项: 模式疾跑倍率乘入引擎
+			if (profile instanceof CraftKnockbackProfile) {
+				sprintExtraH *= profile.getSprintHorizontalMultiplier();
+				sprintExtraV *= profile.getSprintVerticalMultiplier();
+			}
 			if (sprintExtraH != 0.0D || sprintExtraV != 0.0D) {
 				victim.g(sin * sprintExtraH * dynamicMultiplier, sprintExtraV * dynamicMultiplier,
 						cos * sprintExtraH * dynamicMultiplier);
