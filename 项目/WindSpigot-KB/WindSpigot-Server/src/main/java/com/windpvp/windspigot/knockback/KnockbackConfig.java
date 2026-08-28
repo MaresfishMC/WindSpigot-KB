@@ -70,15 +70,40 @@ public class KnockbackConfig {
 	/** 各模式KB调整目录 */
 	private static File MODE_DIR;
 
-	/** 引擎参数分类 -> 文件名（基础KB配置与其他KB配置拆分） */
+	/**
+	 * 引擎参数分类 -> 文件名。
+	 * 基础击退(base-kb/sprint-extra)与对刀PVP已并入模式文件, 不再生成全局文件;
+	 * 全局仅剩: 全局乘区 / 系统开关 / 高级机制(含疾跑宽判)。
+	 */
 	private static final Map<String, List<String>> CATEGORY_FILES = new LinkedHashMap<>();
 	static {
-		CATEGORY_FILES.put("基础击退.yml", Arrays.asList(KnockbackEngineSettings.CAT_BASE,
-				KnockbackEngineSettings.CAT_MULT, KnockbackEngineSettings.CAT_SPRINT));
-		CATEGORY_FILES.put("对刀PVP.yml", Arrays.asList(KnockbackEngineSettings.CAT_PVP));
+		CATEGORY_FILES.put("全局乘区.yml", Arrays.asList(KnockbackEngineSettings.CAT_MULT));
 		CATEGORY_FILES.put("系统开关.yml", Arrays.asList(KnockbackEngineSettings.CAT_SYSTEM));
-		CATEGORY_FILES.put("高级机制.yml", Arrays.asList(KnockbackEngineSettings.CAT_ADVANCED));
+		CATEGORY_FILES.put("高级机制.yml",
+				Arrays.asList(KnockbackEngineSettings.CAT_ADVANCED, KnockbackEngineSettings.CAT_SPRINT));
 	}
+
+	/** 已并入模式的引擎键 → 模式文件分节键（旧 knockback.yml 导入层路由 + 旧全局文件迁移共用） */
+	private static final String[][] MERGED_KEY_MAP = {
+			{ "base-kb.horizontal.ground", "horizontal.ground" },
+			{ "base-kb.horizontal.air", "horizontal.air" },
+			{ "base-kb.vertical.ground", "vertical.ground" },
+			{ "base-kb.vertical.air", "vertical.air" },
+			{ "base-kb.vertical-limit", "vertical-limit" },
+			{ "base-kb.horizontal-momentum", "horizontal-momentum" },
+			{ "base-kb.vertical-momentum", "vertical-momentum" },
+			{ "horizontal.sprint-extra", "sprint-extra.horizontal" },
+			{ "vertical.sprint-extra", "sprint-extra.vertical" },
+			{ "pvp.enabled", "pvp.enabled" },
+			{ "pvp.multiplier.horizontal.ground", "pvp.horizontal.ground" },
+			{ "pvp.multiplier.horizontal.air", "pvp.horizontal.air" },
+			{ "pvp.multiplier.vertical.ground", "pvp.vertical.ground" },
+			{ "pvp.multiplier.vertical.air", "pvp.vertical.air" },
+			{ "pvp.multiplier.vertical-limit", "pvp.vertical-limit" },
+			{ "pvp.multiplier.horizontal-momentum", "pvp.horizontal-momentum" },
+			{ "pvp.multiplier.vertical-momentum", "pvp.vertical-momentum" },
+			{ "pvp.horizontal.sprint-extra", "pvp.sprint-extra.horizontal" },
+			{ "pvp.vertical.sprint-extra", "pvp.sprint-extra.vertical" } };
 
 	public static void init(File configFile) {
 		CONFIG_FILE = configFile;
@@ -105,8 +130,19 @@ public class KnockbackConfig {
 		config.options().copyDefaults(true);
 		c.setHeader(HEADER);
 
+		// 旧全局文件迁移(基础击退.yml/对刀PVP.yml → 模式文件分节), 必须在加载模式前执行
+		migrateLegacyEngineFiles();
+
 		// 加载所有配置
 		loadProfiles();
+
+		// 设置当前使用的击退配置(导入层路由需要, 先于引擎参数加载)
+		currentKb = getKbProfileByName(getString("knockback.current", "kohi"));
+		if (currentKb == null) {
+			WindSpigot.LOGGER.warn("未找到指定的击退配置，使用默认配置 'kohi'");
+			currentKb = getKbProfileByName("kohi");
+			set("knockback.current", "kohi");
+		}
 
 		// 击退引擎全局参数（kb配置文件/ 多文件 + 调试工具导入层）
 		loadEngineSettings();
@@ -114,13 +150,6 @@ public class KnockbackConfig {
 		// 世界 -> 配置映射
 		loadWorlds();
 
-		// 设置当前使用的击退配置
-		currentKb = getKbProfileByName(getString("knockback.current", "kohi"));
-		if (currentKb == null) {
-			WindSpigot.LOGGER.warn("未找到指定的击退配置，使用默认配置 'kohi'");
-			currentKb = getKbProfileByName("kohi");
-			set("knockback.current", "kohi");
-		}
 		save();
 	}
 
@@ -305,7 +334,8 @@ public class KnockbackConfig {
 	}
 
 	/**
-	 * 从模式文件加载单个击退配置（键为扁平结构，不含 knockback.profiles 前缀）
+	 * 从模式文件加载单个击退配置。
+	 * 双格式兼容: 新版 KBM 式分节(horizontal.ground/air 等) + 旧版扁平键(horizontal/horizontal-ground 等)。
 	 */
 	private static void loadProfileFromFile(File file) {
 		String key = file.getName().substring(0, file.getName().length() - ".yml".length());
@@ -317,56 +347,94 @@ public class KnockbackConfig {
 			kbProfiles.add(profile);
 		}
 
-		// 基础参数
-		profile.setStopSprint(yml.getBoolean("stop-sprint", true));
-		profile.setFrictionHorizontal(yml.getDouble("friction-horizontal", 2.0D));
-		profile.setFrictionVertical(yml.getDouble("friction-vertical", 2.0D));
-		profile.setHorizontal(yml.getDouble("horizontal", 0.4D));
-		profile.setVertical(yml.getDouble("vertical", 0.4D));
-		// 近战基础击退: 地面/空中分离(配置文件作为基础KB)
-		// 缺分离键时回落旧键 horizontal/vertical(地面=空中, 与旧版手感一致);
-		// 文件无任何水平/垂直键时 groundSplitSet=false, 引擎回落全局 base-kb
-		boolean hasBaseKeys = yml.contains("horizontal") || yml.contains("vertical")
+		// ---- 近战基础击退: 地面/空中分离 ----
+		// 新版分节 horizontal.ground/air; 旧版扁平 horizontal-ground/horizontal(地面=空中)
+		boolean hasNewBase = yml.contains("horizontal.ground") || yml.contains("horizontal.air")
+				|| yml.contains("vertical.ground") || yml.contains("vertical.air");
+		boolean hasLegacyBase = yml.contains("horizontal") || yml.contains("vertical")
 				|| yml.contains("horizontal-ground") || yml.contains("horizontal-air")
 				|| yml.contains("vertical-ground") || yml.contains("vertical-air");
-		profile.setHorizontalGround(yml.getDouble("horizontal-ground", yml.getDouble("horizontal", 0.4D)));
-		profile.setHorizontalAir(yml.getDouble("horizontal-air", yml.getDouble("horizontal", 0.4D)));
-		profile.setVerticalGround(yml.getDouble("vertical-ground", yml.getDouble("vertical", 0.4D)));
-		profile.setVerticalAir(yml.getDouble("vertical-air", yml.getDouble("vertical", 0.4D)));
-		profile.setGroundSplitSet(hasBaseKeys);
+		double legacyH = yml.getDouble("horizontal", yml.getDouble("horizontal.ground",
+				yml.getDouble("horizontal-ground", 0.4D)));
+		double legacyV = yml.getDouble("vertical", yml.getDouble("vertical.ground",
+				yml.getDouble("vertical-ground", 0.4D)));
+		profile.setHorizontalGround(yml.getDouble("horizontal.ground", legacyH));
+		profile.setHorizontalAir(yml.getDouble("horizontal.air", yml.getDouble("horizontal-air", legacyH)));
+		profile.setVerticalGround(yml.getDouble("vertical.ground", legacyV));
+		profile.setVerticalAir(yml.getDouble("vertical.air", yml.getDouble("vertical-air", legacyV)));
+		profile.setGroundSplitSet(hasNewBase || hasLegacyBase);
+		profile.setBaseExplicit(hasNewBase || hasLegacyBase);
+		profile.setHorizontal(legacyH);
+		profile.setVertical(legacyV);
+
+		// ---- 垂直钳制与动量(原全局 base-kb 并入) ----
+		profile.setVerticalLimit(yml.getDouble("vertical-limit", 0.4D));
+		profile.setHorizontalMomentum(yml.getDouble("horizontal-momentum", 0.5D));
+		profile.setVerticalMomentum(yml.getDouble("vertical-momentum", 0.5D));
+		profile.setClampExplicit(yml.contains("vertical-limit") || yml.contains("horizontal-momentum")
+				|| yml.contains("vertical-momentum"));
+
+		// ---- 疾跑额外击退(原全局 sprint-extra 并入) ----
+		profile.setSprintExtraHorizontal(yml.getDouble("sprint-extra.horizontal", 0.0D));
+		profile.setSprintExtraVertical(yml.getDouble("sprint-extra.vertical", 0.0D));
+		profile.setSprintExtraExplicit(yml.contains("sprint-extra.horizontal") || yml.contains("sprint-extra.vertical"));
+
+		// ---- 对刀PVP独立乘区(原全局 pvp.* 并入) ----
+		profile.setPvpEnabled(yml.getBoolean("pvp.enabled", true));
+		profile.setPvpHorizontalGround(yml.getDouble("pvp.horizontal.ground", 1.0D));
+		profile.setPvpHorizontalAir(yml.getDouble("pvp.horizontal.air", 1.0D));
+		profile.setPvpVerticalGround(yml.getDouble("pvp.vertical.ground", 1.0D));
+		profile.setPvpVerticalAir(yml.getDouble("pvp.vertical.air", 1.0D));
+		profile.setPvpVerticalLimit(yml.getDouble("pvp.vertical-limit", 1.0D));
+		profile.setPvpHorizontalMomentum(yml.getDouble("pvp.horizontal-momentum", 1.0D));
+		profile.setPvpVerticalMomentum(yml.getDouble("pvp.vertical-momentum", 1.0D));
+		profile.setPvpSprintExtraHorizontal(yml.getDouble("pvp.sprint-extra.horizontal", 0.0D));
+		profile.setPvpSprintExtraVertical(yml.getDouble("pvp.sprint-extra.vertical", 0.0D));
+		profile.setPvpExplicit(yml.contains("pvp.enabled") || yml.contains("pvp.horizontal.ground"));
+
+		// ---- 基础/摩擦 ----
+		profile.setStopSprint(yml.getBoolean("stop-sprint", true));
+		profile.setFrictionHorizontal(yml.getDouble("friction.horizontal", yml.getDouble("friction-horizontal", 2.0D)));
+		profile.setFrictionVertical(yml.getDouble("friction.vertical", yml.getDouble("friction-vertical", 2.0D)));
 		profile.setVerticalMax(yml.getDouble("vertical-max", 0.4D));
 		profile.setVerticalMin(yml.getDouble("vertical-min", -1.0D));
-		profile.setExtraHorizontal(yml.getDouble("extra-horizontal", 0.5D));
-		profile.setExtraVertical(yml.getDouble("extra-vertical", 0.1D));
 
-		// W-Tap参数
-		profile.setWTapExtraHorizontal(yml.getDouble("wtap-extra-horizontal", 0.5));
-		profile.setWTapExtraVertical(yml.getDouble("wtap-extra-vertical", 0.1));
+		// ---- 击退附魔与W-Tap ----
+		profile.setExtraHorizontal(yml.getDouble("extra.horizontal", yml.getDouble("extra-horizontal", 0.5D)));
+		profile.setExtraVertical(yml.getDouble("extra.vertical", yml.getDouble("extra-vertical", 0.1D)));
+		profile.setWTapExtraHorizontal(yml.getDouble("wtap-extra.horizontal", yml.getDouble("wtap-extra-horizontal", 0.5D)));
+		profile.setWTapExtraVertical(yml.getDouble("wtap-extra.vertical", yml.getDouble("wtap-extra-vertical", 0.1D)));
+		profile.setAddHorizontal(yml.getDouble("add.horizontal", yml.getDouble("add-horizontal", 0.0D)));
+		profile.setAddVertical(yml.getDouble("add.vertical", yml.getDouble("add-vertical", 0.0D)));
 
-		// 附加击退
-		profile.setAddHorizontal(yml.getDouble("add-horizontal", 0));
-		profile.setAddVertical(yml.getDouble("add-vertical", 0));
-
-		// 疾跑宽松判定
-		profile.setSprintHorizontalMultiplier(yml.getDouble("sprint-horizontal-multiplier", 1.0D));
-		profile.setSprintVerticalMultiplier(yml.getDouble("sprint-vertical-multiplier", 1.0D));
+		// ---- 疾跑倍率与宽松判定 ----
+		profile.setSprintHorizontalMultiplier(
+				yml.getDouble("sprint-multiplier.horizontal", yml.getDouble("sprint-horizontal-multiplier", 1.0D)));
+		profile.setSprintVerticalMultiplier(
+				yml.getDouble("sprint-multiplier.vertical", yml.getDouble("sprint-vertical-multiplier", 1.0D)));
 		profile.setSprintLenientEnabled(yml.getBoolean("sprint-lenient-enabled", true));
 
-		// 空中/地面分开判定
-		profile.setAirHorizontalMultiplier(yml.getDouble("air-horizontal-multiplier", 1.0D));
-		profile.setAirVerticalMultiplier(yml.getDouble("air-vertical-multiplier", 1.0D));
-		profile.setGroundHorizontalMultiplier(yml.getDouble("ground-horizontal-multiplier", 1.0D));
-		profile.setGroundVerticalMultiplier(yml.getDouble("ground-vertical-multiplier", 1.0D));
+		// ---- 空中/地面倍率 ----
+		profile.setAirHorizontalMultiplier(
+				yml.getDouble("air-multiplier.horizontal", yml.getDouble("air-horizontal-multiplier", 1.0D)));
+		profile.setAirVerticalMultiplier(
+				yml.getDouble("air-multiplier.vertical", yml.getDouble("air-vertical-multiplier", 1.0D)));
+		profile.setGroundHorizontalMultiplier(
+				yml.getDouble("ground-multiplier.horizontal", yml.getDouble("ground-horizontal-multiplier", 1.0D)));
+		profile.setGroundVerticalMultiplier(
+				yml.getDouble("ground-multiplier.vertical", yml.getDouble("ground-vertical-multiplier", 1.0D)));
 
-		// 动态Misplay
-		profile.setDynamicMisplayEnabled(yml.getBoolean("dynamic-misplay-enabled", false));
-		profile.setTargetMisplay(yml.getDouble("target-misplay", 0.0D));
-		profile.setMisplayCompensation(yml.getDouble("misplay-compensation", 0.5D));
-		// 模式文件显式包含 misplay 字段时, 引擎优先读该模式值(全局兜底)
-		profile.setMisplayExplicit(yml.contains("dynamic-misplay-enabled") || yml.contains("target-misplay")
-				|| yml.contains("misplay-compensation"));
+		// ---- 动态Misplay(模式显式优先, 全局兜底) ----
+		profile.setDynamicMisplayEnabled(
+				yml.getBoolean("dynamic-misplay.enabled", yml.getBoolean("dynamic-misplay-enabled", false)));
+		profile.setTargetMisplay(yml.getDouble("dynamic-misplay.target", yml.getDouble("target-misplay", 0.0D)));
+		profile.setMisplayCompensation(
+				yml.getDouble("dynamic-misplay.compensation", yml.getDouble("misplay-compensation", 0.5D)));
+		profile.setMisplayExplicit(yml.contains("dynamic-misplay.enabled") || yml.contains("dynamic-misplay.target")
+				|| yml.contains("dynamic-misplay.compensation") || yml.contains("dynamic-misplay-enabled")
+				|| yml.contains("target-misplay") || yml.contains("misplay-compensation"));
 
-		// 投射物击退
+		// ---- 投射物击退 ----
 		profile.setRodHorizontal(yml.getDouble("projectiles.rod.horizontal", 0.4D));
 		profile.setRodVertical(yml.getDouble("projectiles.rod.vertical", 0.4D));
 		profile.setArrowHorizontal(yml.getDouble("projectiles.arrow.horizontal", 0.4D));
@@ -378,7 +446,7 @@ public class KnockbackConfig {
 		profile.setEggHorizontal(yml.getDouble("projectiles.egg.horizontal", 0.4D));
 		profile.setEggVertical(yml.getDouble("projectiles.egg.vertical", 0.4D));
 
-		// 引擎参数覆盖：模式文件中出现的引擎键（base-kb/multiplier 等）对该模式的受害者优先生效
+		// ---- 引擎参数覆盖（模式文件中出现的引擎键对该模式受害者优先生效） ----
 		profile.clearEngineOverrides();
 		for (KnockbackEngineSettings.Param p : KnockbackEngineSettings.PARAMS.values()) {
 			if (!yml.contains(p.path)) {
@@ -395,20 +463,6 @@ public class KnockbackConfig {
 				profile.setEngineOverride(p.path, yml.getBoolean(p.path));
 				break;
 			}
-		}
-
-		// 一致性自检：检查模式文件是否包含所有基础参数键
-		List<String> requiredLegacyKeys = Arrays.asList("stop-sprint", "friction-horizontal", "friction-vertical",
-				"horizontal", "vertical", "vertical-max", "vertical-min", "extra-horizontal", "extra-vertical");
-		List<String> missing = new ArrayList<>();
-		for (String k : requiredLegacyKeys) {
-			if (!yml.contains(k)) {
-				missing.add(k);
-			}
-		}
-		if (!missing.isEmpty()) {
-			LOGGER.warn("模式 '" + key + "' 缺失 " + missing.size() + " 个基础参数键: " + missing
-					+ "，已使用默认值。建议补全后保存");
 		}
 	}
 
@@ -433,14 +487,116 @@ public class KnockbackConfig {
 	}
 
 	/**
+	 * 旧全局文件迁移:
+	 * 1) 基础击退.yml 中的 base-kb(垂直钳制/动量)与 sprint-extra → 各模式文件新分节(仅补缺失键, 不覆盖模式已有值);
+	 * 2) 对刀PVP.yml 的 pvp 组 → 各模式文件 pvp 分节;
+	 * 3) multiplier.* / sprint-reach.* 搬运到 全局乘区.yml / 高级机制.yml;
+	 * 4) 删除旧文件(不再生成)。
+	 */
+	private static void migrateLegacyEngineFiles() {
+		if (KB_DIR == null) {
+			return;
+		}
+		File legacyBase = new File(KB_DIR, "基础击退.yml");
+		File legacyPvp = new File(KB_DIR, "对刀PVP.yml");
+		if (!legacyBase.exists() && !legacyPvp.exists()) {
+			return;
+		}
+		WindSpigot.LOGGER.warn("检测到旧全局文件(基础击退.yml/对刀PVP.yml)，开始迁移到模式文件分节...");
+		MODE_DIR.mkdirs();
+		YamlConfiguration base = legacyBase.exists() ? loadYaml(legacyBase) : new YamlConfiguration();
+		YamlConfiguration pvp = legacyPvp.exists() ? loadYaml(legacyPvp) : new YamlConfiguration();
+
+		// 旧文件中的键 → 模式分节键(仅补缺失, 不覆盖模式已有值)
+		String[][] mergeMap = {
+				{ "base-kb.vertical-limit", "vertical-limit" },
+				{ "base-kb.horizontal-momentum", "horizontal-momentum" },
+				{ "base-kb.vertical-momentum", "vertical-momentum" },
+				{ "horizontal.sprint-extra", "sprint-extra.horizontal" },
+				{ "vertical.sprint-extra", "sprint-extra.vertical" },
+				{ "pvp.enabled", "pvp.enabled" },
+				{ "pvp.multiplier.horizontal.ground", "pvp.horizontal.ground" },
+				{ "pvp.multiplier.horizontal.air", "pvp.horizontal.air" },
+				{ "pvp.multiplier.vertical.ground", "pvp.vertical.ground" },
+				{ "pvp.multiplier.vertical.air", "pvp.vertical.air" },
+				{ "pvp.multiplier.vertical-limit", "pvp.vertical-limit" },
+				{ "pvp.multiplier.horizontal-momentum", "pvp.horizontal-momentum" },
+				{ "pvp.multiplier.vertical-momentum", "pvp.vertical-momentum" },
+				{ "pvp.horizontal.sprint-extra", "pvp.sprint-extra.horizontal" },
+				{ "pvp.vertical.sprint-extra", "pvp.sprint-extra.vertical" } };
+
+		File[] files = MODE_DIR.listFiles((dir, name) -> name.endsWith(".yml"));
+		if (files != null) {
+			for (File f : files) {
+				YamlConfiguration yml = loadYaml(f);
+				boolean changed = false;
+				for (String[] m : mergeMap) {
+					if (yml.contains(m[1])) {
+						continue; // 模式已有该键(模式优先), 不覆盖
+					}
+					Object src = base.contains(m[0]) ? base.get(m[0]) : pvp.get(m[0]);
+					if (src == null) {
+						continue;
+					}
+					yml.set(m[1], src);
+					changed = true;
+				}
+				if (changed) {
+					try {
+						yml.save(f);
+					} catch (IOException ex) {
+						LOGGER.log(Level.ERROR, "迁移模式文件失败: " + f.getPath(), ex);
+					}
+				}
+			}
+		}
+
+		// 全局保留项搬运: multiplier → 全局乘区.yml; sprint-reach → 高级机制.yml
+		saveGlobalKeysFrom(base, "multiplier.");
+		saveGlobalKeysFrom(base, "sprint-reach.");
+
+		if (legacyBase.exists() && legacyBase.delete()) {
+			WindSpigot.LOGGER.info("已迁移并删除旧文件: 基础击退.yml");
+		}
+		if (legacyPvp.exists() && legacyPvp.delete()) {
+			WindSpigot.LOGGER.info("已迁移并删除旧文件: 对刀PVP.yml");
+		}
+	}
+
+	/** 把旧文件中某前缀的引擎键搬运到对应的新全局分类文件(若新文件缺失) */
+	private static void saveGlobalKeysFrom(YamlConfiguration legacy, String prefix) {
+		String targetFile = prefix.startsWith("multiplier") ? "全局乘区.yml" : "高级机制.yml";
+		File file = new File(KB_DIR, targetFile);
+		YamlConfiguration yml = file.exists() ? loadYaml(file) : new YamlConfiguration();
+		boolean changed = false;
+		for (KnockbackEngineSettings.Param p : KnockbackEngineSettings.PARAMS.values()) {
+			if (!p.path.startsWith(prefix)) {
+				continue;
+			}
+			if (legacy.contains(p.path) && !yml.contains(p.path)) {
+				yml.set(p.path, legacy.get(p.path));
+				changed = true;
+			}
+		}
+		if (changed) {
+			try {
+				yml.save(file);
+			} catch (IOException ex) {
+				LOGGER.log(Level.ERROR, "搬运全局键失败: " + file.getPath(), ex);
+			}
+		}
+	}
+
+	/**
 	 * 加载引擎参数：kb配置文件/ 下各分类文件（合并语义），
-	 * 随后检查根目录 knockback.yml 是否含引擎键（调试工具导出），有则导入到分类文件并移除。
+	 * 随后检查根目录 knockback.yml 是否含引擎键（调试工具导出）：
+	 * 已并入模式的键路由到当前全局模式文件分节，其余导入到分类文件并移除。
 	 */
 	private static void loadEngineSettings() {
 		if (KB_DIR == null) {
 			return;
 		}
-		boolean firstRun = !new File(KB_DIR, "基础击退.yml").exists();
+		boolean firstRun = !new File(KB_DIR, "全局乘区.yml").exists();
 		if (firstRun) {
 			KnockbackEngineSettings.resetAll();
 			saveEngineSettings();
@@ -457,10 +613,43 @@ public class KnockbackConfig {
 			WindSpigot.LOGGER.info("击退引擎参数加载: " + total + " 个键来自 " + KB_DIR.getPath());
 		}
 
-		// 调试工具导入层：knockback.yml 中的引擎键导入到分类文件后移除
-		if (KnockbackEngineSettings.hasEngineKeys(config)) {
+		// 调试工具导入层：knockback.yml 中的引擎键 → 分类文件(全局) + 当前模式文件(并入键)
+		boolean hasEngine = false;
+		for (String path : KnockbackEngineSettings.paths()) {
+			if (config.contains(path)) {
+				hasEngine = true;
+				break;
+			}
+		}
+		if (hasEngine) {
+			// 1) 并入模式的键 → 当前全局模式文件分节
+			if (currentKb != null) {
+				File profileFile = profileFile(currentKb.getName());
+				YamlConfiguration pyml = profileFile.exists() ? loadYaml(profileFile) : new YamlConfiguration();
+				int merged = 0;
+				for (String[] pair : MERGED_KEY_MAP) {
+					if (config.contains(pair[0])) {
+						pyml.set(pair[1], config.get(pair[0]));
+						config.set(pair[0], null);
+						merged++;
+					}
+				}
+				if (merged > 0) {
+					try {
+						pyml.save(profileFile);
+						loadProfileFromFile(profileFile); // 重新加载到内存
+						WindSpigot.LOGGER.info("已从 knockback.yml 导入 " + merged + " 个并入键到模式 '"
+								+ currentKb.getName() + "'");
+					} catch (IOException ex) {
+						LOGGER.log(Level.ERROR, "导入并入键失败: " + profileFile.getPath(), ex);
+					}
+				}
+			}
+			// 2) 其余引擎键 → 分类文件
 			int imported = KnockbackEngineSettings.loadFrom(config);
-			saveEngineSettings();
+			if (imported > 0) {
+				saveEngineSettings();
+			}
 			int stripped = 0;
 			for (String path : KnockbackEngineSettings.paths()) {
 				if (config.contains(path)) {
@@ -475,8 +664,8 @@ public class KnockbackConfig {
 					config.set(topKey, null);
 				}
 			}
-			WindSpigot.LOGGER.info("已从 knockback.yml 导入 " + imported + " 个引擎参数到 " + KB_DIR.getPath()
-					+ "（原文件已移除 " + stripped + " 个引擎键）");
+			WindSpigot.LOGGER.info("已从 knockback.yml 导入 " + imported + " 个全局引擎键（原文件已移除 "
+					+ stripped + " 个引擎键）");
 		}
 	}
 

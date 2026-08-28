@@ -26,13 +26,39 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	// ==================== 基础击退参数 ====================
 	private double horizontal = 0.4D;
 	private double vertical = 0.4D;
-	// 近战基础击退: 地面/空中分离(配置文件作为基础KB)
+	// ==================== 近战基础击退: 地面/空中分离(配置文件作为基础KB) ====================
 	// 缺分离键时由加载器回落旧键 horizontal/vertical; 两者皆无时引擎回落全局 base-kb
 	private double horizontalGround = 0.4D;
 	private double horizontalAir = 0.4D;
 	private double verticalGround = 0.4D;
 	private double verticalAir = 0.4D;
 	private boolean groundSplitSet = false;
+	private boolean baseExplicit = false;
+
+	// ==================== 垂直钳制与动量(原全局 base-kb 并入) ====================
+	private double verticalLimit = 0.4D;
+	private double horizontalMomentum = 0.5D;
+	private double verticalMomentum = 0.5D;
+	private boolean clampExplicit = false;
+
+	// ==================== 疾跑额外击退(原全局 sprint-extra 并入, 绝对值) ====================
+	private double sprintExtraHorizontal = 0.0D;
+	private double sprintExtraVertical = 0.0D;
+	private boolean sprintExtraExplicit = false;
+
+	// ==================== 对刀PVP独立乘区(原全局 pvp.* 并入) ====================
+	private boolean pvpEnabled = true;
+	private double pvpHorizontalGround = 1.0D;
+	private double pvpHorizontalAir = 1.0D;
+	private double pvpVerticalGround = 1.0D;
+	private double pvpVerticalAir = 1.0D;
+	private double pvpVerticalLimit = 1.0D;
+	private double pvpHorizontalMomentum = 1.0D;
+	private double pvpVerticalMomentum = 1.0D;
+	private double pvpSprintExtraHorizontal = 0.0D;
+	private double pvpSprintExtraVertical = 0.0D;
+	private boolean pvpExplicit = false;
+
 	// 模式文件显式包含 dynamic-misplay 字段(引擎优先读该模式值, 全局兜底)
 	private boolean misplayExplicit = false;
 	private double verticalMin = -1.0D;
@@ -106,6 +132,28 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		this.verticalGround = other.verticalGround;
 		this.verticalAir = other.verticalAir;
 		this.groundSplitSet = other.groundSplitSet;
+		this.baseExplicit = other.baseExplicit;
+		// 垂直钳制与动量
+		this.verticalLimit = other.verticalLimit;
+		this.horizontalMomentum = other.horizontalMomentum;
+		this.verticalMomentum = other.verticalMomentum;
+		this.clampExplicit = other.clampExplicit;
+		// 疾跑额外击退
+		this.sprintExtraHorizontal = other.sprintExtraHorizontal;
+		this.sprintExtraVertical = other.sprintExtraVertical;
+		this.sprintExtraExplicit = other.sprintExtraExplicit;
+		// 对刀PVP
+		this.pvpEnabled = other.pvpEnabled;
+		this.pvpHorizontalGround = other.pvpHorizontalGround;
+		this.pvpHorizontalAir = other.pvpHorizontalAir;
+		this.pvpVerticalGround = other.pvpVerticalGround;
+		this.pvpVerticalAir = other.pvpVerticalAir;
+		this.pvpVerticalLimit = other.pvpVerticalLimit;
+		this.pvpHorizontalMomentum = other.pvpHorizontalMomentum;
+		this.pvpVerticalMomentum = other.pvpVerticalMomentum;
+		this.pvpSprintExtraHorizontal = other.pvpSprintExtraHorizontal;
+		this.pvpSprintExtraVertical = other.pvpSprintExtraVertical;
+		this.pvpExplicit = other.pvpExplicit;
 		this.misplayExplicit = other.misplayExplicit;
 		this.verticalMin = other.verticalMin;
 		this.verticalMax = other.verticalMax;
@@ -165,50 +213,60 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 
 	@Override
 	public void save(boolean projectiles) {
-		// 保存到独立的模式文件: kb配置文件/模式/<名>.yml（扁平键）
+		// 保存到独立的模式文件: kb配置文件/模式/<名>.yml（KBM 式分节）
 		File file = KnockbackConfig.profileFile(this.name);
 		file.getParentFile().mkdirs();
-		YamlConfiguration yml = file.exists() ? YamlConfiguration.loadConfiguration(file) : new YamlConfiguration();
+		YamlConfiguration yml = new YamlConfiguration();
 
-		// 基础参数
-		yml.set("stop-sprint", this.stopSprint);
-		yml.set("friction-horizontal", this.frictionHorizontal);
-		yml.set("friction-vertical", this.frictionVertical);
-		yml.set("horizontal", this.horizontal);
-		yml.set("vertical", this.vertical);
-		// 近战基础击退: 地面/空中分离(配置文件作为基础KB)
-		yml.set("horizontal-ground", this.horizontalGround);
-		yml.set("horizontal-air", this.horizontalAir);
-		yml.set("vertical-ground", this.verticalGround);
-		yml.set("vertical-air", this.verticalAir);
+		// ==== 近战基础击退(地面/空中分离) ====
+		yml.set("horizontal.ground", this.horizontalGround);
+		yml.set("horizontal.air", this.horizontalAir);
+		yml.set("vertical.ground", this.verticalGround);
+		yml.set("vertical.air", this.verticalAir);
+		// ==== 垂直钳制与动量 ====
+		yml.set("vertical-limit", this.verticalLimit);
 		yml.set("vertical-max", this.verticalMax);
 		yml.set("vertical-min", this.verticalMin);
-		yml.set("extra-horizontal", this.extraHorizontal);
-		yml.set("extra-vertical", this.extraVertical);
-
-		// W-Tap参数
-		yml.set("wtap-extra-horizontal", this.wTapHorizontal);
-		yml.set("wtap-extra-vertical", this.wTapVertical);
-
-		// 附加击退
-		yml.set("add-horizontal", this.addHorizontal);
-		yml.set("add-vertical", this.addVertical);
-
-		// 疾跑宽松判定
-		yml.set("sprint-horizontal-multiplier", this.sprintHorizontalMultiplier);
-		yml.set("sprint-vertical-multiplier", this.sprintVerticalMultiplier);
+		yml.set("horizontal-momentum", this.horizontalMomentum);
+		yml.set("vertical-momentum", this.verticalMomentum);
+		// ==== 疾跑额外击退(绝对值) ====
+		yml.set("sprint-extra.horizontal", this.sprintExtraHorizontal);
+		yml.set("sprint-extra.vertical", this.sprintExtraVertical);
+		// ==== 对刀PVP独立乘区 ====
+		yml.set("pvp.enabled", this.pvpEnabled);
+		yml.set("pvp.horizontal.ground", this.pvpHorizontalGround);
+		yml.set("pvp.horizontal.air", this.pvpHorizontalAir);
+		yml.set("pvp.vertical.ground", this.pvpVerticalGround);
+		yml.set("pvp.vertical.air", this.pvpVerticalAir);
+		yml.set("pvp.vertical-limit", this.pvpVerticalLimit);
+		yml.set("pvp.horizontal-momentum", this.pvpHorizontalMomentum);
+		yml.set("pvp.vertical-momentum", this.pvpVerticalMomentum);
+		yml.set("pvp.sprint-extra.horizontal", this.pvpSprintExtraHorizontal);
+		yml.set("pvp.sprint-extra.vertical", this.pvpSprintExtraVertical);
+		// ==== 摩擦 ====
+		yml.set("friction.horizontal", this.frictionHorizontal);
+		yml.set("friction.vertical", this.frictionVertical);
+		yml.set("stop-sprint", this.stopSprint);
+		// ==== 击退附魔与W-Tap ====
+		yml.set("extra.horizontal", this.extraHorizontal);
+		yml.set("extra.vertical", this.extraVertical);
+		yml.set("wtap-extra.horizontal", this.wTapHorizontal);
+		yml.set("wtap-extra.vertical", this.wTapVertical);
+		yml.set("add.horizontal", this.addHorizontal);
+		yml.set("add.vertical", this.addVertical);
+		// ==== 疾跑倍率与宽松判定 ====
+		yml.set("sprint-multiplier.horizontal", this.sprintHorizontalMultiplier);
+		yml.set("sprint-multiplier.vertical", this.sprintVerticalMultiplier);
 		yml.set("sprint-lenient-enabled", this.sprintLenientEnabled);
-
-		// 空中/地面分开判定
-		yml.set("air-horizontal-multiplier", this.airHorizontalMultiplier);
-		yml.set("air-vertical-multiplier", this.airVerticalMultiplier);
-		yml.set("ground-horizontal-multiplier", this.groundHorizontalMultiplier);
-		yml.set("ground-vertical-multiplier", this.groundVerticalMultiplier);
-
-		// 动态Misplay
-		yml.set("dynamic-misplay-enabled", this.dynamicMisplayEnabled);
-		yml.set("target-misplay", this.targetMisplay);
-		yml.set("misplay-compensation", this.misplayCompensation);
+		// ==== 空中/地面倍率 ====
+		yml.set("air-multiplier.horizontal", this.airHorizontalMultiplier);
+		yml.set("air-multiplier.vertical", this.airVerticalMultiplier);
+		yml.set("ground-multiplier.horizontal", this.groundHorizontalMultiplier);
+		yml.set("ground-multiplier.vertical", this.groundVerticalMultiplier);
+		// ==== 动态Misplay ====
+		yml.set("dynamic-misplay.enabled", this.dynamicMisplayEnabled);
+		yml.set("dynamic-misplay.target", this.targetMisplay);
+		yml.set("dynamic-misplay.compensation", this.misplayCompensation);
 
 		if (projectiles) {
 			yml.set("projectiles.rod.horizontal", this.rodHorizontal);
@@ -329,6 +387,179 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 
 	public void setMisplayExplicit(boolean misplayExplicit) {
 		this.misplayExplicit = misplayExplicit;
+	}
+
+	// ==================== 垂直钳制与动量(原全局 base-kb 并入) ====================
+
+	public boolean isBaseExplicit() {
+		return baseExplicit;
+	}
+
+	public void setBaseExplicit(boolean baseExplicit) {
+		this.baseExplicit = baseExplicit;
+	}
+
+	public double getVerticalLimit() {
+		return verticalLimit;
+	}
+
+	public void setVerticalLimit(double verticalLimit) {
+		this.verticalLimit = verticalLimit;
+		this.clampExplicit = true;
+	}
+
+	public double getHorizontalMomentum() {
+		return horizontalMomentum;
+	}
+
+	public void setHorizontalMomentum(double horizontalMomentum) {
+		this.horizontalMomentum = horizontalMomentum;
+		this.clampExplicit = true;
+	}
+
+	public double getVerticalMomentum() {
+		return verticalMomentum;
+	}
+
+	public void setVerticalMomentum(double verticalMomentum) {
+		this.verticalMomentum = verticalMomentum;
+		this.clampExplicit = true;
+	}
+
+	public boolean isClampExplicit() {
+		return clampExplicit;
+	}
+
+	public void setClampExplicit(boolean clampExplicit) {
+		this.clampExplicit = clampExplicit;
+	}
+
+	// ==================== 疾跑额外击退(原全局 sprint-extra 并入) ====================
+
+	public double getSprintExtraHorizontal() {
+		return sprintExtraHorizontal;
+	}
+
+	public void setSprintExtraHorizontal(double v) {
+		this.sprintExtraHorizontal = v;
+		this.sprintExtraExplicit = true;
+	}
+
+	public double getSprintExtraVertical() {
+		return sprintExtraVertical;
+	}
+
+	public void setSprintExtraVertical(double v) {
+		this.sprintExtraVertical = v;
+		this.sprintExtraExplicit = true;
+	}
+
+	public boolean isSprintExtraExplicit() {
+		return sprintExtraExplicit;
+	}
+
+	public void setSprintExtraExplicit(boolean explicit) {
+		this.sprintExtraExplicit = explicit;
+	}
+
+	// ==================== 对刀PVP独立乘区(原全局 pvp.* 并入) ====================
+
+	public boolean isPvpExplicit() {
+		return pvpExplicit;
+	}
+
+	public void setPvpExplicit(boolean pvpExplicit) {
+		this.pvpExplicit = pvpExplicit;
+	}
+
+	public boolean isPvpEnabled() {
+		return pvpEnabled;
+	}
+
+	public void setPvpEnabled(boolean pvpEnabled) {
+		this.pvpEnabled = pvpEnabled;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpHorizontalGround() {
+		return pvpHorizontalGround;
+	}
+
+	public void setPvpHorizontalGround(double v) {
+		this.pvpHorizontalGround = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpHorizontalAir() {
+		return pvpHorizontalAir;
+	}
+
+	public void setPvpHorizontalAir(double v) {
+		this.pvpHorizontalAir = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpVerticalGround() {
+		return pvpVerticalGround;
+	}
+
+	public void setPvpVerticalGround(double v) {
+		this.pvpVerticalGround = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpVerticalAir() {
+		return pvpVerticalAir;
+	}
+
+	public void setPvpVerticalAir(double v) {
+		this.pvpVerticalAir = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpVerticalLimit() {
+		return pvpVerticalLimit;
+	}
+
+	public void setPvpVerticalLimit(double v) {
+		this.pvpVerticalLimit = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpHorizontalMomentum() {
+		return pvpHorizontalMomentum;
+	}
+
+	public void setPvpHorizontalMomentum(double v) {
+		this.pvpHorizontalMomentum = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpVerticalMomentum() {
+		return pvpVerticalMomentum;
+	}
+
+	public void setPvpVerticalMomentum(double v) {
+		this.pvpVerticalMomentum = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpSprintExtraHorizontal() {
+		return pvpSprintExtraHorizontal;
+	}
+
+	public void setPvpSprintExtraHorizontal(double v) {
+		this.pvpSprintExtraHorizontal = v;
+		this.pvpExplicit = true;
+	}
+
+	public double getPvpSprintExtraVertical() {
+		return pvpSprintExtraVertical;
+	}
+
+	public void setPvpSprintExtraVertical(double v) {
+		this.pvpSprintExtraVertical = v;
+		this.pvpExplicit = true;
 	}
 
 	@Override

@@ -155,7 +155,7 @@ public class KnockbackGUI implements Listener {
 		registerAll();
 		Inventory inv = Bukkit.createInventory(new GUIHolder(null, 0), 27, "§8击退引擎参数 · 分类");
 
-		List<String> cats = KnockbackEngineSettings.categories();
+		List<String> cats = KnockbackEngineSettings.guiCategories();
 		Material[] icons = { Material.GOLD_SWORD, Material.ANVIL, Material.SUGAR, Material.DIAMOND_SWORD,
 				Material.REDSTONE, Material.ENCHANTMENT_TABLE, Material.BOOK };
 		int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
@@ -425,7 +425,7 @@ public class KnockbackGUI implements Listener {
 	}
 
 	private void handleMainClick(Player player, int slot) {
-		List<String> cats = KnockbackEngineSettings.categories();
+		List<String> cats = KnockbackEngineSettings.guiCategories();
 		int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
 		for (int i = 0; i < slots.length && i <= cats.size(); i++) {
 			if (slot == slots[i]) {

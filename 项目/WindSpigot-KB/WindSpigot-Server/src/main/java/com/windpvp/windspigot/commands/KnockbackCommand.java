@@ -126,7 +126,7 @@ public class KnockbackCommand extends Command {
 	}
 
 	private String categoryList() {
-		return String.join("§7, §f", KnockbackEngineSettings.categories());
+		return String.join("§7, §f", KnockbackEngineSettings.guiCategories());
 	}
 
 	private void sendList(CommandSender sender, String categoryArg) {
@@ -218,7 +218,7 @@ public class KnockbackCommand extends Command {
 	}
 
 	private String findCategory(String name) {
-		for (String cat : KnockbackEngineSettings.categories()) {
+		for (String cat : KnockbackEngineSettings.guiCategories()) {
 			if (cat.equalsIgnoreCase(name) || cat.contains(name)) {
 				return cat;
 			}
@@ -375,7 +375,7 @@ public class KnockbackCommand extends Command {
 			switch (sub) {
 			case "list":
 			case "gui":
-				return filter(KnockbackEngineSettings.categories(), args[1]);
+				return filter(KnockbackEngineSettings.guiCategories(), args[1]);
 			case "get":
 			case "set":
 				return filter(KnockbackEngineSettings.paths(), args[1]);

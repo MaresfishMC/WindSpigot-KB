@@ -124,10 +124,14 @@ public class KnockbackEngineSettings {
 		return p;
 	}
 
-	public static final String CAT_BASE = "基础击退";
+	/**
+	 * 已并入模式文件的分类: 基础击退(base-kb+sprint-extra) 与 对刀PVP。
+	 * 这些键保留在注册表中仅作为硬编码默认与旧配置兼容层, 不再生成全局文件/不再出现在 GUI 全局分类。
+	 */
+	public static final String CAT_BASE = "基础击退(并入模式)";
 	public static final String CAT_MULT = "全局乘区";
-	public static final String CAT_SPRINT = "疾跑加成";
-	public static final String CAT_PVP = "对刀PVP";
+	public static final String CAT_SPRINT = "疾跑宽判";
+	public static final String CAT_PVP = "对刀PVP(并入模式)";
 	public static final String CAT_SYSTEM = "系统开关";
 	public static final String CAT_ADVANCED = "高级机制";
 
@@ -150,9 +154,9 @@ public class KnockbackEngineSettings {
 		reg("multiplier.horizontal-momentum", Type.DOUBLE, 1.0D, CAT_MULT, "水平动量乘区");
 		reg("multiplier.vertical-momentum", Type.DOUBLE, 1.0D, CAT_MULT, "垂直动量乘区");
 
-		// ---------- 疾跑加成 sprint-extra（绝对值累加） ----------
-		reg("horizontal.sprint-extra", Type.DOUBLE, 0.0D, CAT_SPRINT, "疾跑额外水平击退(绝对值)");
-		reg("vertical.sprint-extra", Type.DOUBLE, 0.0D, CAT_SPRINT, "疾跑额外垂直击退(绝对值)");
+		// ---------- 疾跑加成 sprint-extra（绝对值累加, 已并入模式文件, 此处仅默认值） ----------
+		reg("horizontal.sprint-extra", Type.DOUBLE, 0.0D, CAT_BASE, "疾跑额外水平击退(绝对值)");
+		reg("vertical.sprint-extra", Type.DOUBLE, 0.0D, CAT_BASE, "疾跑额外垂直击退(绝对值)");
 		reg("sprint-reach.enabled", Type.BOOL, false, CAT_SPRINT, "疾跑宽松判定总开关");
 		reg("sprint-reach.grace-ticks", Type.INT, 5, CAT_SPRINT, "疾跑宽限(tick内仍视为疾跑)");
 		reg("sprint-reach.extra", Type.DOUBLE, 0.5D, CAT_SPRINT, "疾跑时额外攻击距离(格)");
@@ -237,6 +241,23 @@ public class KnockbackEngineSettings {
 	public static List<String> categories() {
 		List<String> cats = new ArrayList<>();
 		for (Param p : PARAMS.values()) {
+			if (!cats.contains(p.category)) {
+				cats.add(p.category);
+			}
+		}
+		return cats;
+	}
+
+	/**
+	 * GUI 全局分类: 排除已并入模式文件的分类(基础击退/对刀PVP)。
+	 * 这些参数改由 GUI「模式参数」页编辑(ProfileParams)。
+	 */
+	public static List<String> guiCategories() {
+		List<String> cats = new ArrayList<>();
+		for (Param p : PARAMS.values()) {
+			if (p.category.equals(CAT_BASE) || p.category.equals(CAT_PVP)) {
+				continue;
+			}
 			if (!cats.contains(p.category)) {
 				cats.add(p.category);
 			}
