@@ -26,7 +26,8 @@
         </div>
         <div style="color:var(--text2); font-size:0.75rem; margin:2px 0 6px;" id="modeStatusTip"></div>
         <div class="row row-inline" style="gap:4px;">
-            <button class="btn btn-warning" onclick="convertLegacyToCore()" style="width:100%;">🔄 旧kbm配置 → 新核心KB</button>
+            <button class="btn btn-warning" onclick="document.getElementById('convertFileInput').click()" style="width:100%;">🔄 导入旧kbm配置 → 换算新核心KB</button>
+            <input type="file" id="convertFileInput" accept=".yml,.yaml" style="display:none;" onchange="convertLegacyToCore(event)">
         </div>
 
         <div class="section-title">📌 模块切换</div>

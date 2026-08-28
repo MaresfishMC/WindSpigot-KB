@@ -548,88 +548,201 @@ function onYLimitChange() {
     notifyChange();
 }
 
-// ---- 旧kbm配置 → 新核心KB 一键转换 ----
-var LEGACY_TO_CORE_MAP = {
-    'horizontal.ground': 'base-kb.horizontal.ground',
-    'horizontal.air': 'base-kb.horizontal.air',
-    'vertical.ground': 'base-kb.vertical.ground',
-    'vertical.air': 'base-kb.vertical.air',
-    'horizontal.sprint_extra': 'horizontal.sprint-extra',
-    'vertical.sprint_extra': 'vertical.sprint-extra',
-    'hit_delay': 'hit-delay',
-    'y_limit.max_y_height': 'y-limit.max-y-height',
-    'y_limit.vertical_kb_after_limit': 'y-limit.vertical-kb-after-limit',
-    'packet.delay.ticks': 'hit-delay',
-    'packet.misplace.distance': 'dynamic-misplay.target'
-};
+// ---- 旧kbm配置 → 新核心KB 换算（dw1e/KnockbackManager 作者公式） ----
+// 点击按钮弹出文件选择器 → 解析所选 KBM 配置 → 公式换算 → 下载 knockback.yml + 模式文件
 
-function convertLegacyToCore() {
-    if (KB_MODE === 'core') {
-        saveModeBundle(); // 先保存当前新核心模式未落盘的进度
-    }
-    var legacy = loadModeBundle('legacy');
-    if (!legacy) {
-        legacy = legacyStateDefaults();
-    }
-    var unmapped = [];
-    var mappedCount = 0;
-    var targetA = JSON.parse(JSON.stringify(CORE_THEORY));
-    var targetB = JSON.parse(JSON.stringify(CORE_THEORY));
+function num(v, def) {
+    var n = parseFloat(v);
+    return isNaN(n) ? (def === undefined ? 0 : def) : n;
+}
 
-    for (var k in LEGACY_THEORY) {
-        var newKey = LEGACY_TO_CORE_MAP[k];
-        if (newKey && CORE_THEORY[newKey] !== undefined) {
-            targetA[newKey] = (typeof legacy.schemeA[k] === 'number') ? legacy.schemeA[k] : LEGACY_THEORY[k];
-            targetB[newKey] = (typeof legacy.schemeB[k] === 'number') ? legacy.schemeB[k] : LEGACY_THEORY[k];
-            mappedCount++;
-        } else if (k === 'packet.misplace.enabled' || k === 'packet.delay.enabled') {
-            // 开关类无对应, 忽略
-        } else {
-            unmapped.push(k + '(无对应新核心键)');
+// 按作者公式生成 模式配置文件 内容(地面/空中分离 + 投射物 = 基础值×倍率)
+function buildProfileYamlFromKbm(full, extra, yLimit, sourceName) {
+    var H_G = num(full['horizontal.ground'], LEGACY_THEORY['horizontal.ground']);
+    var H_A = num(full['horizontal.air'], LEGACY_THEORY['horizontal.air']);
+    var V_G = num(full['vertical.ground'], LEGACY_THEORY['vertical.ground']);
+    var V_A = num(full['vertical.air'], LEGACY_THEORY['vertical.air']);
+    var pEnabled = full['projectile.enabled'] === true;
+    var ph = num(full['projectile.horizontal_multiplier'], LEGACY_THEORY['projectile.horizontal_multiplier']);
+    var pv = num(full['projectile.vertical_multiplier'], LEGACY_THEORY['projectile.vertical_multiplier']);
+    var projH = pEnabled ? round6(H_G * ph) : 0.4;
+    var projV = pEnabled ? round6(V_G * pv) : 0.4;
+    var misplaceOn = extra['packet.misplace.enabled'] === true;
+    var L = [];
+    L.push('# 由旧KBM配置换算生成 (dw1e/KnockbackManager 公式)');
+    L.push('# 来源: ' + (sourceName || '未知') + '  换算时间: ' + new Date().toLocaleString());
+    L.push('stop-sprint: ' + (full['stop_sprint'] !== false));
+    L.push('friction-horizontal: 2.0');
+    L.push('friction-vertical: 2.0');
+    L.push('horizontal: ' + H_G);
+    L.push('vertical: ' + V_G);
+    L.push('horizontal-ground: ' + H_G);
+    L.push('horizontal-air: ' + H_A);
+    L.push('vertical-ground: ' + V_G);
+    L.push('vertical-air: ' + V_A);
+    L.push('vertical-max: ' + Math.max(V_G, V_A));
+    L.push('vertical-min: -1.0');
+    L.push('extra-horizontal: 0.5');
+    L.push('extra-vertical: 0.1');
+    L.push('wtap-extra-horizontal: 0.5');
+    L.push('wtap-extra-vertical: 0.1');
+    L.push('add-horizontal: 0');
+    L.push('add-vertical: 0');
+    L.push('sprint-horizontal-multiplier: 1.0');
+    L.push('sprint-vertical-multiplier: 1.0');
+    L.push('sprint-lenient-enabled: true');
+    L.push('air-horizontal-multiplier: 1.0');
+    L.push('air-vertical-multiplier: 1.0');
+    L.push('ground-horizontal-multiplier: 1.0');
+    L.push('ground-vertical-multiplier: 1.0');
+    L.push('dynamic-misplay-enabled: ' + misplaceOn);
+    L.push('target-misplay: ' + (misplaceOn ? num(extra['packet.misplace.distance'], 0.1) : 0.0));
+    L.push('misplay-compensation: 0.5');
+    L.push('projectiles:');
+    var kinds = ['rod', 'arrow', 'pearl', 'snowball', 'egg'];
+    for (var i = 0; i < kinds.length; i++) {
+        L.push('  ' + kinds[i] + ':');
+        L.push('    horizontal: ' + projH);
+        L.push('    vertical: ' + projV);
+    }
+    return L.join('\n');
+}
+
+function round6(v) {
+    return Number(Number(v).toFixed(6));
+}
+
+function downloadFile(name, content) {
+    var blob = new Blob([content], { type: 'text/yaml;charset=utf-8' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+}
+
+function convertLegacyToCore(event) {
+    var file = event && event.target && event.target.files ? event.target.files[0] : null;
+    if (event && event.target) event.target.value = '';
+    if (!file) {
+        showToast('⚠️ 已取消，未选择配置文件', 'warn');
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var kbm = parseLegacyYaml(e.target.result);
+            if (Object.keys(kbm).length === 0) {
+                alert('文件 "' + file.name + '" 未解析到有效的 KBM 参数，请确认是 KnockbackManager 的配置格式。');
+                return;
+            }
+
+            // 合并默认值(缺省键用旧工具理论值)
+            var full = JSON.parse(JSON.stringify(LEGACY_THEORY));
+            for (var k in kbm) {
+                full[k] = kbm[k];
+            }
+            var extra = JSON.parse(JSON.stringify(LEGACY_EXTRA_DEFAULT));
+            if (typeof full['packet.misplace.enabled'] === 'boolean') extra['packet.misplace.enabled'] = full['packet.misplace.enabled'];
+            if (typeof full['packet.misplace.distance'] === 'number') extra['packet.misplace.distance'] = full['packet.misplace.distance'];
+            if (typeof full['packet.delay.enabled'] === 'boolean') extra['packet.delay.enabled'] = full['packet.delay.enabled'];
+            if (typeof full['packet.delay.ticks'] === 'number') extra['packet.delay.ticks'] = full['packet.delay.ticks'];
+            var yLimit = JSON.parse(JSON.stringify(LEGACY_YLIMIT_DEFAULT));
+            if (typeof full['y_limit.enabled'] === 'boolean') yLimit.enabled = full['y_limit.enabled'];
+            if (typeof full['y_limit.max_y_height'] === 'number') yLimit.max_y_height = full['y_limit.max_y_height'];
+            if (typeof full['y_limit.vertical_kb_after_limit'] === 'number') yLimit.vertical_kb_after_limit = full['y_limit.vertical_kb_after_limit'];
+
+            // ---- 作者公式换算 → 新核心引擎键(1:1 尺度) ----
+            var target = JSON.parse(JSON.stringify(CORE_THEORY));
+            target['base-kb.horizontal.ground'] = num(full['horizontal.ground']);
+            target['base-kb.horizontal.air'] = num(full['horizontal.air']);
+            target['base-kb.vertical.ground'] = num(full['vertical.ground']);
+            target['base-kb.vertical.air'] = num(full['vertical.air']);
+            target['horizontal.sprint-extra'] = num(full['horizontal.sprint_extra']);
+            target['vertical.sprint-extra'] = num(full['vertical.sprint_extra']);
+            target['hit-delay'] = Math.round(num(full['hit_delay'], LEGACY_THEORY['hit_delay']));
+            target['y-limit.max-y-height'] = num(yLimit.max_y_height);
+            target['y-limit.vertical-kb-after-limit'] = num(yLimit.vertical_kb_after_limit);
+            if (extra['packet.misplace.enabled'] === true) {
+                target['dynamic-misplay.target'] = num(extra['packet.misplace.distance'], 0.1);
+            }
+
+            var bools = JSON.parse(JSON.stringify(CORE_BOOLS));
+            bools['y-limit.enabled'] = yLimit.enabled !== false;
+            bools['stop-sprint'] = full['stop_sprint'] !== false;
+            bools['dynamic-misplay.enabled'] = extra['packet.misplace.enabled'] === true;
+
+            // ---- 换算摘要 ----
+            var exactCount = 10;
+            var approx = [];
+            if (extra['packet.misplace.enabled'] === true) {
+                approx.push('packet.misplace.distance → dynamic-misplay.target (近似)');
+            }
+            if (extra['packet.delay.enabled'] === true) {
+                approx.push('packet.delay.ticks → hit-delay (位置包延迟无对应, 近似映射)');
+            }
+            var ignored = [];
+            if (full['projectile.enabled'] === false) {
+                ignored.push('projectile.enabled=false → 模式文件投射物保持默认0.4');
+            }
+            if (full['projectile.direction_override'] === true) {
+                ignored.push('projectile.direction_override (新核心方向内建, 无此开关)');
+            }
+            if (full['potion.enabled'] === true) {
+                ignored.push('potion.* (1.8.8新核心无药水系统, 无法换算)');
+            }
+            ignored.push('modern.* (1.8.8无攻击冷却/下界合金机制)');
+
+            // ---- 生成两个文件并下载 ----
+            var baseName = file.name.replace(/\.[^.]+$/, '');
+            var profileName = baseName.replace(/[^\w\u4e00-\u9fa5-]/g, '_');
+            if (!profileName) profileName = 'converted';
+            downloadFile('模式' + profileName + '.yml', buildProfileYamlFromKbm(full, extra, yLimit, file.name));
+
+            var ymlLines = [];
+            ymlLines.push('# knockback.yml 由旧KBM配置换算生成 (dw1e/KnockbackManager 作者公式)');
+            ymlLines.push('# 来源: ' + file.name + '  换算时间: ' + new Date().toLocaleString());
+            ymlLines.push('');
+            var body = emitYamlLines(function(key) {
+                if (key in bools) return bools[key];
+                return target[key];
+            }, null);
+            ymlLines = ymlLines.concat(body);
+            downloadFile('knockback.yml', kbmSignContent(ymlLines.join('\n')));
+
+            // ---- 应用到新核心模式并切换 ----
+            var core = loadModeBundle('core') || coreStateDefaults();
+            core.schemeA = target;
+            core.schemeB = target;
+            core.paramsState = {};
+            core.bools = bools;
+            core.currentParam = 'base-kb.horizontal.ground';
+            core.extraConfig = {};
+            core.yLimitSettings = {};
+            core.fixedParams = {};
+            localStorage.setItem('kbm_mode_core', JSON.stringify(core));
+
+            if (KB_MODE !== 'core') {
+                switchMode('core');
+            } else {
+                MODES.core = core;
+                applyModeGlobals(core);
+                renderModeUI();
+            }
+            showToast('🔄 换算完成: 精确 ' + exactCount + ' 项 + 近似 ' + approx.length + ' 项, 已下载 knockback.yml 与 模式' + profileName + '.yml', 'success');
+            var notes = approx.concat(ignored);
+            if (notes.length > 0) {
+                setTimeout(function() {
+                    showToast('⚠️ ' + notes.join('、'), 'warn');
+                }, 900);
+            }
+        } catch (err) {
+            alert('换算失败：' + err.message);
         }
-    }
-    for (var f in LEGACY_FIXED) {
-        if (f === 'stop_sprint') continue; // 下方布尔映射处理
-        unmapped.push(f + '(无对应新核心键)');
-    }
-
-    // 布尔映射
-    var bools = JSON.parse(JSON.stringify(CORE_BOOLS));
-    var legacyExtra = legacy.extraConfig || LEGACY_EXTRA_DEFAULT;
-    var legacyY = legacy.yLimitSettings || LEGACY_YLIMIT_DEFAULT;
-    if (legacyY && typeof legacyY.enabled === 'boolean') bools['y-limit.enabled'] = legacyY.enabled;
-    if (legacy.fixedParams && typeof legacy.fixedParams['stop_sprint'] === 'boolean') {
-        bools['stop-sprint'] = legacy.fixedParams['stop_sprint'];
-    }
-    if (legacyExtra && legacyExtra['packet.delay.enabled'] === true) {
-        // packet.delay 语义近似 hit-delay, 仅当 ticks 有效时提示
-        unmapped.push('packet.delay.enabled(语义近似, 已映射 ticks→hit-delay)');
-    }
-
-    var core = loadModeBundle('core') || coreStateDefaults();
-    core.schemeA = targetA;
-    core.schemeB = targetB;
-    core.paramsState = {};
-    core.bools = bools;
-    core.currentParam = 'base-kb.horizontal.ground';
-    core.extraConfig = {};
-    core.yLimitSettings = {};
-    core.fixedParams = {};
-    localStorage.setItem('kbm_mode_core', JSON.stringify(core));
-
-    if (KB_MODE !== 'core') {
-        switchMode('core');
-    } else {
-        MODES.core = core;
-        applyModeGlobals(core);
-        renderModeUI();
-    }
-    showToast('🔄 转换完成: ' + mappedCount + ' 个参数已映射', 'success');
-    if (unmapped.length > 0) {
-        setTimeout(function() {
-            showToast('⚠️ 未映射: ' + unmapped.join('、'), 'warn');
-        }, 700);
-    }
+    };
+    reader.readAsText(file);
 }
 
 // ================================================================
@@ -1623,6 +1736,7 @@ function parseCoreYaml(content) {
 }
 
 // 原版kbm 解析器(与旧版kb调试工具完全一致: horizontal/vertical/packet/y_limit 分节)
+// 换算用途: 额外支持 projectile/potion/stop_sprint/modern 等 KnockbackManager 全量键
 function parseLegacyYaml(content) {
     var lines = content.split('\n');
     var values = {};
@@ -1669,7 +1783,11 @@ function parseLegacyYaml(content) {
             var finalVal = (boolVal !== null) ? boolVal : (isNaN(numVal) ? val : numVal);
 
             var fullKey = '';
-            if (inMisplace && (key === 'enabled' || key === 'distance')) {
+            // KBM 顶层键(出现在任何分节之后, 不归属分节)
+            var TOP_LEVEL_KEYS = ['stop_sprint', 'hit_delay'];
+            if (TOP_LEVEL_KEYS.indexOf(key) !== -1) {
+                fullKey = key;
+            } else if (inMisplace && (key === 'enabled' || key === 'distance')) {
                 fullKey = 'packet.misplace.' + key;
             } else if (inDelay && (key === 'enabled' || key === 'ticks')) {
                 fullKey = 'packet.delay.' + key;
@@ -1678,7 +1796,15 @@ function parseLegacyYaml(content) {
             } else {
                 fullKey = currentSection ? (currentSection + '.' + key) : key;
             }
-            var validKeys = Object.keys(LEGACY_THEORY).concat(['packet.misplace.enabled', 'packet.delay.enabled', 'y_limit.enabled']);
+            var validKeys = Object.keys(LEGACY_THEORY).concat([
+                'packet.misplace.enabled', 'packet.delay.enabled', 'y_limit.enabled',
+                'stop_sprint',
+                'projectile.enabled', 'projectile.horizontal_multiplier', 'projectile.vertical_multiplier',
+                'projectile.direction_override',
+                'potion.enabled', 'potion.horizontal_multiplier', 'potion.vertical_multiplier',
+                'potion.compensation_multiplier',
+                'modern.cooldown_affects_kb', 'modern.netherite_kb_resistance'
+            ]);
             if (validKeys.includes(fullKey)) {
                 values[fullKey] = finalVal;
             }
