@@ -447,8 +447,13 @@ public class KnockbackConfig {
 		profile.setEggVertical(yml.getDouble("projectiles.egg.vertical", 0.4D));
 
 		// ---- 引擎参数覆盖（模式文件中出现的引擎键对该模式受害者优先生效） ----
+		// 已并入模式的键(base-kb.*/pvp.*/sprint-extra)跳过: 其模式分节键与引擎路径同名,
+		// 若加载为引擎覆盖会在 save 时反向覆盖模式字段写入值(如 pvp.enabled 永远回到文件旧值)
 		profile.clearEngineOverrides();
 		for (KnockbackEngineSettings.Param p : KnockbackEngineSettings.PARAMS.values()) {
+			if (KnockbackConfig.isMergedEnginePath(p.path)) {
+				continue;
+			}
 			if (!yml.contains(p.path)) {
 				continue;
 			}
@@ -588,7 +593,87 @@ public class KnockbackConfig {
 	}
 
 	/**
-	 * 加载引擎参数：kb配置文件/ 下各分类文件（合并语义），
+	 * 已并入键(基础击退/对刀PVP/疾跑加成) → 当前全局模式文件分节的读写。
+	 * /kb set|get 对并入键重定向到这里, 保证"改了真生效且重启不丢"(配置文件作为基础KB)。
+	 */
+
+	/** 引擎键 → 模式文件分节键; 非并入键返回 null */
+	public static String mergedProfileKey(String enginePath) {
+		for (String[] pair : MERGED_KEY_MAP) {
+			if (pair[0].equals(enginePath)) {
+				return pair[1];
+			}
+		}
+		return null;
+	}
+
+	/** 该引擎路径是否属于已并入模式的键(与模式文件分节键同名, 不参与引擎覆盖机制) */
+	public static boolean isMergedEnginePath(String enginePath) {
+		return mergedProfileKey(enginePath) != null;
+	}
+
+	/** 读取当前全局模式该并入键的实际生效值(非并入键或模式无效返回 null) */
+	public static Object getMergedValue(String enginePath) {
+		String key = mergedProfileKey(enginePath);
+		if (key == null) {
+			return null;
+		}
+		ProfileParams.P pp = ProfileParams.byKey(key);
+		if (pp == null) {
+			return null;
+		}
+		KnockbackProfile kb = getCurrentKb();
+		if (!(kb instanceof CraftKnockbackProfile)) {
+			return null;
+		}
+		return pp.get((CraftKnockbackProfile) kb);
+	}
+
+	/**
+	 * 把并入键的值写入当前全局模式文件分节并更新内存(即时生效+落盘)。
+	 *
+	 * @return null 表示成功; 否则返回错误描述
+	 */
+	public static String setMergedValue(String enginePath, Object value) {
+		String key = mergedProfileKey(enginePath);
+		if (key == null) {
+			return "该键不属于已并入模式的参数";
+		}
+		ProfileParams.P pp = ProfileParams.byKey(key);
+		if (pp == null) {
+			return "内部错误: 无此分节键 " + key;
+		}
+		KnockbackProfile kb = getCurrentKb();
+		if (!(kb instanceof CraftKnockbackProfile)) {
+			return "当前全局模式无效";
+		}
+		CraftKnockbackProfile profile = (CraftKnockbackProfile) kb;
+		if (pp.bool) {
+			if (!(value instanceof Boolean)) {
+				return "布尔参数只接受 true/false";
+			}
+		} else {
+			double num = ((Number) value).doubleValue();
+			if (Double.isNaN(num) || Double.isInfinite(num)) {
+				return "非法数值(NaN/Infinity)";
+			}
+			if (key.contains("momentum") && (num < 0.0D || num > 1.0D)) {
+				return "动量保留必须在0~1之间";
+			}
+			if (num < 0.0D && !key.equals("vertical-min") && !key.equals("dynamic-misplay.target")) {
+				return "参数不允许为负数";
+			}
+			value = num;
+		}
+		pp.set(profile, value);
+		profile.save(true);
+		return null;
+	}
+
+	/**
+	 * 加载引擎参数：kb配置文件/ 下各分类文件（合并语义）。
+	 * 缺失的分类文件用默认值单独生成, 绝不 resetAll 覆盖已有文件(避免旧服务器部分文件缺失时
+	 * 用户自定义的系统开关/高级机制被默认值冲掉)。
 	 * 随后检查根目录 knockback.yml 是否含引擎键（调试工具导出）：
 	 * 已并入模式的键路由到当前全局模式文件分节，其余导入到分类文件并移除。
 	 */
@@ -596,22 +681,29 @@ public class KnockbackConfig {
 		if (KB_DIR == null) {
 			return;
 		}
-		boolean firstRun = !new File(KB_DIR, "全局乘区.yml").exists();
-		if (firstRun) {
-			KnockbackEngineSettings.resetAll();
-			saveEngineSettings();
-			WindSpigot.LOGGER.info("已生成击退引擎配置目录: " + KB_DIR.getPath());
-		} else {
-			int total = 0;
-			for (String fileName : CATEGORY_FILES.keySet()) {
-				File file = new File(KB_DIR, fileName);
-				if (!file.exists()) {
-					continue;
+		int total = 0;
+		int created = 0;
+		for (Map.Entry<String, List<String>> entry : CATEGORY_FILES.entrySet()) {
+			File file = new File(KB_DIR, entry.getKey());
+			if (!file.exists()) {
+				YamlConfiguration yml = new YamlConfiguration();
+				for (KnockbackEngineSettings.Param p : KnockbackEngineSettings.PARAMS.values()) {
+					if (entry.getValue().contains(p.category)) {
+						yml.set(p.path, p.def);
+					}
 				}
+				try {
+					yml.save(file);
+					created++;
+				} catch (IOException ex) {
+					LOGGER.log(Level.ERROR, "无法生成 " + file.getPath(), ex);
+				}
+			} else {
 				total += KnockbackEngineSettings.loadFrom(loadYaml(file));
 			}
-			WindSpigot.LOGGER.info("击退引擎参数加载: " + total + " 个键来自 " + KB_DIR.getPath());
 		}
+		WindSpigot.LOGGER.info("击退引擎参数加载: " + total + " 个键来自 " + KB_DIR.getPath()
+				+ (created > 0 ? "（生成缺失文件 " + created + " 个）" : ""));
 
 		// 调试工具导入层：knockback.yml 中的引擎键 → 分类文件(全局) + 当前模式文件(并入键)
 		boolean hasEngine = false;

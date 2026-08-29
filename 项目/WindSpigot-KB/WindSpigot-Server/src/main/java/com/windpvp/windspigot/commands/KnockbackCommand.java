@@ -147,7 +147,10 @@ public class KnockbackCommand extends Command {
 		sender.sendMessage(separator);
 		sender.sendMessage("§6" + title + " §7(共 " + params.size() + " 项)");
 		for (Param p : params) {
-			sender.sendMessage(" §e" + p.path + " §7= §f" + formatValue(p) + " §8" + p.desc);
+			boolean merged = KnockbackConfig.mergedProfileKey(p.path) != null;
+			String value = merged ? formatRaw(KnockbackConfig.getMergedValue(p.path)) : formatValue(p);
+			sender.sendMessage(" §e" + p.path + " §7= §f" + value + " §8" + p.desc
+					+ (merged ? " §7(并入模式, /kb set 将写入当前模式)" : ""));
 		}
 		sender.sendMessage(separator);
 	}
@@ -157,6 +160,17 @@ public class KnockbackCommand extends Command {
 		if (p == null) {
 			sender.sendMessage("§c未知参数: " + path + " §7(/kb list 查看全部)");
 			return;
+		}
+		// 并入模式的键: 显示当前全局模式的实际生效值
+		String mergedKey = KnockbackConfig.mergedProfileKey(p.path);
+		if (mergedKey != null) {
+			Object v = KnockbackConfig.getMergedValue(p.path);
+			if (v != null) {
+				sender.sendMessage("§e" + p.path + " §7= §f" + formatRaw(v)
+						+ " §8" + p.desc + " §7(已并入模式 §f" + KnockbackConfig.getCurrentKb().getName()
+						+ " §7的 " + mergedKey + ")");
+				return;
+			}
 		}
 		sender.sendMessage("§e" + p.path + " §7= §f" + formatValue(p) + " §8" + p.desc);
 	}
@@ -198,6 +212,18 @@ public class KnockbackCommand extends Command {
 			sender.sendMessage("§c参数校验失败，已拒绝: " + error);
 			return;
 		}
+		// 并入模式的键(基础击退/对刀PVP/疾跑加成): 重定向写入当前全局模式文件分节
+		String mergedKey = KnockbackConfig.mergedProfileKey(p.path);
+		if (mergedKey != null) {
+			String mergedError = KnockbackConfig.setMergedValue(p.path, parsed);
+			if (mergedError != null) {
+				sender.sendMessage("§c参数校验失败，已拒绝: " + mergedError);
+				return;
+			}
+			sender.sendMessage("§a已更新 §f" + p.path + " §7→ 写入当前模式 §f"
+					+ KnockbackConfig.getCurrentKb().getName() + " §7的分节 " + mergedKey + " §7(已落盘)");
+			return;
+		}
 		p.set(parsed);
 		KnockbackConfig.saveEngineSettings(); // 即时生效 + 持久化
 		sender.sendMessage("§a已更新 §f" + p.path + " §7→ " + formatValue(p) + " §7(已保存)");
@@ -235,6 +261,19 @@ public class KnockbackCommand extends Command {
 		default:
 			return String.format("%.6f", p.getDouble()).replaceAll("0+$", "").replaceAll("\\.$", ".0");
 		}
+	}
+
+	private String formatRaw(Object v) {
+		if (v == null) {
+			return "§8-";
+		}
+		if (v instanceof Boolean) {
+			return Boolean.TRUE.equals(v) ? "§atrue" : "§cfalse";
+		}
+		if (v instanceof Number) {
+			return String.format("%.6f", ((Number) v).doubleValue()).replaceAll("0+$", "").replaceAll("\\.$", ".0");
+		}
+		return String.valueOf(v);
 	}
 
 	private String joinTail(String[] args) {

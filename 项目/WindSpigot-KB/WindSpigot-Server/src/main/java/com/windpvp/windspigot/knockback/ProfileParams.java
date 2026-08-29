@@ -204,4 +204,14 @@ public final class ProfileParams {
 		}
 		return list;
 	}
+
+	/** 按模式文件分节键精确查找 */
+	public static P byKey(String key) {
+		for (P p : ALL) {
+			if (p.key.equals(key)) {
+				return p;
+			}
+		}
+		return null;
+	}
 }

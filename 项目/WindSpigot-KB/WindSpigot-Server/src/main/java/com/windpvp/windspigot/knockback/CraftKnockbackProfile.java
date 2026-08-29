@@ -280,7 +280,11 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 			yml.set("projectiles.egg.horizontal", this.eggHorizontal);
 			yml.set("projectiles.egg.vertical", this.eggVertical);
 			// 引擎参数覆盖（模式文件中的引擎键对该模式受害者优先生效）
+			// 已并入模式的键跳过: 其模式分节键与引擎路径同名, 防止旧覆盖反向冲掉模式字段值
 			for (java.util.Map.Entry<String, Object> entry : this.engineOverrides.entrySet()) {
+				if (KnockbackConfig.isMergedEnginePath(entry.getKey())) {
+					continue;
+				}
 				yml.set(entry.getKey(), entry.getValue());
 			}
 		}
