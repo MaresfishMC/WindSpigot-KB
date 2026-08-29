@@ -86,11 +86,17 @@
             <span id="advancedHeadTitle">功能开关 (knockback.yml)</span>
         </div>
         <div class="foldable-content collapsed" id="advancedContent">
-            <div style="color:var(--text2); font-size:0.8rem; margin-top:6px;">与内核 knockback.yml 中的布尔开关一一对应，导出时一并写入。</div>
+            <div style="color:var(--text2); font-size:0.8rem; margin-top:6px;">全局布尔开关 → knockback.yml；模式布尔开关 → 模式&lt;名&gt;.yml，导出时自动拆分两个文件。</div>
+            <div style="color:var(--accent); font-weight:600; margin-top:4px;">📄 模式文件开关</div>
             <div class="row row-inline">
-                <label>pvp.enabled (对刀独立参数)</label>
+                <label>pvp.enabled (对刀独立参数·模式)</label>
                 <input type="checkbox" id="bool_pvp_enabled" checked onchange="onBoolChange('pvp.enabled', this.checked)" style="width:auto; flex:0 0 auto;">
             </div>
+            <div class="row row-inline">
+                <label>sprint-lenient-enabled (疾跑宽松判定·模式)</label>
+                <input type="checkbox" id="bool_sprint_lenient_enabled" checked onchange="onBoolChange('sprint-lenient-enabled', this.checked)" style="width:auto; flex:0 0 auto;">
+            </div>
+            <div style="color:var(--accent); font-weight:600; margin-top:6px;">🌐 全局开关</div>
             <div class="row row-inline">
                 <label>stop-sprint (命中后中断疾跑)</label>
                 <input type="checkbox" id="bool_stop_sprint" checked onchange="onBoolChange('stop-sprint', this.checked)" style="width:auto; flex:0 0 auto;">

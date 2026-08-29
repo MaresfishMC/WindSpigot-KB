@@ -73,15 +73,18 @@ KBM 无垂直上限键（上限由 y_limit 状态机承担）。换算生成模�
 
 ## 二、换算总表
 
+> 更新(2026-08-28)：基础击退/对刀PVP/疾跑加成已并入模式文件（见《模式并入整改报告》），
+> 以下换算目标中的近战基础类键现写入 **模式文件(KBM式分节)**，knockback.yml 仅含全局乘区/机制键。
+
 | 原KBM键 | 新核心目标 | 公式 | 类别 |
 |---|---|---|---|
-| horizontal.ground / air | knockback.yml `base-kb.horizontal.ground/air` | ×1 | 精确 |
-| vertical.ground / air | knockback.yml `base-kb.vertical.ground/air` | ×1 | 精确 |
-| horizontal.sprint_extra / vertical.sprint_extra | knockback.yml `horizontal/vertical.sprint-extra` | ×1 | 精确 |
+| horizontal.ground / air | 模式文件 `horizontal.ground/air` | ×1 | 精确 |
+| vertical.ground / air | 模式文件 `vertical.ground/air` | ×1 | 精确 |
+| horizontal.sprint_extra / vertical.sprint_extra | 模式文件 `sprint-extra.horizontal/vertical` | ×1 | 精确 |
 | hit_delay | knockback.yml `hit-delay` | ×1 | 精确 |
 | y_limit.* | knockback.yml `y-limit.*` + BOOLS | ×1 | 精确(机制近似) |
-| stop_sprint | BOOLS `stop-sprint` | = | 精确 |
-| packet.misplace.distance(+enabled) | `dynamic-misplay.target`(+`dynamic-misplay.enabled`) | ×1 | 近似 |
+| stop_sprint | 模式文件 `stop-sprint` + BOOLS `stop-sprint` | = | 精确 |
+| packet.misplace.distance(+enabled) | 模式文件+全局 `dynamic-misplay.target`(+`enabled`) | ×1 | 近似 |
 | packet.delay.ticks | `hit-delay`（仅 hit_delay 缺失时） | ×1 | 近似 |
 | projectile.horizontal_multiplier / vertical_multiplier | 模式文件 projectiles.*.horizontal/vertical | 基础值×倍率 | **作者公式** |
 | projectile.enabled | 模式文件投射物是否保持默认 | =false→保持默认 | 提示 |

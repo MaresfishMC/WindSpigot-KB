@@ -10,15 +10,9 @@
 var KB_MODE = 'core'; // 'core' | 'legacy'
 var MODES = { core: null, legacy: null };
 
-// ---- 新核心KB 参数(与内核键名一致) ----
-var CORE_THEORY = {
-    "base-kb.horizontal.ground": 0.4,
-    "base-kb.horizontal.air": 0.4,
-    "base-kb.vertical.ground": 0.4,
-    "base-kb.vertical.air": 0.4,
-    "base-kb.vertical-limit": 0.4,
-    "base-kb.horizontal-momentum": 0.5,
-    "base-kb.vertical-momentum": 0.5,
+// ---- 新核心KB 参数: 全局引擎键(knockback.yml) ----
+// 基础击退/对刀PVP/疾跑加成已并入模式文件(见 CORE_PROFILE_KEYS), 不再属于全局
+var CORE_GLOBAL_KEYS = {
     "multiplier.horizontal.ground": 1.0,
     "multiplier.horizontal.air": 1.0,
     "multiplier.vertical.ground": 1.0,
@@ -26,17 +20,6 @@ var CORE_THEORY = {
     "multiplier.vertical-limit": 1.0,
     "multiplier.horizontal-momentum": 1.0,
     "multiplier.vertical-momentum": 1.0,
-    "horizontal.sprint-extra": 0.0,
-    "vertical.sprint-extra": 0.0,
-    "pvp.multiplier.horizontal.ground": 1.0,
-    "pvp.multiplier.horizontal.air": 1.0,
-    "pvp.multiplier.vertical.ground": 1.0,
-    "pvp.multiplier.vertical.air": 1.0,
-    "pvp.multiplier.vertical-limit": 1.0,
-    "pvp.multiplier.horizontal-momentum": 1.0,
-    "pvp.multiplier.vertical-momentum": 1.0,
-    "pvp.horizontal.sprint-extra": 0.0,
-    "pvp.vertical.sprint-extra": 0.0,
     "hit-delay": 0,
     "y-limit.max-y-height": 1.25,
     "y-limit.vertical-kb-after-limit": 0.1,
@@ -54,9 +37,63 @@ var CORE_THEORY = {
     "dynamic-misplay.compensation": 0.5
 };
 
-// 布尔开关参数(高级设置面板中切换)
+// ---- 新核心KB 模式文件键(KBM 式分节, 导出到 模式<名>.yml, 放入 kb配置文件/模式/) ----
+var CORE_PROFILE_KEYS = {
+    "horizontal.ground": 0.4,
+    "horizontal.air": 0.4,
+    "vertical.ground": 0.4,
+    "vertical.air": 0.4,
+    "vertical-limit": 0.4,
+    "vertical-max": 0.4,
+    "vertical-min": -1.0,
+    "horizontal-momentum": 0.5,
+    "vertical-momentum": 0.5,
+    "sprint-extra.horizontal": 0.0,
+    "sprint-extra.vertical": 0.0,
+    "pvp.horizontal.ground": 1.0,
+    "pvp.horizontal.air": 1.0,
+    "pvp.vertical.ground": 1.0,
+    "pvp.vertical.air": 1.0,
+    "pvp.vertical-limit": 1.0,
+    "pvp.horizontal-momentum": 1.0,
+    "pvp.vertical-momentum": 1.0,
+    "pvp.sprint-extra.horizontal": 0.0,
+    "pvp.sprint-extra.vertical": 0.0,
+    "friction.horizontal": 2.0,
+    "friction.vertical": 2.0,
+    "extra.horizontal": 0.5,
+    "extra.vertical": 0.1,
+    "wtap-extra.horizontal": 0.5,
+    "wtap-extra.vertical": 0.1,
+    "add.horizontal": 0.0,
+    "add.vertical": 0.0,
+    "sprint-multiplier.horizontal": 1.0,
+    "sprint-multiplier.vertical": 1.0,
+    "air-multiplier.horizontal": 1.0,
+    "air-multiplier.vertical": 1.0,
+    "ground-multiplier.horizontal": 1.0,
+    "ground-multiplier.vertical": 1.0,
+    "projectiles.rod.horizontal": 0.4,
+    "projectiles.rod.vertical": 0.4,
+    "projectiles.arrow.horizontal": 0.4,
+    "projectiles.arrow.vertical": 0.4,
+    "projectiles.pearl.horizontal": 0.4,
+    "projectiles.pearl.vertical": 0.4,
+    "projectiles.snowball.horizontal": 0.4,
+    "projectiles.snowball.vertical": 0.4,
+    "projectiles.egg.horizontal": 0.4,
+    "projectiles.egg.vertical": 0.4
+};
+
+// 二分调试参数表 = 全局键 + 模式键(导出时自动拆分两个文件)
+var CORE_THEORY = {};
+(function() {
+    for (var g in CORE_GLOBAL_KEYS) CORE_THEORY[g] = CORE_GLOBAL_KEYS[g];
+    for (var p in CORE_PROFILE_KEYS) CORE_THEORY[p] = CORE_PROFILE_KEYS[p];
+})();
+
+// 布尔开关参数: 全局(knockback.yml)
 var CORE_BOOLS = {
-    "pvp.enabled": true,
     "stop-sprint": true,
     "damage-increment": true,
     "iframe-knockback": true,
@@ -68,6 +105,12 @@ var CORE_BOOLS = {
     "lag-compensation.enabled": false,
     "dynamic-misplay.enabled": false,
     "dynamic-misplay.anti-cheat-compatible": true
+};
+
+// 布尔开关参数: 模式文件(模式<名>.yml)
+var PROFILE_BOOLS = {
+    "pvp.enabled": true,
+    "sprint-lenient-enabled": true
 };
 
 // ---- 原版kbm 参数(旧工具 schema, 与 旧版kb调试工具 完全一致, 保持原风格) ----
@@ -139,30 +182,63 @@ var fixedParams = {};
 var extraConfig = {};
 var yLimitSettings = {};
 
-// 导出 YAML 时的键顺序(与内核生成的 knockback.yml 模板一致)
-var YAML_ORDER = [
-    "base-kb.horizontal.ground", "base-kb.horizontal.air",
-    "base-kb.vertical.ground", "base-kb.vertical.air",
-    "base-kb.vertical-limit", "base-kb.horizontal-momentum", "base-kb.vertical-momentum",
+// 导出 YAML 时的键顺序: 全局 knockback.yml(基础击退/对刀PVP已并入模式文件, 不再导出)
+var YAML_ORDER_GLOBAL = [
     "multiplier.horizontal.ground", "multiplier.horizontal.air",
     "multiplier.vertical.ground", "multiplier.vertical.air",
     "multiplier.vertical-limit", "multiplier.horizontal-momentum", "multiplier.vertical-momentum",
-    "horizontal.sprint-extra", "vertical.sprint-extra",
-    "pvp.enabled",
-    "pvp.multiplier.horizontal.ground", "pvp.multiplier.horizontal.air",
-    "pvp.multiplier.vertical.ground", "pvp.multiplier.vertical.air",
-    "pvp.multiplier.vertical-limit", "pvp.multiplier.horizontal-momentum", "pvp.multiplier.vertical-momentum",
-    "pvp.horizontal.sprint-extra", "pvp.vertical.sprint-extra",
     "stop-sprint", "damage-increment", "iframe-knockback", "server-side-kb",
     "y-limit.enabled", "y-limit.max-y-height", "y-limit.vertical-kb-after-limit",
     "sprint-reach.enabled", "sprint-reach.grace-ticks", "sprint-reach.extra",
+    "sprint-reach.feedback",
     "lag-compensation.enabled",
     "range-reduction.enabled", "range-reduction.start-range", "range-reduction.factor", "range-reduction.max-reduction",
     "hit-delay",
     "combo.enabled", "combo.increment", "combo.max", "combo.reset-ticks",
     "gravity.value", "gravity.air-resistance",
+    "air-ground.grace-ticks",
     "dynamic-misplay.enabled", "dynamic-misplay.target", "dynamic-misplay.compensation",
     "dynamic-misplay.max-compensation", "dynamic-misplay.anti-cheat-compatible"
+];
+
+// 模式文件(kb配置文件/模式/<名>.yml)键顺序: KBM 式分节
+var YAML_ORDER_PROFILE = [
+    "horizontal.ground", "horizontal.air",
+    "vertical.ground", "vertical.air",
+    "vertical-limit", "vertical-max", "vertical-min",
+    "horizontal-momentum", "vertical-momentum",
+    "sprint-extra.horizontal", "sprint-extra.vertical",
+    "pvp.enabled",
+    "pvp.horizontal.ground", "pvp.horizontal.air",
+    "pvp.vertical.ground", "pvp.vertical.air",
+    "pvp.vertical-limit", "pvp.horizontal-momentum", "pvp.vertical-momentum",
+    "pvp.sprint-extra.horizontal", "pvp.sprint-extra.vertical",
+    "friction.horizontal", "friction.vertical",
+    "stop-sprint",
+    "extra.horizontal", "extra.vertical",
+    "wtap-extra.horizontal", "wtap-extra.vertical",
+    "add.horizontal", "add.vertical",
+    "sprint-multiplier.horizontal", "sprint-multiplier.vertical",
+    "sprint-lenient-enabled",
+    "air-multiplier.horizontal", "air-multiplier.vertical",
+    "ground-multiplier.horizontal", "ground-multiplier.vertical",
+    "dynamic-misplay.enabled", "dynamic-misplay.target", "dynamic-misplay.compensation",
+    "projectiles.rod.horizontal", "projectiles.rod.vertical",
+    "projectiles.arrow.horizontal", "projectiles.arrow.vertical",
+    "projectiles.pearl.horizontal", "projectiles.pearl.vertical",
+    "projectiles.snowball.horizontal", "projectiles.snowball.vertical",
+    "projectiles.egg.horizontal", "projectiles.egg.vertical"
+];
+
+// 原版kbm 候选导出键序(与旧工具一致)
+var YAML_ORDER_LEGACY = [
+    "horizontal.ground", "horizontal.air", "horizontal.sprint_extra",
+    "vertical.ground", "vertical.air", "vertical.sprint_extra",
+    "packet.misplace.distance", "packet.delay.ticks",
+    "projectile.horizontal_multiplier", "projectile.vertical_multiplier",
+    "potion.horizontal_multiplier", "potion.vertical_multiplier", "potion.compensation_multiplier",
+    "hit_delay",
+    "y_limit.max_y_height", "y_limit.vertical_kb_after_limit"
 ];
 
 // 整数类型的参数(导出时取整)
@@ -275,7 +351,7 @@ function legacyStateDefaults() {
 
 function coreStateDefaults() {
     return {
-        currentParam: 'base-kb.horizontal.ground',
+        currentParam: 'horizontal.ground',
         schemeA: JSON.parse(JSON.stringify(CORE_THEORY)),
         schemeB: JSON.parse(JSON.stringify(CORE_THEORY)),
         paramsState: {},
@@ -284,7 +360,8 @@ function coreStateDefaults() {
         extraConfig: {},
         yLimitSettings: {},
         fixedParams: {},
-        bools: JSON.parse(JSON.stringify(CORE_BOOLS))
+        bools: JSON.parse(JSON.stringify(CORE_BOOLS)),
+        profileBools: JSON.parse(JSON.stringify(PROFILE_BOOLS))
     };
 }
 
@@ -332,6 +409,11 @@ function applyModeGlobals(b) {
     } else if (b.bools) {
         for (var k in BOOLS) {
             if (typeof b.bools[k] === 'boolean') BOOLS[k] = b.bools[k];
+        }
+        if (b.profileBools) {
+            for (var pk in PROFILE_BOOLS) {
+                if (typeof b.profileBools[pk] === 'boolean') PROFILE_BOOLS[pk] = b.profileBools[pk];
+            }
         }
     }
 }
@@ -469,6 +551,7 @@ function switchMode(mode) {
         MODES.legacy.fixedParams = fixedParams;
     } else {
         MODES.core.bools = JSON.parse(JSON.stringify(BOOLS));
+        MODES.core.profileBools = JSON.parse(JSON.stringify(PROFILE_BOOLS));
     }
     try { localStorage.setItem('kbm_mode_' + KB_MODE, JSON.stringify(MODES[KB_MODE])); } catch (e) {}
 
@@ -556,48 +639,91 @@ function num(v, def) {
     return isNaN(n) ? (def === undefined ? 0 : def) : n;
 }
 
-// 按作者公式生成 模式配置文件 内容(地面/空中分离 + 投射物 = 基础值×倍率)
+// 按作者公式生成 模式配置文件 内容(KBM 式分节: 地面/空中分离 + 对刀PVP + 投射物=基础值×倍率)
 function buildProfileYamlFromKbm(full, extra, yLimit, sourceName) {
     var H_G = num(full['horizontal.ground'], LEGACY_THEORY['horizontal.ground']);
     var H_A = num(full['horizontal.air'], LEGACY_THEORY['horizontal.air']);
     var V_G = num(full['vertical.ground'], LEGACY_THEORY['vertical.ground']);
     var V_A = num(full['vertical.air'], LEGACY_THEORY['vertical.air']);
+    var HS = num(full['horizontal.sprint_extra'], LEGACY_THEORY['horizontal.sprint_extra']);
+    var VS = num(full['vertical.sprint_extra'], LEGACY_THEORY['vertical.sprint_extra']);
     var pEnabled = full['projectile.enabled'] === true;
     var ph = num(full['projectile.horizontal_multiplier'], LEGACY_THEORY['projectile.horizontal_multiplier']);
     var pv = num(full['projectile.vertical_multiplier'], LEGACY_THEORY['projectile.vertical_multiplier']);
     var projH = pEnabled ? round6(H_G * ph) : 0.4;
     var projV = pEnabled ? round6(V_G * pv) : 0.4;
     var misplaceOn = extra['packet.misplace.enabled'] === true;
+    var misplaceTarget = misplaceOn ? num(extra['packet.misplace.distance'], 0.1) : 0.0;
     var L = [];
-    L.push('# 由旧KBM配置换算生成 (dw1e/KnockbackManager 公式)');
+    L.push('# 模式配置 (由旧KBM配置换算生成, dw1e/KnockbackManager 作者公式)');
     L.push('# 来源: ' + (sourceName || '未知') + '  换算时间: ' + new Date().toLocaleString());
-    L.push('stop-sprint: ' + (full['stop_sprint'] !== false));
-    L.push('friction-horizontal: 2.0');
-    L.push('friction-vertical: 2.0');
-    L.push('horizontal: ' + H_G);
-    L.push('vertical: ' + V_G);
-    L.push('horizontal-ground: ' + H_G);
-    L.push('horizontal-air: ' + H_A);
-    L.push('vertical-ground: ' + V_G);
-    L.push('vertical-air: ' + V_A);
+    L.push('# 放入 kb配置文件/模式/ 后设为全局生效');
+    L.push('');
+    // ==== 近战基础击退(地面/空中分离) ====
+    L.push('horizontal:');
+    L.push('  ground: ' + H_G);
+    L.push('  air: ' + H_A);
+    L.push('vertical:');
+    L.push('  ground: ' + V_G);
+    L.push('  air: ' + V_A);
+    // ==== 垂直钳制与动量 ====
+    L.push('vertical-limit: ' + Math.max(V_G, V_A));
     L.push('vertical-max: ' + Math.max(V_G, V_A));
     L.push('vertical-min: -1.0');
-    L.push('extra-horizontal: 0.5');
-    L.push('extra-vertical: 0.1');
-    L.push('wtap-extra-horizontal: 0.5');
-    L.push('wtap-extra-vertical: 0.1');
-    L.push('add-horizontal: 0');
-    L.push('add-vertical: 0');
-    L.push('sprint-horizontal-multiplier: 1.0');
-    L.push('sprint-vertical-multiplier: 1.0');
+    L.push('horizontal-momentum: 0.5');
+    L.push('vertical-momentum: 0.5');
+    // ==== 疾跑额外击退(绝对值) ====
+    L.push('sprint-extra:');
+    L.push('  horizontal: ' + HS);
+    L.push('  vertical: ' + VS);
+    // ==== 对刀PVP独立乘区 ====
+    L.push('pvp:');
+    L.push('  enabled: true');
+    L.push('  horizontal:');
+    L.push('    ground: 1.0');
+    L.push('    air: 1.0');
+    L.push('  vertical:');
+    L.push('    ground: 1.0');
+    L.push('    air: 1.0');
+    L.push('  vertical-limit: 1.0');
+    L.push('  horizontal-momentum: 1.0');
+    L.push('  vertical-momentum: 1.0');
+    L.push('  sprint-extra:');
+    L.push('    horizontal: 0.0');
+    L.push('    vertical: 0.0');
+    // ==== 摩擦 ====
+    L.push('friction:');
+    L.push('  horizontal: 2.0');
+    L.push('  vertical: 2.0');
+    L.push('stop-sprint: ' + (full['stop_sprint'] !== false));
+    // ==== 击退附魔与W-Tap ====
+    L.push('extra:');
+    L.push('  horizontal: 0.5');
+    L.push('  vertical: 0.1');
+    L.push('wtap-extra:');
+    L.push('  horizontal: 0.5');
+    L.push('  vertical: 0.1');
+    L.push('add:');
+    L.push('  horizontal: 0');
+    L.push('  vertical: 0');
+    // ==== 疾跑倍率与宽松判定 ====
+    L.push('sprint-multiplier:');
+    L.push('  horizontal: 1.0');
+    L.push('  vertical: 1.0');
     L.push('sprint-lenient-enabled: true');
-    L.push('air-horizontal-multiplier: 1.0');
-    L.push('air-vertical-multiplier: 1.0');
-    L.push('ground-horizontal-multiplier: 1.0');
-    L.push('ground-vertical-multiplier: 1.0');
-    L.push('dynamic-misplay-enabled: ' + misplaceOn);
-    L.push('target-misplay: ' + (misplaceOn ? num(extra['packet.misplace.distance'], 0.1) : 0.0));
-    L.push('misplay-compensation: 0.5');
+    // ==== 空中/地面倍率 ====
+    L.push('air-multiplier:');
+    L.push('  horizontal: 1.0');
+    L.push('  vertical: 1.0');
+    L.push('ground-multiplier:');
+    L.push('  horizontal: 1.0');
+    L.push('  vertical: 1.0');
+    // ==== 动态misplay ====
+    L.push('dynamic-misplay:');
+    L.push('  enabled: ' + misplaceOn);
+    L.push('  target: ' + misplaceTarget);
+    L.push('  compensation: 0.5');
+    // ==== 投射物(作者公式: 基础值×倍率) ====
     L.push('projectiles:');
     var kinds = ['rod', 'arrow', 'pearl', 'snowball', 'egg'];
     for (var i = 0; i < kinds.length; i++) {
@@ -654,14 +780,26 @@ function convertLegacyToCore(event) {
             if (typeof full['y_limit.max_y_height'] === 'number') yLimit.max_y_height = full['y_limit.max_y_height'];
             if (typeof full['y_limit.vertical_kb_after_limit'] === 'number') yLimit.vertical_kb_after_limit = full['y_limit.vertical_kb_after_limit'];
 
-            // ---- 作者公式换算 → 新核心引擎键(1:1 尺度) ----
+            // ---- 作者公式换算: 模式键(近战基础/疾跑/投射物倍率) + 全局键(乘区/机制) ----
             var target = JSON.parse(JSON.stringify(CORE_THEORY));
-            target['base-kb.horizontal.ground'] = num(full['horizontal.ground']);
-            target['base-kb.horizontal.air'] = num(full['horizontal.air']);
-            target['base-kb.vertical.ground'] = num(full['vertical.ground']);
-            target['base-kb.vertical.air'] = num(full['vertical.air']);
-            target['horizontal.sprint-extra'] = num(full['horizontal.sprint_extra']);
-            target['vertical.sprint-extra'] = num(full['vertical.sprint_extra']);
+            // 模式键(导出到 模式<名>.yml, 配置文件作为基础KB)
+            target['horizontal.ground'] = num(full['horizontal.ground']);
+            target['horizontal.air'] = num(full['horizontal.air']);
+            target['vertical.ground'] = num(full['vertical.ground']);
+            target['vertical.air'] = num(full['vertical.air']);
+            target['sprint-extra.horizontal'] = num(full['horizontal.sprint_extra']);
+            target['sprint-extra.vertical'] = num(full['vertical.sprint_extra']);
+            var pEnabled = full['projectile.enabled'] === true;
+            var ph = num(full['projectile.horizontal_multiplier'], LEGACY_THEORY['projectile.horizontal_multiplier']);
+            var pv = num(full['projectile.vertical_multiplier'], LEGACY_THEORY['projectile.vertical_multiplier']);
+            var projH = pEnabled ? round6(num(full['horizontal.ground']) * ph) : 0.4;
+            var projV = pEnabled ? round6(num(full['vertical.ground']) * pv) : 0.4;
+            var projKinds = ['rod', 'arrow', 'pearl', 'snowball', 'egg'];
+            for (var pi = 0; pi < projKinds.length; pi++) {
+                target['projectiles.' + projKinds[pi] + '.horizontal'] = projH;
+                target['projectiles.' + projKinds[pi] + '.vertical'] = projV;
+            }
+            // 全局键(knockback.yml)
             target['hit-delay'] = Math.round(num(full['hit_delay'], LEGACY_THEORY['hit_delay']));
             target['y-limit.max-y-height'] = num(yLimit.max_y_height);
             target['y-limit.vertical-kb-after-limit'] = num(yLimit.vertical_kb_after_limit);
@@ -673,6 +811,7 @@ function convertLegacyToCore(event) {
             bools['y-limit.enabled'] = yLimit.enabled !== false;
             bools['stop-sprint'] = full['stop_sprint'] !== false;
             bools['dynamic-misplay.enabled'] = extra['packet.misplace.enabled'] === true;
+            var profileBools = JSON.parse(JSON.stringify(PROFILE_BOOLS));
 
             // ---- 换算摘要 ----
             var exactCount = 10;
@@ -684,7 +823,7 @@ function convertLegacyToCore(event) {
                 approx.push('packet.delay.ticks → hit-delay (位置包延迟无对应, 近似映射)');
             }
             var ignored = [];
-            if (full['projectile.enabled'] === false) {
+            if (!pEnabled) {
                 ignored.push('projectile.enabled=false → 模式文件投射物保持默认0.4');
             }
             if (full['projectile.direction_override'] === true) {
@@ -695,7 +834,7 @@ function convertLegacyToCore(event) {
             }
             ignored.push('modern.* (1.8.8无攻击冷却/下界合金机制)');
 
-            // ---- 生成两个文件并下载 ----
+            // ---- 生成两个文件并下载(全局 + 模式分节) ----
             var baseName = file.name.replace(/\.[^.]+$/, '');
             var profileName = baseName.replace(/[^\w\u4e00-\u9fa5-]/g, '_');
             if (!profileName) profileName = 'converted';
@@ -705,7 +844,7 @@ function convertLegacyToCore(event) {
             ymlLines.push('# knockback.yml 由旧KBM配置换算生成 (dw1e/KnockbackManager 作者公式)');
             ymlLines.push('# 来源: ' + file.name + '  换算时间: ' + new Date().toLocaleString());
             ymlLines.push('');
-            var body = emitYamlLines(function(key) {
+            var body = emitYamlLines(YAML_ORDER_GLOBAL, function(key) {
                 if (key in bools) return bools[key];
                 return target[key];
             }, null);
@@ -718,7 +857,8 @@ function convertLegacyToCore(event) {
             core.schemeB = target;
             core.paramsState = {};
             core.bools = bools;
-            core.currentParam = 'base-kb.horizontal.ground';
+            core.profileBools = profileBools;
+            core.currentParam = 'horizontal.ground';
             core.extraConfig = {};
             core.yLimitSettings = {};
             core.fixedParams = {};
@@ -788,6 +928,7 @@ function autoSaveState() {
         b.fixedParams = fixedParams;
     } else {
         b.bools = JSON.parse(JSON.stringify(BOOLS));
+        b.profileBools = JSON.parse(JSON.stringify(PROFILE_BOOLS));
     }
     try {
         localStorage.setItem('kbm_mode_' + KB_MODE, JSON.stringify(b));
@@ -804,20 +945,28 @@ function notifyChange() {
     autoSaveState();
 }
 
-// 布尔开关面板:同步界面复选框到 BOOLS
+// 布尔开关面板:同步界面复选框到 BOOLS / PROFILE_BOOLS
 function renderBoolPanel() {
     for (var b in BOOLS) {
         var el = document.getElementById(boolId(b));
         if (el) el.checked = BOOLS[b];
     }
+    for (var pb in PROFILE_BOOLS) {
+        var el2 = document.getElementById(boolId(pb));
+        if (el2) el2.checked = PROFILE_BOOLS[pb];
+    }
 }
 
 function onBoolChange(key, checked) {
-    if (typeof checked === 'boolean') {
-        BOOLS[key] = checked;
-    } else {
+    var val = checked;
+    if (typeof checked !== 'boolean') {
         var el = document.getElementById(boolId(key));
-        if (el) BOOLS[key] = el.checked;
+        val = el ? el.checked : false;
+    }
+    if (key in PROFILE_BOOLS) {
+        PROFILE_BOOLS[key] = val;
+    } else {
+        BOOLS[key] = val;
     }
     notifyChange();
 }
@@ -1699,7 +1848,7 @@ function parseCoreYaml(content) {
     var values = {};
     var indents = [];
     var keys = [];
-    var validKeys = Object.keys(THEORY).concat(Object.keys(BOOLS));
+    var validKeys = Object.keys(THEORY).concat(Object.keys(BOOLS)).concat(Object.keys(PROFILE_BOOLS));
     var lines = content.split('\n');
     for (var i = 0; i < lines.length; i++) {
         var raw = lines[i];
@@ -1833,6 +1982,8 @@ function applyParsedValues(target, values) {
         for (var k2 in values) {
             if (k2 in BOOLS) {
                 BOOLS[k2] = values[k2];
+            } else if (k2 in PROFILE_BOOLS) {
+                PROFILE_BOOLS[k2] = values[k2];
             } else {
                 target[k2] = values[k2];
             }
@@ -2543,7 +2694,7 @@ function cmpSelected() {
 }
 
 // ================================================================
-// 通用 YAML 生成器: 按 YAML_ORDER 输出嵌套结构
+// 通用 YAML 生成器: 按给定键序输出嵌套结构
 // valueForKey(key) 返回该键的值(数值/布尔), 仅输出有值的键
 // ================================================================
 function fmtYamlVal(key, v) {
@@ -2552,11 +2703,11 @@ function fmtYamlVal(key, v) {
     return String(Number(Number(v).toFixed(6)));
 }
 
-function emitYamlLines(valueForKey, noteForKey) {
+function emitYamlLines(order, valueForKey, noteForKey) {
     var lines = [];
     var pathStack = [];
-    for (var i = 0; i < YAML_ORDER.length; i++) {
-        var key = YAML_ORDER[i];
+    for (var i = 0; i < order.length; i++) {
+        var key = order[i];
         var v = valueForKey(key);
         if (v === undefined || v === null || (typeof v === 'number' && isNaN(v))) continue;
         var parts = key.split('.');
@@ -2581,6 +2732,44 @@ function emitYamlLines(valueForKey, noteForKey) {
     return lines;
 }
 
+// 模式文件(模式<名>.yml)取值: 模式布尔 → 全局布尔同步 → 方案/候选值
+function profileValueForKey(key, sel) {
+    if (key in PROFILE_BOOLS) return PROFILE_BOOLS[key];
+    if (key === 'stop-sprint') return BOOLS['stop-sprint'];
+    if (key === 'dynamic-misplay.enabled') return BOOLS['dynamic-misplay.enabled'];
+    if (key === 'dynamic-misplay.target') return exportValue('dynamic-misplay.target');
+    if (key === 'dynamic-misplay.compensation') return exportValue('dynamic-misplay.compensation');
+    if (sel) return sel[key] ? Number(sel[key].value) : undefined;
+    return exportValue(key);
+}
+
+// 全局取值: 布尔 → 方案/候选值
+function globalValueForKey(key, sel) {
+    if (key in BOOLS) {
+        var dep = depBoolForParam(currentParam);
+        if (key === dep) return true;
+        return BOOLS[key];
+    }
+    if (sel) return sel[key] ? Number(sel[key].value) : undefined;
+    return exportValue(key);
+}
+
+function buildGlobalYaml(valueForKey, noteForKey, headerLines) {
+    var lines = headerLines.slice();
+    lines.push('');
+    var body = emitYamlLines(YAML_ORDER_GLOBAL, valueForKey, noteForKey);
+    lines = lines.concat(body);
+    return kbmSignContent(lines.join('\n'));
+}
+
+function buildProfileYamlContent(valueForKey, noteForKey, headerLines) {
+    var lines = headerLines.slice();
+    lines.push('');
+    var body = emitYamlLines(YAML_ORDER_PROFILE, valueForKey, noteForKey);
+    lines = lines.concat(body);
+    return lines.join('\n');
+}
+
 function cmpPreview() {
     var sel = cmpSelected();
     var keys = Object.keys(sel);
@@ -2588,39 +2777,67 @@ function cmpPreview() {
         document.getElementById('cmpPreview').value = '# 暂无选择';
         return;
     }
-    var lines = [];
-    lines.push(KB_MODE === 'legacy'
-        ? '# KBM 组合配置（来自保留候选）'
-        : '# knockback.yml 组合配置（来自保留候选）');
-    lines.push('# 生成时间: ' + new Date().toLocaleString());
-    lines.push('');
-    var body = emitYamlLines(function(key) {
-        if (key in BOOLS) return BOOLS[key];
-        return sel[key] ? Number(sel[key].value) : undefined;
+    if (KB_MODE === 'legacy') {
+        var lines = [];
+        lines.push('# KBM 组合配置（来自保留候选）');
+        lines.push('# 生成时间: ' + new Date().toLocaleString());
+        lines.push('');
+        var body = emitYamlLines(YAML_ORDER_LEGACY, function(key) {
+            return sel[key] ? Number(sel[key].value) : undefined;
+        }, function(key) {
+            return sel[key] ? sel[key].note : '';
+        });
+        lines = lines.concat(body);
+        document.getElementById('cmpPreview').value = lines.join('\n');
+        return;
+    }
+    // 新核心: 预览 = 全局 + 模式 两段
+    var g = buildGlobalYaml(function(key) {
+        return globalValueForKey(key, sel);
     }, function(key) {
         return sel[key] ? sel[key].note : '';
-    });
-    lines = lines.concat(body);
-    document.getElementById('cmpPreview').value = (KB_MODE === 'legacy')
-        ? lines.join('\n')
-        : kbmSignContent(lines.join('\n'));
+    }, ['# knockback.yml 组合配置（全局引擎键, 来自保留候选）', '# 生成时间: ' + new Date().toLocaleString()]);
+    var p = buildProfileYamlContent(function(key) {
+        return profileValueForKey(key, sel);
+    }, function(key) {
+        return sel[key] ? sel[key].note : '';
+    }, ['# ---- 以下为模式配置(另存为 模式<名>.yml, 放入 kb配置文件/模式/) ----', '# 模式文件组合配置（来自保留候选）']);
+    document.getElementById('cmpPreview').value = g + '\n' + p;
 }
 
 function cmpExport() {
-    var yaml = document.getElementById('cmpPreview').value;
-    if (!yaml || yaml === '# 暂无选择') {
+    var sel = cmpSelected();
+    if (Object.keys(sel).length === 0) {
         showToast('⚠️ 请先选择候选', 'warn');
         return;
     }
-    var blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
-    var link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = (KB_MODE === 'legacy') ? 'kbm_combined.yml' : 'knockback.yml'; // 新核心: 放入服务端根目录后 /kb reload 生效
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    showToast('✅ 组合 YAML 已导出', 'success');
+    if (KB_MODE === 'legacy') {
+        var yaml = document.getElementById('cmpPreview').value;
+        var blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'kbm_combined.yml';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        showToast('✅ 组合 YAML 已导出', 'success');
+        return;
+    }
+    // 新核心: 拆分两个文件下载
+    var g = buildGlobalYaml(function(key) {
+        return globalValueForKey(key, sel);
+    }, function(key) {
+        return sel[key] ? sel[key].note : '';
+    }, ['# knockback.yml 组合配置（来自保留候选）', '# 生成时间: ' + new Date().toLocaleString()]);
+    var p = buildProfileYamlContent(function(key) {
+        return profileValueForKey(key, sel);
+    }, function(key) {
+        return sel[key] ? sel[key].note : '';
+    }, ['# 模式文件组合配置（来自保留候选, 放入 kb配置文件/模式/）', '# 生成时间: ' + new Date().toLocaleString()]);
+    downloadFile('knockback.yml', g);
+    downloadFile('模式组合.yml', p);
+    showToast('✅ 已导出 knockback.yml + 模式组合.yml', 'success');
 }
 
 function cmpCopy() {
@@ -2718,30 +2935,19 @@ function exportConfig() {
     if (filename === null) return;
     if (filename.trim() === '') filename = 'knockback';
     var ext = '.yml';
-    var lines = [];
-    lines.push('# knockback.yml 配置导出 (方案A, 适用于内核 KB 系统)');
-    lines.push('# 导出时间: ' + new Date().toLocaleString());
-    lines.push('');
-    var body = emitYamlLines(function(key) {
-        if (key in BOOLS) {
-            var dep = depBoolForParam(currentParam);
-            if (key === dep) return true;
-            return BOOLS[key];
-        }
-        return exportValue(key);
-    }, null);
-    lines = lines.concat(body);
-    var content = kbmSignContent(lines.join('\n'));
-    var blob = new Blob([content], { type: 'text/yaml;charset=utf-8' });
-    var link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename + ext;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    addHistory('💾 导出', '文件: ' + filename + ext);
-    showToast('✅ 已导出 ' + filename + ext, 'success');
+    var g = buildGlobalYaml(function(key) {
+        return globalValueForKey(key, null);
+    }, null, ['# knockback.yml 配置导出 (方案A, 适用于内核 KB 系统, 全局引擎键)',
+        '# 导出时间: ' + new Date().toLocaleString(),
+        '# 基础击退/对刀PVP/疾跑加成已并入模式文件, 见同时导出的 模式' + filename + '.yml']);
+    var p = buildProfileYamlContent(function(key) {
+        return profileValueForKey(key, null);
+    }, null, ['# 模式配置导出 (方案A, 放入 kb配置文件/模式/ 后设为全局生效)',
+        '# 导出时间: ' + new Date().toLocaleString()]);
+    downloadFile(filename + ext, g);
+    downloadFile('模式' + filename + '.yml', p);
+    addHistory('💾 导出', '文件: ' + filename + ext + ' + 模式' + filename + '.yml');
+    showToast('✅ 已导出 ' + filename + ext + ' 与 模式' + filename + '.yml', 'success');
 }
 
 // 原版kbm 导出(与旧版kb调试工具格式完全一致, 无防伪标识)
