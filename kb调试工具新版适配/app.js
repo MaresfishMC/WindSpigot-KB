@@ -11,15 +11,8 @@ var KB_MODE = 'core'; // 'core' | 'legacy'
 var MODES = { core: null, legacy: null };
 
 // ---- 新核心KB 参数: 全局引擎键(knockback.yml) ----
-// 基础击退/对刀PVP/疾跑加成已并入模式文件(见 CORE_PROFILE_KEYS), 不再属于全局
+// 基础击退/对刀PVP/疾跑加成/全局乘区已全部并入模式文件(见 CORE_PROFILE_KEYS), 不再属于全局
 var CORE_GLOBAL_KEYS = {
-    "multiplier.horizontal.ground": 1.0,
-    "multiplier.horizontal.air": 1.0,
-    "multiplier.vertical.ground": 1.0,
-    "multiplier.vertical.air": 1.0,
-    "multiplier.vertical-limit": 1.0,
-    "multiplier.horizontal-momentum": 1.0,
-    "multiplier.vertical-momentum": 1.0,
     "hit-delay": 0,
     "y-limit.max-y-height": 1.25,
     "y-limit.vertical-kb-after-limit": 0.1,
@@ -59,6 +52,13 @@ var CORE_PROFILE_KEYS = {
     "pvp.vertical-momentum": 1.0,
     "pvp.sprint-extra.horizontal": 0.0,
     "pvp.sprint-extra.vertical": 0.0,
+    "multiplier.horizontal.ground": 1.0,
+    "multiplier.horizontal.air": 1.0,
+    "multiplier.vertical.ground": 1.0,
+    "multiplier.vertical.air": 1.0,
+    "multiplier.vertical-limit": 1.0,
+    "multiplier.horizontal-momentum": 1.0,
+    "multiplier.vertical-momentum": 1.0,
     "friction.horizontal": 2.0,
     "friction.vertical": 2.0,
     "extra.horizontal": 0.5,
@@ -182,11 +182,8 @@ var fixedParams = {};
 var extraConfig = {};
 var yLimitSettings = {};
 
-// 导出 YAML 时的键顺序: 全局 knockback.yml(基础击退/对刀PVP已并入模式文件, 不再导出)
+// 导出 YAML 时的键顺序: 全局 knockback.yml(基础击退/对刀PVP/乘区已并入模式文件, 不再导出)
 var YAML_ORDER_GLOBAL = [
-    "multiplier.horizontal.ground", "multiplier.horizontal.air",
-    "multiplier.vertical.ground", "multiplier.vertical.air",
-    "multiplier.vertical-limit", "multiplier.horizontal-momentum", "multiplier.vertical-momentum",
     "stop-sprint", "damage-increment", "iframe-knockback", "server-side-kb",
     "y-limit.enabled", "y-limit.max-y-height", "y-limit.vertical-kb-after-limit",
     "sprint-reach.enabled", "sprint-reach.grace-ticks", "sprint-reach.extra",
@@ -201,7 +198,7 @@ var YAML_ORDER_GLOBAL = [
     "dynamic-misplay.max-compensation", "dynamic-misplay.anti-cheat-compatible"
 ];
 
-// 模式文件(kb配置文件/模式/<名>.yml)键顺序: KBM 式分节
+// 模式文件(kb配置文件/模式/<名>.yml)键顺序: KBM 式分节(乘区已并入)
 var YAML_ORDER_PROFILE = [
     "horizontal.ground", "horizontal.air",
     "vertical.ground", "vertical.air",
@@ -213,6 +210,9 @@ var YAML_ORDER_PROFILE = [
     "pvp.vertical.ground", "pvp.vertical.air",
     "pvp.vertical-limit", "pvp.horizontal-momentum", "pvp.vertical-momentum",
     "pvp.sprint-extra.horizontal", "pvp.sprint-extra.vertical",
+    "multiplier.horizontal.ground", "multiplier.horizontal.air",
+    "multiplier.vertical.ground", "multiplier.vertical.air",
+    "multiplier.vertical-limit", "multiplier.horizontal-momentum", "multiplier.vertical-momentum",
     "friction.horizontal", "friction.vertical",
     "stop-sprint",
     "extra.horizontal", "extra.vertical",
@@ -527,7 +527,7 @@ function renderModeUI() {
     if (tip) {
         tip.textContent = (KB_MODE === 'legacy')
             ? '原版kbm模式: horizontal.*/y_limit.*/packet.* 参数(与旧版kb调试工具一致)'
-            : '新核心模式: base-kb.*/multiplier.*/y-limit.* 参数(导出 knockback.yml)';
+            : '新核心模式: base-kb/乘区/对刀PVP已并入模式文件, 全局仅系统开关/高级机制(导出 knockback.yml + 模式<名>.yml)';
     }
     renderParamSelects();
     renderBoolPanel();

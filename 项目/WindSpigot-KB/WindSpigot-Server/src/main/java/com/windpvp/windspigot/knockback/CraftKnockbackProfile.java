@@ -59,6 +59,16 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	private double pvpSprintExtraVertical = 0.0D;
 	private boolean pvpExplicit = false;
 
+	// ==================== 乘区(原全局 multiplier.* 并入, 模式显式 → 全局默认兜底) ====================
+	private double multHorizontalGround = 1.0D;
+	private double multHorizontalAir = 1.0D;
+	private double multVerticalGround = 1.0D;
+	private double multVerticalAir = 1.0D;
+	private double multVerticalLimit = 1.0D;
+	private double multHorizontalMomentum = 1.0D;
+	private double multVerticalMomentum = 1.0D;
+	private boolean multiplierExplicit = false;
+
 	// 模式文件显式包含 dynamic-misplay 字段(引擎优先读该模式值, 全局兜底)
 	private boolean misplayExplicit = false;
 	private double verticalMin = -1.0D;
@@ -154,6 +164,15 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		this.pvpSprintExtraHorizontal = other.pvpSprintExtraHorizontal;
 		this.pvpSprintExtraVertical = other.pvpSprintExtraVertical;
 		this.pvpExplicit = other.pvpExplicit;
+		// 乘区
+		this.multHorizontalGround = other.multHorizontalGround;
+		this.multHorizontalAir = other.multHorizontalAir;
+		this.multVerticalGround = other.multVerticalGround;
+		this.multVerticalAir = other.multVerticalAir;
+		this.multVerticalLimit = other.multVerticalLimit;
+		this.multHorizontalMomentum = other.multHorizontalMomentum;
+		this.multVerticalMomentum = other.multVerticalMomentum;
+		this.multiplierExplicit = other.multiplierExplicit;
 		this.misplayExplicit = other.misplayExplicit;
 		this.verticalMin = other.verticalMin;
 		this.verticalMax = other.verticalMax;
@@ -218,21 +237,21 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		file.getParentFile().mkdirs();
 		YamlConfiguration yml = new YamlConfiguration();
 
-		// ==== 近战基础击退(地面/空中分离) ====
+		// ==== 分类一: 近战基础击退(地面/空中分离) ====
 		yml.set("horizontal.ground", this.horizontalGround);
 		yml.set("horizontal.air", this.horizontalAir);
 		yml.set("vertical.ground", this.verticalGround);
 		yml.set("vertical.air", this.verticalAir);
-		// ==== 垂直钳制与动量 ====
+		// ==== 分类一: 垂直钳制与动量 ====
 		yml.set("vertical-limit", this.verticalLimit);
 		yml.set("vertical-max", this.verticalMax);
 		yml.set("vertical-min", this.verticalMin);
 		yml.set("horizontal-momentum", this.horizontalMomentum);
 		yml.set("vertical-momentum", this.verticalMomentum);
-		// ==== 疾跑额外击退(绝对值) ====
+		// ==== 分类一: 疾跑额外击退(绝对值) ====
 		yml.set("sprint-extra.horizontal", this.sprintExtraHorizontal);
 		yml.set("sprint-extra.vertical", this.sprintExtraVertical);
-		// ==== 对刀PVP独立乘区 ====
+		// ==== 分类二: 对刀PVP独立乘区 ====
 		yml.set("pvp.enabled", this.pvpEnabled);
 		yml.set("pvp.horizontal.ground", this.pvpHorizontalGround);
 		yml.set("pvp.horizontal.air", this.pvpHorizontalAir);
@@ -243,27 +262,35 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		yml.set("pvp.vertical-momentum", this.pvpVerticalMomentum);
 		yml.set("pvp.sprint-extra.horizontal", this.pvpSprintExtraHorizontal);
 		yml.set("pvp.sprint-extra.vertical", this.pvpSprintExtraVertical);
-		// ==== 摩擦 ====
+		// ==== 分类三: 乘区(原全局乘区.yml 并入, 模式显式优先) ====
+		yml.set("multiplier.horizontal.ground", this.multHorizontalGround);
+		yml.set("multiplier.horizontal.air", this.multHorizontalAir);
+		yml.set("multiplier.vertical.ground", this.multVerticalGround);
+		yml.set("multiplier.vertical.air", this.multVerticalAir);
+		yml.set("multiplier.vertical-limit", this.multVerticalLimit);
+		yml.set("multiplier.horizontal-momentum", this.multHorizontalMomentum);
+		yml.set("multiplier.vertical-momentum", this.multVerticalMomentum);
+		// ==== 分类四: 摩擦与系统 ====
 		yml.set("friction.horizontal", this.frictionHorizontal);
 		yml.set("friction.vertical", this.frictionVertical);
 		yml.set("stop-sprint", this.stopSprint);
-		// ==== 击退附魔与W-Tap ====
+		// ==== 分类四: 击退附魔与W-Tap ====
 		yml.set("extra.horizontal", this.extraHorizontal);
 		yml.set("extra.vertical", this.extraVertical);
 		yml.set("wtap-extra.horizontal", this.wTapHorizontal);
 		yml.set("wtap-extra.vertical", this.wTapVertical);
 		yml.set("add.horizontal", this.addHorizontal);
 		yml.set("add.vertical", this.addVertical);
-		// ==== 疾跑倍率与宽松判定 ====
+		// ==== 分类五: 疾跑倍率与宽松判定 ====
 		yml.set("sprint-multiplier.horizontal", this.sprintHorizontalMultiplier);
 		yml.set("sprint-multiplier.vertical", this.sprintVerticalMultiplier);
 		yml.set("sprint-lenient-enabled", this.sprintLenientEnabled);
-		// ==== 空中/地面倍率 ====
+		// ==== 分类五: 空中/地面倍率 ====
 		yml.set("air-multiplier.horizontal", this.airHorizontalMultiplier);
 		yml.set("air-multiplier.vertical", this.airVerticalMultiplier);
 		yml.set("ground-multiplier.horizontal", this.groundHorizontalMultiplier);
 		yml.set("ground-multiplier.vertical", this.groundVerticalMultiplier);
-		// ==== 动态Misplay ====
+		// ==== 分类六: 动态Misplay ====
 		yml.set("dynamic-misplay.enabled", this.dynamicMisplayEnabled);
 		yml.set("dynamic-misplay.target", this.targetMisplay);
 		yml.set("dynamic-misplay.compensation", this.misplayCompensation);
@@ -564,6 +591,79 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	public void setPvpSprintExtraVertical(double v) {
 		this.pvpSprintExtraVertical = v;
 		this.pvpExplicit = true;
+	}
+
+	// ==================== 乘区(原全局 multiplier.* 并入) ====================
+
+	public boolean isMultiplierExplicit() {
+		return multiplierExplicit;
+	}
+
+	public void setMultiplierExplicit(boolean multiplierExplicit) {
+		this.multiplierExplicit = multiplierExplicit;
+	}
+
+	public double getMultHorizontalGround() {
+		return multHorizontalGround;
+	}
+
+	public void setMultHorizontalGround(double v) {
+		this.multHorizontalGround = v;
+		this.multiplierExplicit = true;
+	}
+
+	public double getMultHorizontalAir() {
+		return multHorizontalAir;
+	}
+
+	public void setMultHorizontalAir(double v) {
+		this.multHorizontalAir = v;
+		this.multiplierExplicit = true;
+	}
+
+	public double getMultVerticalGround() {
+		return multVerticalGround;
+	}
+
+	public void setMultVerticalGround(double v) {
+		this.multVerticalGround = v;
+		this.multiplierExplicit = true;
+	}
+
+	public double getMultVerticalAir() {
+		return multVerticalAir;
+	}
+
+	public void setMultVerticalAir(double v) {
+		this.multVerticalAir = v;
+		this.multiplierExplicit = true;
+	}
+
+	public double getMultVerticalLimit() {
+		return multVerticalLimit;
+	}
+
+	public void setMultVerticalLimit(double v) {
+		this.multVerticalLimit = v;
+		this.multiplierExplicit = true;
+	}
+
+	public double getMultHorizontalMomentum() {
+		return multHorizontalMomentum;
+	}
+
+	public void setMultHorizontalMomentum(double v) {
+		this.multHorizontalMomentum = v;
+		this.multiplierExplicit = true;
+	}
+
+	public double getMultVerticalMomentum() {
+		return multVerticalMomentum;
+	}
+
+	public void setMultVerticalMomentum(double v) {
+		this.multVerticalMomentum = v;
+		this.multiplierExplicit = true;
 	}
 
 	@Override

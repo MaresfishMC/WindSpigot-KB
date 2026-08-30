@@ -19,6 +19,7 @@ public final class ProfileParams {
 
 	public static final String CAT_BASE = "基础·地面空中分离";
 	public static final String CAT_PVP = "对刀PVP";
+	public static final String CAT_MULT = "乘区(原全局)";
 	public static final String CAT_PROJ = "投射物";
 	public static final String CAT_SPRINT = "疾跑与附加";
 	public static final String CAT_ADV = "高级·动态misplay";
@@ -125,6 +126,22 @@ public final class ProfileParams {
 				CraftKnockbackProfile::getPvpSprintExtraHorizontal, dbl((p, v) -> p.setPvpSprintExtraHorizontal(((Number) v).doubleValue())));
 		reg("pvp.sprint-extra.vertical", CAT_PVP, "对刀疾跑额外垂直击退", false, 0.025,
 				CraftKnockbackProfile::getPvpSprintExtraVertical, dbl((p, v) -> p.setPvpSprintExtraVertical(((Number) v).doubleValue())));
+
+		// ---------- 乘区(原全局 multiplier.* 并入, 模式显式 → 全局默认兜底) ----------
+		reg("multiplier.horizontal.ground", CAT_MULT, "水平乘区(地面)", false, 0.02,
+				CraftKnockbackProfile::getMultHorizontalGround, dbl((p, v) -> p.setMultHorizontalGround(((Number) v).doubleValue())));
+		reg("multiplier.horizontal.air", CAT_MULT, "水平乘区(空中)", false, 0.02,
+				CraftKnockbackProfile::getMultHorizontalAir, dbl((p, v) -> p.setMultHorizontalAir(((Number) v).doubleValue())));
+		reg("multiplier.vertical.ground", CAT_MULT, "垂直乘区(地面)", false, 0.02,
+				CraftKnockbackProfile::getMultVerticalGround, dbl((p, v) -> p.setMultVerticalGround(((Number) v).doubleValue())));
+		reg("multiplier.vertical.air", CAT_MULT, "垂直乘区(空中)", false, 0.02,
+				CraftKnockbackProfile::getMultVerticalAir, dbl((p, v) -> p.setMultVerticalAir(((Number) v).doubleValue())));
+		reg("multiplier.vertical-limit", CAT_MULT, "垂直上限乘区", false, 0.02,
+				CraftKnockbackProfile::getMultVerticalLimit, dbl((p, v) -> p.setMultVerticalLimit(((Number) v).doubleValue())));
+		reg("multiplier.horizontal-momentum", CAT_MULT, "水平动量乘区", false, 0.02,
+				CraftKnockbackProfile::getMultHorizontalMomentum, dbl((p, v) -> p.setMultHorizontalMomentum(((Number) v).doubleValue())));
+		reg("multiplier.vertical-momentum", CAT_MULT, "垂直动量乘区", false, 0.02,
+				CraftKnockbackProfile::getMultVerticalMomentum, dbl((p, v) -> p.setMultVerticalMomentum(((Number) v).doubleValue())));
 
 		// ---------- 投射物(原核心独有) ----------
 		reg("projectiles.rod.horizontal", CAT_PROJ, "鱼竿水平击退", false, 0.015,

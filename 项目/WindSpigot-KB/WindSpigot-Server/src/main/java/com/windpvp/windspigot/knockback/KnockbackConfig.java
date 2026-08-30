@@ -72,12 +72,11 @@ public class KnockbackConfig {
 
 	/**
 	 * 引擎参数分类 -> 文件名。
-	 * 基础击退(base-kb/sprint-extra)与对刀PVP已并入模式文件, 不再生成全局文件;
-	 * 全局仅剩: 全局乘区 / 系统开关 / 高级机制(含疾跑宽判)。
+	 * 基础击退(base-kb/sprint-extra)、对刀PVP、全局乘区(multiplier)已全部并入模式文件, 不再生成全局文件;
+	 * 全局仅剩: 系统开关 / 高级机制(含疾跑宽判)。
 	 */
 	private static final Map<String, List<String>> CATEGORY_FILES = new LinkedHashMap<>();
 	static {
-		CATEGORY_FILES.put("全局乘区.yml", Arrays.asList(KnockbackEngineSettings.CAT_MULT));
 		CATEGORY_FILES.put("系统开关.yml", Arrays.asList(KnockbackEngineSettings.CAT_SYSTEM));
 		CATEGORY_FILES.put("高级机制.yml",
 				Arrays.asList(KnockbackEngineSettings.CAT_ADVANCED, KnockbackEngineSettings.CAT_SPRINT));
@@ -103,7 +102,14 @@ public class KnockbackConfig {
 			{ "pvp.multiplier.horizontal-momentum", "pvp.horizontal-momentum" },
 			{ "pvp.multiplier.vertical-momentum", "pvp.vertical-momentum" },
 			{ "pvp.horizontal.sprint-extra", "pvp.sprint-extra.horizontal" },
-			{ "pvp.vertical.sprint-extra", "pvp.sprint-extra.vertical" } };
+			{ "pvp.vertical.sprint-extra", "pvp.sprint-extra.vertical" },
+			{ "multiplier.horizontal.ground", "multiplier.horizontal.ground" },
+			{ "multiplier.horizontal.air", "multiplier.horizontal.air" },
+			{ "multiplier.vertical.ground", "multiplier.vertical.ground" },
+			{ "multiplier.vertical.air", "multiplier.vertical.air" },
+			{ "multiplier.vertical-limit", "multiplier.vertical-limit" },
+			{ "multiplier.horizontal-momentum", "multiplier.horizontal-momentum" },
+			{ "multiplier.vertical-momentum", "multiplier.vertical-momentum" } };
 
 	public static void init(File configFile) {
 		CONFIG_FILE = configFile;
@@ -392,6 +398,18 @@ public class KnockbackConfig {
 		profile.setPvpSprintExtraVertical(yml.getDouble("pvp.sprint-extra.vertical", 0.0D));
 		profile.setPvpExplicit(yml.contains("pvp.enabled") || yml.contains("pvp.horizontal.ground"));
 
+		// ---- 乘区(原全局 multiplier.* 并入, 模式显式 → 全局默认兜底) ----
+		profile.setMultHorizontalGround(yml.getDouble("multiplier.horizontal.ground", 1.0D));
+		profile.setMultHorizontalAir(yml.getDouble("multiplier.horizontal.air", 1.0D));
+		profile.setMultVerticalGround(yml.getDouble("multiplier.vertical.ground", 1.0D));
+		profile.setMultVerticalAir(yml.getDouble("multiplier.vertical.air", 1.0D));
+		profile.setMultVerticalLimit(yml.getDouble("multiplier.vertical-limit", 1.0D));
+		profile.setMultHorizontalMomentum(yml.getDouble("multiplier.horizontal-momentum", 1.0D));
+		profile.setMultVerticalMomentum(yml.getDouble("multiplier.vertical-momentum", 1.0D));
+		profile.setMultiplierExplicit(yml.contains("multiplier.horizontal.ground")
+				|| yml.contains("multiplier.vertical.ground") || yml.contains("multiplier.vertical-limit")
+				|| yml.contains("multiplier.horizontal-momentum") || yml.contains("multiplier.vertical-momentum"));
+
 		// ---- 基础/摩擦 ----
 		profile.setStopSprint(yml.getBoolean("stop-sprint", true));
 		profile.setFrictionHorizontal(yml.getDouble("friction.horizontal", yml.getDouble("friction-horizontal", 2.0D)));
@@ -495,8 +513,9 @@ public class KnockbackConfig {
 	 * 旧全局文件迁移:
 	 * 1) 基础击退.yml 中的 base-kb(垂直钳制/动量)与 sprint-extra → 各模式文件新分节(仅补缺失键, 不覆盖模式已有值);
 	 * 2) 对刀PVP.yml 的 pvp 组 → 各模式文件 pvp 分节;
-	 * 3) multiplier.* / sprint-reach.* 搬运到 全局乘区.yml / 高级机制.yml;
-	 * 4) 删除旧文件(不再生成)。
+	 * 3) 全局乘区.yml 的 multiplier 组 → 各模式文件 multiplier 分节(仅补缺失键);
+	 * 4) sprint-reach.* 搬运到 高级机制.yml;
+	 * 5) 删除旧文件(不再生成)。
 	 */
 	private static void migrateLegacyEngineFiles() {
 		if (KB_DIR == null) {
@@ -504,13 +523,15 @@ public class KnockbackConfig {
 		}
 		File legacyBase = new File(KB_DIR, "基础击退.yml");
 		File legacyPvp = new File(KB_DIR, "对刀PVP.yml");
-		if (!legacyBase.exists() && !legacyPvp.exists()) {
+		File legacyMult = new File(KB_DIR, "全局乘区.yml");
+		if (!legacyBase.exists() && !legacyPvp.exists() && !legacyMult.exists()) {
 			return;
 		}
-		WindSpigot.LOGGER.warn("检测到旧全局文件(基础击退.yml/对刀PVP.yml)，开始迁移到模式文件分节...");
+		WindSpigot.LOGGER.warn("检测到旧全局文件(基础击退.yml/对刀PVP.yml/全局乘区.yml)，开始迁移到模式文件分节...");
 		MODE_DIR.mkdirs();
 		YamlConfiguration base = legacyBase.exists() ? loadYaml(legacyBase) : new YamlConfiguration();
 		YamlConfiguration pvp = legacyPvp.exists() ? loadYaml(legacyPvp) : new YamlConfiguration();
+		YamlConfiguration mult = legacyMult.exists() ? loadYaml(legacyMult) : new YamlConfiguration();
 
 		// 旧文件中的键 → 模式分节键(仅补缺失, 不覆盖模式已有值)
 		String[][] mergeMap = {
@@ -528,7 +549,14 @@ public class KnockbackConfig {
 				{ "pvp.multiplier.horizontal-momentum", "pvp.horizontal-momentum" },
 				{ "pvp.multiplier.vertical-momentum", "pvp.vertical-momentum" },
 				{ "pvp.horizontal.sprint-extra", "pvp.sprint-extra.horizontal" },
-				{ "pvp.vertical.sprint-extra", "pvp.sprint-extra.vertical" } };
+				{ "pvp.vertical.sprint-extra", "pvp.sprint-extra.vertical" },
+				{ "multiplier.horizontal.ground", "multiplier.horizontal.ground" },
+				{ "multiplier.horizontal.air", "multiplier.horizontal.air" },
+				{ "multiplier.vertical.ground", "multiplier.vertical.ground" },
+				{ "multiplier.vertical.air", "multiplier.vertical.air" },
+				{ "multiplier.vertical-limit", "multiplier.vertical-limit" },
+				{ "multiplier.horizontal-momentum", "multiplier.horizontal-momentum" },
+				{ "multiplier.vertical-momentum", "multiplier.vertical-momentum" } };
 
 		File[] files = MODE_DIR.listFiles((dir, name) -> name.endsWith(".yml"));
 		if (files != null) {
@@ -540,6 +568,9 @@ public class KnockbackConfig {
 						continue; // 模式已有该键(模式优先), 不覆盖
 					}
 					Object src = base.contains(m[0]) ? base.get(m[0]) : pvp.get(m[0]);
+					if (src == null) {
+						src = mult.get(m[0]);
+					}
 					if (src == null) {
 						continue;
 					}
@@ -556,8 +587,7 @@ public class KnockbackConfig {
 			}
 		}
 
-		// 全局保留项搬运: multiplier → 全局乘区.yml; sprint-reach → 高级机制.yml
-		saveGlobalKeysFrom(base, "multiplier.");
+		// 全局保留项搬运: sprint-reach → 高级机制.yml (multiplier 已并入模式文件, 不再搬运全局)
 		saveGlobalKeysFrom(base, "sprint-reach.");
 
 		if (legacyBase.exists() && legacyBase.delete()) {
@@ -566,11 +596,14 @@ public class KnockbackConfig {
 		if (legacyPvp.exists() && legacyPvp.delete()) {
 			WindSpigot.LOGGER.info("已迁移并删除旧文件: 对刀PVP.yml");
 		}
+		if (legacyMult.exists() && legacyMult.delete()) {
+			WindSpigot.LOGGER.info("已迁移并删除旧文件: 全局乘区.yml");
+		}
 	}
 
 	/** 把旧文件中某前缀的引擎键搬运到对应的新全局分类文件(若新文件缺失) */
 	private static void saveGlobalKeysFrom(YamlConfiguration legacy, String prefix) {
-		String targetFile = prefix.startsWith("multiplier") ? "全局乘区.yml" : "高级机制.yml";
+		String targetFile = "高级机制.yml";
 		File file = new File(KB_DIR, targetFile);
 		YamlConfiguration yml = file.exists() ? loadYaml(file) : new YamlConfiguration();
 		boolean changed = false;
@@ -657,7 +690,9 @@ public class KnockbackConfig {
 			if (Double.isNaN(num) || Double.isInfinite(num)) {
 				return "非法数值(NaN/Infinity)";
 			}
-			if (key.contains("momentum") && (num < 0.0D || num > 1.0D)) {
+			// 仅动量保留键限制 [0,1]; multiplier.*-momentum 是乘区, 允许大于 1
+			boolean isRetention = key.equals("horizontal-momentum") || key.equals("vertical-momentum");
+			if (isRetention && (num < 0.0D || num > 1.0D)) {
 				return "动量保留必须在0~1之间";
 			}
 			if (num < 0.0D && !key.equals("vertical-min") && !key.equals("dynamic-misplay.target")) {

@@ -125,11 +125,11 @@ public class KnockbackEngineSettings {
 	}
 
 	/**
-	 * 已并入模式文件的分类: 基础击退(base-kb+sprint-extra) 与 对刀PVP。
+	 * 已并入模式文件的分类: 基础击退(base-kb+sprint-extra)、对刀PVP 与 全局乘区(multiplier)。
 	 * 这些键保留在注册表中仅作为硬编码默认与旧配置兼容层, 不再生成全局文件/不再出现在 GUI 全局分类。
 	 */
 	public static final String CAT_BASE = "基础击退(并入模式)";
-	public static final String CAT_MULT = "全局乘区";
+	public static final String CAT_MULT = "乘区(并入模式)";
 	public static final String CAT_SPRINT = "疾跑宽判";
 	public static final String CAT_PVP = "对刀PVP(并入模式)";
 	public static final String CAT_SYSTEM = "系统开关";
@@ -145,7 +145,7 @@ public class KnockbackEngineSettings {
 		reg("base-kb.horizontal-momentum", Type.DOUBLE, 0.5D, CAT_BASE, "受击水平动量保留(0=完全覆盖)");
 		reg("base-kb.vertical-momentum", Type.DOUBLE, 0.5D, CAT_BASE, "受击垂直动量保留");
 
-		// ---------- 全局乘区 multiplier ----------
+		// ---------- 全局乘区 multiplier(已并入模式文件 multiplier 分节, 此处仅默认值/旧配置兼容层) ----------
 		reg("multiplier.horizontal.ground", Type.DOUBLE, 1.0D, CAT_MULT, "水平乘区(地面)");
 		reg("multiplier.horizontal.air", Type.DOUBLE, 1.0D, CAT_MULT, "水平乘区(空中)");
 		reg("multiplier.vertical.ground", Type.DOUBLE, 1.0D, CAT_MULT, "垂直乘区(地面)");
@@ -249,13 +249,13 @@ public class KnockbackEngineSettings {
 	}
 
 	/**
-	 * GUI 全局分类: 排除已并入模式文件的分类(基础击退/对刀PVP)。
+	 * GUI 全局分类: 排除已并入模式文件的分类(基础击退/对刀PVP/乘区)。
 	 * 这些参数改由 GUI「模式参数」页编辑(ProfileParams)。
 	 */
 	public static List<String> guiCategories() {
 		List<String> cats = new ArrayList<>();
 		for (Param p : PARAMS.values()) {
-			if (p.category.equals(CAT_BASE) || p.category.equals(CAT_PVP)) {
+			if (p.category.equals(CAT_BASE) || p.category.equals(CAT_PVP) || p.category.equals(CAT_MULT)) {
 				continue;
 			}
 			if (!cats.contains(p.category)) {
@@ -311,8 +311,9 @@ public class KnockbackEngineSettings {
 			if (Double.isNaN(num) || Double.isInfinite(num)) {
 				return "非法数值(NaN/Infinity): " + p.path;
 			}
-			// 动量保留必须在 [0,1]，否则击退会无限放大
-			if (p.path.contains("momentum") && (num < 0.0D || num > 1.0D)) {
+			// 动量保留必须 [0,1]（仅基础击退的动量保留键; multiplier/pvp 的 -momentum 是乘区, 允许大于1）
+			if ((p.path.equals("base-kb.horizontal-momentum") || p.path.equals("base-kb.vertical-momentum"))
+					&& (num < 0.0D || num > 1.0D)) {
 				return "动量保留必须在0~1之间: " + p.path + "=" + num;
 			}
 			// 乘区/上限/衰减/连击等不允许负数（y-limit.vertical-kb-after-limit 明确允许负值）

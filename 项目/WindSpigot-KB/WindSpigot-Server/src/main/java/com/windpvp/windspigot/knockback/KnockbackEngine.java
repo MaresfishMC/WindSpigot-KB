@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dev.cobblesword.nachospigot.knockback.KnockbackProfile;
+import net.minecraft.server.AxisAlignedBB;
 import net.minecraft.server.ChatComponentText;
 import net.minecraft.server.Entity;
 import net.minecraft.server.EntityHuman;
@@ -100,16 +101,42 @@ public final class KnockbackEngine {
 	 * 布尔开关保持全局（避免同场玩家规则不一致）。
 	 */
 	private static double d(Entity victim, KnockbackEngineSettings.Param p) {
-		if (victim != null) {
-			KnockbackProfile profile = victim.getKnockbackProfile();
-			if (profile instanceof CraftKnockbackProfile) {
-				Object override = ((CraftKnockbackProfile) profile).getEngineOverride(p.path);
-				if (override instanceof Number) {
-					return ((Number) override).doubleValue();
-				}
+		return d(craftOf(victim), p);
+	}
+
+	/**
+	 * 热路径变体：调用方已持有受害者 profile，直接传入避免重复 instanceof 与字段查找。
+	 */
+	private static double d(CraftKnockbackProfile craft, KnockbackEngineSettings.Param p) {
+		if (craft != null) {
+			Object override = craft.getEngineOverride(p.path);
+			if (override instanceof Number) {
+				return ((Number) override).doubleValue();
 			}
 		}
 		return p.getDouble();
+	}
+
+	private static CraftKnockbackProfile craftOf(Entity victim) {
+		if (victim == null) {
+			return null;
+		}
+		KnockbackProfile profile = victim.getKnockbackProfile();
+		return profile instanceof CraftKnockbackProfile ? (CraftKnockbackProfile) profile : null;
+	}
+
+	/**
+	 * 布尔开关取值：模式文件可携带该引擎键覆盖(如 range-reduction.enabled 随模式生效)，
+	 * 否则用全局值。仅对"手感类"开关使用; 规则一致性开关(如 stop-sprint)保持全局。
+	 */
+	private static boolean b(CraftKnockbackProfile craft, KnockbackEngineSettings.Param p) {
+		if (craft != null) {
+			Object override = craft.getEngineOverride(p.path);
+			if (override instanceof Boolean) {
+				return ((Boolean) override).booleanValue();
+			}
+		}
+		return p.getBool();
 	}
 
 	// ==================== 连击追踪 ====================
@@ -123,6 +150,10 @@ public final class KnockbackEngine {
 	private static final Map<UUID, ComboData> COMBOS = new ConcurrentHashMap<>();
 
 	private static int nextCombo(Entity victim) {
+		// 长时间运行防内存膨胀: 连击表超过上限时整体清空(极端情况下的安全网)
+		if (COMBOS.size() > 10000) {
+			COMBOS.clear();
+		}
 		ComboData data = COMBOS.computeIfAbsent(victim.getUniqueID(), k -> new ComboData());
 		int now = MinecraftServer.currentTick;
 		if (now - data.lastTick > P.COMBO_RESET.getInt()) {
@@ -161,6 +192,12 @@ public final class KnockbackEngine {
 
 	// ==================== 动态 misplay（借鉴 KnockbackManager 思想，按 ping 补偿） ====================
 
+	/** 贴墙检测：水平外扩 0.05 格的包围盒是否与实心方块相交（方向无关） */
+	private static boolean isAgainstWall(Entity victim) {
+		AxisAlignedBB box = victim.getBoundingBox().grow(0.05D, 0.0D, 0.05D);
+		return !victim.world.getCubes(victim, box).isEmpty();
+	}
+
 	/**
 	 * 基于目标玩家延迟计算击退补偿系数（速度补偿，不改动位置）。
 	 * 模式文件显式包含 dynamic-misplay 分节时以模式值为准; 全局兜底。
@@ -183,8 +220,10 @@ public final class KnockbackEngine {
 		if (!enabled || !(victim instanceof EntityPlayer)) {
 			return 1.0D;
 		}
-		// 反作弊兼容：目标正在水平碰撞（贴墙/被卡）时不补偿，避免误触发移动检测
-		if (P.DM_ANTICHEAT.getBool() && victim.positionChanged) {
+		// 反作弊兼容：目标贴住实心方块(贴墙/被卡)时不补偿，避免误触发移动检测。
+		// 1.8.8 NMS 无 collidedHorizontally 字段, 且 positionChanged 在每次水平移动 tick 均为 true,
+		// 故用轻微外扩包围盒做方向无关的贴墙检测(仅 misplay 开启时每击一次, 开销可忽略)
+		if (P.DM_ANTICHEAT.getBool() && isAgainstWall(victim)) {
 			return 1.0D;
 		}
 		int ping = ((EntityPlayer) victim).ping;
@@ -244,8 +283,8 @@ public final class KnockbackEngine {
 			horizontal = air ? craft.getHorizontalAir() : craft.getHorizontalGround();
 			vertical = air ? craft.getVerticalAir() : craft.getVerticalGround();
 		} else {
-			horizontal = d(victim, air ? P.BASE_H_A : P.BASE_H_G);
-			vertical = d(victim, air ? P.BASE_V_A : P.BASE_V_G);
+			horizontal = d(craft, air ? P.BASE_H_A : P.BASE_H_G);
+			vertical = d(craft, air ? P.BASE_V_A : P.BASE_V_G);
 		}
 
 		// ---- 乘区（对刀走 pvp 乘区; 模式显式 → 全局） × 原核心独有空中/地面倍率 ----
@@ -255,11 +294,15 @@ public final class KnockbackEngine {
 			multH = air ? craft.getPvpHorizontalAir() : craft.getPvpHorizontalGround();
 			multV = air ? craft.getPvpVerticalAir() : craft.getPvpVerticalGround();
 		} else if (pvp) {
-			multH = d(victim, air ? P.PVP_MULT_H_A : P.PVP_MULT_H_G);
-			multV = d(victim, air ? P.PVP_MULT_V_A : P.PVP_MULT_V_G);
+			multH = d(craft, air ? P.PVP_MULT_H_A : P.PVP_MULT_H_G);
+			multV = d(craft, air ? P.PVP_MULT_V_A : P.PVP_MULT_V_G);
+		} else if (craft != null && craft.isMultiplierExplicit()) {
+			// 全局乘区已并入模式文件: 模式显式 → 全局默认兜底
+			multH = air ? craft.getMultHorizontalAir() : craft.getMultHorizontalGround();
+			multV = air ? craft.getMultVerticalAir() : craft.getMultVerticalGround();
 		} else {
-			multH = d(victim, air ? P.MULT_H_A : P.MULT_H_G);
-			multV = d(victim, air ? P.MULT_V_A : P.MULT_V_G);
+			multH = d(craft, air ? P.MULT_H_A : P.MULT_H_G);
+			multV = d(craft, air ? P.MULT_V_A : P.MULT_V_G);
 		}
 		if (craft != null) {
 			multH *= air ? craft.getAirHorizontalMultiplier() : craft.getGroundHorizontalMultiplier();
@@ -268,12 +311,12 @@ public final class KnockbackEngine {
 		horizontal *= multH;
 		vertical *= multV;
 
-		// ---- 距离衰减（借鉴 MMC：远距离命中减免击退） ----
-		if (P.RANGE_ENABLED.getBool() && attacker != null) {
-			double startRange = d(victim, P.RANGE_START);
+		// ---- 距离衰减（借鉴 MMC：远距离命中减免击退; 开关可随模式文件覆盖） ----
+		if (b(craft, P.RANGE_ENABLED) && attacker != null) {
+			double startRange = d(craft, P.RANGE_START);
 			if (magnitude > startRange) {
-				double reduction = Math.min((magnitude - startRange) * d(victim, P.RANGE_FACTOR),
-						d(victim, P.RANGE_MAX));
+				double reduction = Math.min((magnitude - startRange) * d(craft, P.RANGE_FACTOR),
+						d(craft, P.RANGE_MAX));
 				horizontal = Math.max(0.0D, horizontal - reduction);
 			}
 		}
@@ -281,13 +324,13 @@ public final class KnockbackEngine {
 		// ---- 连击递增（连续命中有额外击退） ----
 		if (P.COMBO_ENABLED.getBool()) {
 			int combo = nextCombo(victim);
-			horizontal += Math.min(combo * d(victim, P.COMBO_INC), d(victim, P.COMBO_MAX));
+			horizontal += Math.min(combo * d(craft, P.COMBO_INC), d(craft, P.COMBO_MAX));
 		}
 
 		// ---- 防飞天限高（受击者高出攻击者过多时改用超限垂直击退） ----
 		if (P.Y_LIMIT_ENABLED.getBool() && attacker != null
-				&& victim.locY - attacker.locY > d(victim, P.Y_LIMIT_MAX)) {
-			vertical = d(victim, P.Y_LIMIT_AFTER);
+				&& victim.locY - attacker.locY > d(craft, P.Y_LIMIT_MAX)) {
+			vertical = d(craft, P.Y_LIMIT_AFTER);
 		}
 
 		// ---- 动量保留（模式显式 → 全局; 再乘对刀/全局动量乘区） ----
@@ -297,8 +340,8 @@ public final class KnockbackEngine {
 			momentumH = craft.getHorizontalMomentum();
 			momentumV = craft.getVerticalMomentum();
 		} else {
-			momentumH = d(victim, P.BASE_H_MOM);
-			momentumV = d(victim, P.BASE_V_MOM);
+			momentumH = d(craft, P.BASE_H_MOM);
+			momentumV = d(craft, P.BASE_V_MOM);
 		}
 		double momMultH;
 		double momMultV;
@@ -306,11 +349,15 @@ public final class KnockbackEngine {
 			momMultH = craft.getPvpHorizontalMomentum();
 			momMultV = craft.getPvpVerticalMomentum();
 		} else if (pvp) {
-			momMultH = d(victim, P.PVP_MULT_H_MOM);
-			momMultV = d(victim, P.PVP_MULT_V_MOM);
+			momMultH = d(craft, P.PVP_MULT_H_MOM);
+			momMultV = d(craft, P.PVP_MULT_V_MOM);
+		} else if (craft != null && craft.isMultiplierExplicit()) {
+			// 全局乘区已并入模式文件: 模式显式 → 全局默认兜底
+			momMultH = craft.getMultHorizontalMomentum();
+			momMultV = craft.getMultVerticalMomentum();
 		} else {
-			momMultH = d(victim, P.MULT_H_MOM);
-			momMultV = d(victim, P.MULT_V_MOM);
+			momMultH = d(craft, P.MULT_H_MOM);
+			momMultV = d(craft, P.MULT_V_MOM);
 		}
 		momentumH *= momMultH;
 		momentumV *= momMultV;
@@ -328,15 +375,18 @@ public final class KnockbackEngine {
 		if (craft != null && craft.isClampExplicit()) {
 			verticalLimit = craft.getVerticalLimit();
 		} else {
-			verticalLimit = d(victim, P.BASE_V_LIMIT);
+			verticalLimit = d(craft, P.BASE_V_LIMIT);
 		}
 		double limitMult;
 		if (pvp && craft != null && craft.isPvpExplicit()) {
 			limitMult = craft.getPvpVerticalLimit();
 		} else if (pvp) {
-			limitMult = d(victim, P.PVP_MULT_V_LIMIT);
+			limitMult = d(craft, P.PVP_MULT_V_LIMIT);
+		} else if (craft != null && craft.isMultiplierExplicit()) {
+			// 全局乘区已并入模式文件: 模式显式 → 全局默认兜底
+			limitMult = craft.getMultVerticalLimit();
 		} else {
-			limitMult = d(victim, P.MULT_V_LIMIT);
+			limitMult = d(craft, P.MULT_V_LIMIT);
 		}
 		verticalLimit *= limitMult;
 		if (victim.motY > verticalLimit) {
@@ -433,8 +483,17 @@ public final class KnockbackEngine {
 		}
 	}
 
+	/** 每 tick 缓存一次重力差异判定（EntityLiving 逐实体逐 tick 调用，避免重复快照+哈希查找） */
+	private static int gravityCacheTick = -1;
+	private static boolean gravityDiffersCached;
+
 	private static boolean gravityDiffersFromVanilla() {
-		return P.GRAVITY.getDouble() != 0.08D || P.AIR_RESIST.getDouble() != 0.98D;
+		int now = MinecraftServer.currentTick;
+		if (now != gravityCacheTick) {
+			gravityCacheTick = now;
+			gravityDiffersCached = P.GRAVITY.getDouble() != 0.08D || P.AIR_RESIST.getDouble() != 0.98D;
+		}
+		return gravityDiffersCached;
 	}
 
 	/** EntityLiving 每 tick 重力取值（落地自动解除覆写） */
