@@ -98,6 +98,10 @@ public final class ProfileParams {
 				CraftKnockbackProfile::getSprintExtraHorizontal, dbl((p, v) -> p.setSprintExtraHorizontal(((Number) v).doubleValue())));
 		reg("sprint-extra.vertical", CAT_BASE, "疾跑额外垂直击退(绝对值)", false, 0.025,
 				CraftKnockbackProfile::getSprintExtraVertical, dbl((p, v) -> p.setSprintExtraVertical(((Number) v).doubleValue())));
+		reg("victim-sprint-extra.horizontal", CAT_BASE, "受击方疾跑额外水平击退(朝攻击者运动时, MMC式)", false, 0.025,
+				CraftKnockbackProfile::getVictimSprintExtraHorizontal, dbl((p, v) -> p.setVictimSprintExtraHorizontal(((Number) v).doubleValue())));
+		reg("victim-sprint-extra.vertical", CAT_BASE, "受击方疾跑额外垂直击退", false, 0.025,
+				CraftKnockbackProfile::getVictimSprintExtraVertical, dbl((p, v) -> p.setVictimSprintExtraVertical(((Number) v).doubleValue())));
 		reg("friction.horizontal", CAT_BASE, "水平摩擦系数", false, 0.05,
 				CraftKnockbackProfile::getFrictionHorizontal, dbl((p, v) -> p.setFrictionHorizontal(((Number) v).doubleValue())));
 		reg("friction.vertical", CAT_BASE, "垂直摩擦系数", false, 0.05, CraftKnockbackProfile::getFrictionVertical,

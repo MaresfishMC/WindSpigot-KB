@@ -157,6 +157,9 @@ public class KnockbackEngineSettings {
 		// ---------- 疾跑加成 sprint-extra（绝对值累加, 已并入模式文件, 此处仅默认值） ----------
 		reg("horizontal.sprint-extra", Type.DOUBLE, 0.0D, CAT_BASE, "疾跑额外水平击退(绝对值)");
 		reg("vertical.sprint-extra", Type.DOUBLE, 0.0D, CAT_BASE, "疾跑额外垂直击退(绝对值)");
+		// ---------- 受击方疾跑额外击退（MMC式, 已并入模式文件 victim-sprint-extra 分节, 此处仅默认值） ----------
+		reg("victim-sprint-extra.horizontal", Type.DOUBLE, 0.0D, CAT_BASE, "受击方疾跑额外水平击退(朝攻击者运动时)");
+		reg("victim-sprint-extra.vertical", Type.DOUBLE, 0.0D, CAT_BASE, "受击方疾跑额外垂直击退");
 		reg("sprint-reach.enabled", Type.BOOL, false, CAT_SPRINT, "疾跑宽松判定总开关");
 		reg("sprint-reach.grace-ticks", Type.INT, 5, CAT_SPRINT, "疾跑宽限(tick内仍视为疾跑)");
 		reg("sprint-reach.extra", Type.DOUBLE, 0.5D, CAT_SPRINT, "疾跑时额外攻击距离(格)");

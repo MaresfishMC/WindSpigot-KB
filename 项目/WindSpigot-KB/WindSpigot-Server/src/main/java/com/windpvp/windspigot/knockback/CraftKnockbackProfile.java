@@ -46,6 +46,11 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	private double sprintExtraVertical = 0.0D;
 	private boolean sprintExtraExplicit = false;
 
+	// ==================== 受击方疾跑额外击退(MMC式: 受击者疾跑且朝攻击者移动时承受更多击退) ====================
+	private double victimSprintExtraHorizontal = 0.0D;
+	private double victimSprintExtraVertical = 0.0D;
+	private boolean victimSprintExtraExplicit = false;
+
 	// ==================== 对刀PVP独立乘区(原全局 pvp.* 并入) ====================
 	private boolean pvpEnabled = true;
 	private double pvpHorizontalGround = 1.0D;
@@ -152,6 +157,10 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		this.sprintExtraHorizontal = other.sprintExtraHorizontal;
 		this.sprintExtraVertical = other.sprintExtraVertical;
 		this.sprintExtraExplicit = other.sprintExtraExplicit;
+		// 受击方疾跑额外击退
+		this.victimSprintExtraHorizontal = other.victimSprintExtraHorizontal;
+		this.victimSprintExtraVertical = other.victimSprintExtraVertical;
+		this.victimSprintExtraExplicit = other.victimSprintExtraExplicit;
 		// 对刀PVP
 		this.pvpEnabled = other.pvpEnabled;
 		this.pvpHorizontalGround = other.pvpHorizontalGround;
@@ -251,6 +260,9 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		// ==== 分类一: 疾跑额外击退(绝对值) ====
 		yml.set("sprint-extra.horizontal", this.sprintExtraHorizontal);
 		yml.set("sprint-extra.vertical", this.sprintExtraVertical);
+		// ==== 分类一: 受击方疾跑额外击退(MMC式) ====
+		yml.set("victim-sprint-extra.horizontal", this.victimSprintExtraHorizontal);
+		yml.set("victim-sprint-extra.vertical", this.victimSprintExtraVertical);
 		// ==== 分类二: 对刀PVP独立乘区 ====
 		yml.set("pvp.enabled", this.pvpEnabled);
 		yml.set("pvp.horizontal.ground", this.pvpHorizontalGround);
@@ -491,6 +503,34 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 
 	public void setSprintExtraExplicit(boolean explicit) {
 		this.sprintExtraExplicit = explicit;
+	}
+
+	// ==================== 受击方疾跑额外击退(MMC式) ====================
+
+	public double getVictimSprintExtraHorizontal() {
+		return victimSprintExtraHorizontal;
+	}
+
+	public void setVictimSprintExtraHorizontal(double v) {
+		this.victimSprintExtraHorizontal = v;
+		this.victimSprintExtraExplicit = true;
+	}
+
+	public double getVictimSprintExtraVertical() {
+		return victimSprintExtraVertical;
+	}
+
+	public void setVictimSprintExtraVertical(double v) {
+		this.victimSprintExtraVertical = v;
+		this.victimSprintExtraExplicit = true;
+	}
+
+	public boolean isVictimSprintExtraExplicit() {
+		return victimSprintExtraExplicit;
+	}
+
+	public void setVictimSprintExtraExplicit(boolean explicit) {
+		this.victimSprintExtraExplicit = explicit;
 	}
 
 	// ==================== 对刀PVP独立乘区(原全局 pvp.* 并入) ====================

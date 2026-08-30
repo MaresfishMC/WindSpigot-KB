@@ -93,6 +93,8 @@ public class KnockbackConfig {
 			{ "base-kb.vertical-momentum", "vertical-momentum" },
 			{ "horizontal.sprint-extra", "sprint-extra.horizontal" },
 			{ "vertical.sprint-extra", "sprint-extra.vertical" },
+			{ "victim-sprint-extra.horizontal", "victim-sprint-extra.horizontal" },
+			{ "victim-sprint-extra.vertical", "victim-sprint-extra.vertical" },
 			{ "pvp.enabled", "pvp.enabled" },
 			{ "pvp.multiplier.horizontal.ground", "pvp.horizontal.ground" },
 			{ "pvp.multiplier.horizontal.air", "pvp.horizontal.air" },
@@ -384,6 +386,12 @@ public class KnockbackConfig {
 		profile.setSprintExtraHorizontal(yml.getDouble("sprint-extra.horizontal", 0.0D));
 		profile.setSprintExtraVertical(yml.getDouble("sprint-extra.vertical", 0.0D));
 		profile.setSprintExtraExplicit(yml.contains("sprint-extra.horizontal") || yml.contains("sprint-extra.vertical"));
+
+		// ---- 受击方疾跑额外击退(MMC式) ----
+		profile.setVictimSprintExtraHorizontal(yml.getDouble("victim-sprint-extra.horizontal", 0.0D));
+		profile.setVictimSprintExtraVertical(yml.getDouble("victim-sprint-extra.vertical", 0.0D));
+		profile.setVictimSprintExtraExplicit(yml.contains("victim-sprint-extra.horizontal")
+				|| yml.contains("victim-sprint-extra.vertical"));
 
 		// ---- 对刀PVP独立乘区(原全局 pvp.* 并入) ----
 		profile.setPvpEnabled(yml.getBoolean("pvp.enabled", true));

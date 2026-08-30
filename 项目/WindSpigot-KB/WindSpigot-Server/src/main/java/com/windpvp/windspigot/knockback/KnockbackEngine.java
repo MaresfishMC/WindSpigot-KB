@@ -60,6 +60,8 @@ public final class KnockbackEngine {
 		static final KnockbackEngineSettings.Param MULT_V_MOM = KnockbackEngineSettings.param("multiplier.vertical-momentum");
 		static final KnockbackEngineSettings.Param SPRINT_H = KnockbackEngineSettings.param("horizontal.sprint-extra");
 		static final KnockbackEngineSettings.Param SPRINT_V = KnockbackEngineSettings.param("vertical.sprint-extra");
+		static final KnockbackEngineSettings.Param VICTIM_SPRINT_H = KnockbackEngineSettings.param("victim-sprint-extra.horizontal");
+		static final KnockbackEngineSettings.Param VICTIM_SPRINT_V = KnockbackEngineSettings.param("victim-sprint-extra.vertical");
 		static final KnockbackEngineSettings.Param PVP_MULT_H_G = KnockbackEngineSettings.param("pvp.multiplier.horizontal.ground");
 		static final KnockbackEngineSettings.Param PVP_MULT_H_A = KnockbackEngineSettings.param("pvp.multiplier.horizontal.air");
 		static final KnockbackEngineSettings.Param PVP_MULT_V_G = KnockbackEngineSettings.param("pvp.multiplier.vertical.ground");
@@ -310,6 +312,24 @@ public final class KnockbackEngine {
 		}
 		horizontal *= multH;
 		vertical *= multV;
+
+		// ---- 受击方疾跑额外击退（MMC式: 受击者疾跑且朝攻击者移动时承受更多击退; 模式显式 → 全局默认） ----
+		// 实测(2026-08-30 受控采样): base 0.527 + 受击方疾跑 0.25(仅当受击者朝攻击者运动) + 攻击方疾跑 0.12
+		double victimSprintExtraH;
+		double victimSprintExtraV;
+		if (craft != null && craft.isVictimSprintExtraExplicit()) {
+			victimSprintExtraH = craft.getVictimSprintExtraHorizontal();
+			victimSprintExtraV = craft.getVictimSprintExtraVertical();
+		} else {
+			victimSprintExtraH = d(craft, P.VICTIM_SPRINT_H);
+			victimSprintExtraV = d(craft, P.VICTIM_SPRINT_V);
+		}
+		if ((victimSprintExtraH != 0.0D || victimSprintExtraV != 0.0D) && victim instanceof EntityHuman
+				&& isSprintingEffective((EntityHuman) victim)
+				&& victim.motX * x + victim.motZ * z > 0.0D) {
+			horizontal += victimSprintExtraH;
+			vertical += victimSprintExtraV;
+		}
 
 		// ---- 距离衰减（借鉴 MMC：远距离命中减免击退; 开关可随模式文件覆盖） ----
 		if (b(craft, P.RANGE_ENABLED) && attacker != null) {
