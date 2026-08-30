@@ -189,7 +189,11 @@ public final class KnockbackEngine {
 		if (!P.SPRINT_REACH_ENABLED.getBool()) {
 			return false;
 		}
-		return MinecraftServer.currentTick - attacker.kbLastSprintStopTick <= P.SPRINT_REACH_GRACE.getInt();
+		int lastStop = attacker.kbLastSprintStopTick;
+		// 从未疾跑(初始值 MIN_VALUE)时无宽限: 否则 currentTick - MIN_VALUE 整型溢出成负数,
+		// 导致从未疾跑的攻击者永远满足宽限, 白吃疾跑额外击退
+		return lastStop != Integer.MIN_VALUE
+				&& MinecraftServer.currentTick - lastStop <= P.SPRINT_REACH_GRACE.getInt();
 	}
 
 	// ==================== 动态 misplay（借鉴 KnockbackManager 思想，按 ping 补偿） ====================
@@ -275,8 +279,6 @@ public final class KnockbackEngine {
 		} else {
 			pvp = P.PVP_ENABLED.getBool() && victim instanceof EntityHuman && attacker != null;
 		}
-
-		String state = air ? "air" : "ground";
 
 		// ---- 基础值（模式分节显式 → 全局默认） ----
 		double horizontal;
