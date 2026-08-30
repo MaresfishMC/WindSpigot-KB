@@ -454,8 +454,15 @@ public final class KnockbackEngine {
 			double sprintExtraH;
 			double sprintExtraV;
 			if (craft != null && craft.isSprintExtraExplicit()) {
-				sprintExtraH = pvp ? craft.getPvpSprintExtraHorizontal() : craft.getSprintExtraHorizontal();
-				sprintExtraV = pvp ? craft.getPvpSprintExtraVertical() : craft.getSprintExtraVertical();
+				// 对刀路径优先读 pvp.sprint-extra, 但仅当模式文件显式给出 pvp 分节时;
+				// 否则回落到基础 sprint-extra(避免只配了基础节的模式在对刀路径静默丢失疾跑加成)
+				if (pvp && craft.isPvpExplicit()) {
+					sprintExtraH = craft.getPvpSprintExtraHorizontal();
+					sprintExtraV = craft.getPvpSprintExtraVertical();
+				} else {
+					sprintExtraH = craft.getSprintExtraHorizontal();
+					sprintExtraV = craft.getSprintExtraVertical();
+				}
 			} else if (pvp) {
 				sprintExtraH = d(victim, P.PVP_SPRINT_H);
 				sprintExtraV = d(victim, P.PVP_SPRINT_V);
