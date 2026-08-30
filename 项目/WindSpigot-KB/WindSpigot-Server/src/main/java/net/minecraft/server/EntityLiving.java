@@ -782,9 +782,11 @@ public abstract class EntityLiving extends Entity {
 					f *= 0.75F;
 				}*/
 
-				this.aB = 1.5F;
-				boolean flag = true;
-				this.kbIframeKbApplied = false; // WindSpigot - 重置无敌帧击退标记
+			this.aB = 1.5F;
+			boolean flag = true;
+			this.kbIframeKbApplied = false; // WindSpigot - 重置无敌帧击退标记
+			// WindSpigot - hit-delay 热更新即时生效(原仅在入世界时赋值, /kb reload 后在线实体仍用旧值)
+			this.maxNoDamageTicks = KnockbackEngineSettings.i("hit-delay");
 
 				if (this.noDamageTicks > this.maxNoDamageTicks / 2.0F) {
 					// WindSpigot start - damage-increment 开关：关闭后无敌帧内不再结算伤害差值
