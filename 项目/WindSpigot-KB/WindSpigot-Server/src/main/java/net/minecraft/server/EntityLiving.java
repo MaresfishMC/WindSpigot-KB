@@ -804,17 +804,18 @@ public abstract class EntityLiving extends Entity {
 					}
 					// CraftBukkit end
 					this.lastDamage = f;
-					// WindSpigot start - 无敌帧内"伤害差值"命中(nokb 根因修复):
-					// 伤害已经通过 d() 结算并发送了伤害数字/音效, 击退就绝不能被吞掉。
-					// 原版此处无条件 flag=false, 会让下方 if(flag) 的整个击退块
-					// (含 this.ac() 设置 velocityChanged 与 this.a(...) 阶段一击退)被跳过,
-					// 结果就是"有伤害数字/音效但几乎不位移"(nokb)。
-					// 现在只有开启 iframe-knockback 时才交给 applyIframeKnockback 处理并置 false,
-					// 关闭时保持 flag=true, 走标准流程拿到与正常命中完全一致的阶段一击退。
-					if (KnockbackEngineSettings.b("iframe-knockback")) {
-						this.applyIframeKnockback(damagesource);
-						flag = false; // 已由 applyIframeKnockback 处理, 避免重复击退
-					}
+					// WindSpigot start - 无敌帧内"伤害差值"命中
+					// 原版 1.8.8 此处无条件 flag = false: 伤害照常结算(有数字/音效),
+					// 但下方 if(flag) 的整个击退块(含 this.ac() 置 velocityChanged 与
+					// this.a(...) 阶段一击退)被跳过 ⇒ "有伤害数字却几乎不位移"(nokb)。
+					// 曾试过在 iframe-knockback=false 时保持 flag=true 走标准击退流程,
+					// 结果是**每次差值命中都补发一个速度包**: 线上监听(机器人 14 CPS 对打)
+					// 出现 29.9% 的相邻发包间隔 <480ms、受击方 ndt 9~19 的"连续发包"。
+					// 故恢复原版语义: 差值命中不产生击退。
+					// 真正的修复在系统开关 damage-increment: false —— 窗口内的攻击被整体忽略
+					// (无伤害数字也无击退), 命中区间成为绝对的 10 tick, 与本分支不冲突。
+					this.applyIframeKnockback(damagesource); // WindSpigot - 无敌帧仍击退(需显式开启)
+					flag = false;
 					// WindSpigot end
 				} else {
 					// CraftBukkit start

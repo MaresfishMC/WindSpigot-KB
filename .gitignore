@@ -25,6 +25,7 @@ Thumbs.db
 分析/*.jsonl
 分析/*.log
 分析/kb-log*.csv
+分析/events*.csv
 分析/*.class
 分析/_*/
 分析/classes/
