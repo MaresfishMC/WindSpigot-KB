@@ -191,3 +191,51 @@ build.bat
 - [dw1e/KnockbackManager](https://github.com/dw1e/KnockbackManager) — 动态 misplay 与配置文件拆分思路（仅借鉴，未照搬）
 - [Revethere 的博客](https://revethere.github.io/posts/academic@min-kb-click-freq-lower-bound/) — 击退运动公式与 MMC 击退算法分析
 - [原作者主写，5090dv2主发](https://github.com/5090Dv2) — KB 调试工具（新版适配）与参数 schema
+
+## ⚠️ 重大根因：WindSpigot 异步击退会把击退包发给错误的玩家（2026-09-13）
+
+**这是"全场没有击退 / 有人被反向拉 / 有人收不到击退"的最终根因**，与击退引擎参数无关。
+
+`windspigot.yml` 默认 `async.knockback: true`。开启后 `NetworkManager` 会把
+`PacketPlayOutEntityVelocity` 转发到 `CombatThread`，而写出实现
+`com.windpvp.windspigot.async.netty.Spigot404Write` 存在致命缺陷：
+
+```java
+private static Queue<PacketQueue> packetsQueue = ...;      // ★ static：全服共享队列
+public static void writeThenFlush(Channel channel, Packet packet, ...) {
+    packetsQueue.add(new PacketQueue(packet, listener));   // ★ 入队时不记录目标玩家
+    ...
+    channel.pipeline().lastContext().executor().execute(writer::writeQueueAndFlush);
+}
+public void writeQueueAndFlush() {
+    while (packetsQueue.size() > 0)
+        ChannelFuture future = this.channel.write(messages.getPacket());  // ★ 用"触发刷新的那个人"的 channel
+}
+```
+
+⇒ 打给 A 的击退包会被写进 **B 的连接**：
+
+| 玩家看到的 | 真实机制 |
+|---|---|
+| 「对方无 kb」「全场没有击退」 | A 的击退包发给了 B，A 自己的客户端什么也没收到 |
+| 「负数 kb / 被往回拉」 | B 收到的是 **A 的击退向量**，方向自然相反 |
+| 「连续发包 / 节奏怪」 | 异步线程按 `combat-thread-tps`(默认 40) 批量 flush |
+
+**顺带解释了为什么诊断层一直看不见它**：该路径直接写 netty channel，**绕过了 ProtocolLib
+与 ViaVersion** —— 服务端侧 `PlayerVelocityEvent` 正常触发、velocity 数值完全正确、事件也未被取消，
+但任何出包监听都抓不到，客户端同样毫无位移。
+
+**修复**：`windspigot.yml` → `async.knockback: false`（速度包回归正常发包路径）。
+
+**真机验证**（原版 1.8.9 客户端 + 真实伤害路径 `EntityHuman.attack`）：
+
+```
+关闭前: 30 tick 内 X/Y/Z 零位移, S12 出包捕获恒为 0 条
+关闭后: 水平位移 2.35 格, 顶点升 0.968 格, 滞空 11~12 tick
+        S12 捕获: 113,KBVanilla,0.526625,0.361375,-0.027375
+真实对打: 基础命中恒为 0.5274, 疾跑命中 med 0.9486 (MMC 0.9420), 零上限堆积
+```
+
+> 排查方法论教训：`PlayerVelocityEvent` 触发 ≠ 客户端收到包。事件在**发包之前**触发，
+> 之后可能被取消、可能被改写、也可能在**传输层被投递到别处**。要验证"客户端到底收到什么"，
+> 必须在出包层（ProtocolLib）或客户端侧取证，并在**前台聚焦的真实客户端**上做端到端复核。
