@@ -56,6 +56,9 @@ public class KBProbe extends JavaPlugin implements Listener {
         double prevY, startY, peakY;
         int peakTick;
         String victim;
+        org.bukkit.entity.Entity ent;                      // 采样对象(玩家或合成生物)
+        net.minecraft.server.v1_8_R3.Entity nms;           // 取 motY / onGround
+        boolean cleanup;                                   // 采样结束后移除(合成生物)
     }
     private static final Map<Integer, Trace> TRACES = new ConcurrentHashMap<>();
     private static final int TRACE_TICKS = 30;
@@ -192,6 +195,8 @@ public class KBProbe extends JavaPlugin implements Listener {
             tr.startY = tr.prevY;
             tr.peakY = tr.prevY;
             tr.victim = tp.getName();
+            tr.ent = tp;
+            tr.nms = ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) tp).getHandle();
             TRACES.put(tr.id, tr);
         }
         if (h == null) { skipped++; return; }
@@ -211,39 +216,37 @@ public class KBProbe extends JavaPlugin implements Listener {
         } catch (Exception ex) { getLogger().warning("写日志失败: " + ex); }
     }
 
-    /** 每 tick 采样被追踪受击方的 Y, 落地或满 TRACE_TICKS 后收尾并打印顶点/滞空摘要 */
+    /** 每 tick 采样被追踪实体的 Y, 落地或满 TRACE_TICKS 后收尾并打印顶点/滞空摘要 */
     private void tickTraces() {
         if (TRACES.isEmpty() || trajOut == null) return;
         for (java.util.Iterator<Map.Entry<Integer, Trace>> it = TRACES.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Integer, Trace> en = it.next();
             Trace tr = en.getValue();
-            Player p = null;
-            for (Player online : Bukkit.getOnlinePlayers()) {
-                if (online.getEntityId() == tr.id) { p = online; break; }
-            }
-            if (p == null) { it.remove(); continue; }
+            if (tr.ent == null || !tr.ent.isValid() || tr.nms == null) { it.remove(); continue; }
             try {
-                double y = p.getLocation().getY();
+                double y = tr.ent.getLocation().getY();
                 double dy = y - tr.prevY;
                 tr.ticks++;
                 if (y > tr.peakY) { tr.peakY = y; tr.peakTick = tr.ticks; }
-                net.minecraft.server.v1_8_R3.EntityPlayer nms =
-                        ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) p).getHandle();
                 synchronized (this) {
                     trajOut.write(String.format(Locale.ROOT, "%d,%s,%d,%.4f,%.4f,%.4f,%.6f,%b%n",
-                            System.currentTimeMillis(), tr.victim, tr.ticks, y, dy, nms.motY, 0.0D, nms.onGround));
+                            System.currentTimeMillis(), tr.victim, tr.ticks, y, dy, tr.nms.motY, 0.0D, tr.nms.onGround));
                     trajOut.flush();
                 }
                 tr.prevY = y;
-                boolean landed = nms.onGround && tr.ticks > 2;
+                boolean landed = tr.nms.onGround && tr.ticks > 2;
                 if (landed || tr.ticks >= TRACE_TICKS || System.currentTimeMillis() - tr.startMs > 3000L) {
                     getLogger().info(String.format(Locale.ROOT,
                             "弹道 %s: 起点Y=%.3f 顶点Y=%.3f (第%d tick, 升%.3f) 滞空%d tick(%.2fs)",
                             tr.victim, tr.startY, tr.peakY, tr.peakTick, tr.peakY - tr.startY,
                             tr.ticks, tr.ticks * 0.05D));
+                    if (tr.cleanup) { try { tr.ent.remove(); } catch (Throwable ignored) { } }
                     it.remove();
                 }
-            } catch (Exception ex) { it.remove(); }
+            } catch (Exception ex) {
+                if (tr.cleanup) { try { tr.ent.remove(); } catch (Throwable ignored) { } }
+                it.remove();
+            }
         }
     }
 
@@ -301,6 +304,34 @@ public class KBProbe extends JavaPlugin implements Listener {
                 }
             }
             sender.sendMessage("KBProbe/traj: 40 tick 内未落地 (初速=" + v + " g=" + g + ")");
+            return true;
+        }
+        if (args.length > 0 && "trajmob".equalsIgnoreCase(args[0])) {
+            // 真·端到端弹道自检: 生物的运动由服务端模拟(玩家是客户端权威, 不能这样测),
+            // 所以给合成僵尸施加击退后逐 tick 采样它的 Y, 走的是完整引擎路径:
+            // applyBaseKnockback -> markGravityOverride -> EntityLiving.m() 里的 gravityFor/airResistanceFor。
+            World w = Bukkit.getWorlds().get(0);
+            Location loc = w.getSpawnLocation().clone().add(0.5D, 0.6D, 0.5D);
+            Zombie z = w.spawn(loc, Zombie.class);
+            net.minecraft.server.v1_8_R3.EntityZombie nms =
+                    ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftZombie) z).getHandle();
+            try { nms.k(true); } catch (Throwable ignored) { } // 关闭 AI, 排除寻路/跳跃干扰
+            nms.motX = 0; nms.motY = 0; nms.motZ = 0; nms.onGround = true;
+            com.windpvp.windspigot.knockback.KnockbackEngine.applyBaseKnockback(nms, 1.0D, 0.0D, null);
+            double v0 = nms.motY;
+            Trace tr = new Trace();
+            tr.startMs = System.currentTimeMillis();
+            tr.id = nms.getId();
+            tr.ent = z; tr.nms = nms; tr.cleanup = true;
+            tr.prevY = z.getLocation().getY();
+            tr.startY = tr.prevY;
+            tr.peakY = tr.prevY;
+            tr.victim = "SYNTH_ZOMBIE";
+            TRACES.put(tr.id, tr);
+            sender.sendMessage(String.format(Locale.ROOT,
+                    "KBProbe/trajmob: 已施加击退 motY=%.6f 重力=%.5f(等效 %.1f m/s²), 开始逐 tick 采样(约 30 tick)",
+                    v0, com.windpvp.windspigot.knockback.KnockbackEngine.gravityFor(nms),
+                    com.windpvp.windspigot.knockback.KnockbackEngine.gravityFor(nms) / 0.0025D));
             return true;
         }
         if (args.length > 0 && "status".equalsIgnoreCase(args[0])) {

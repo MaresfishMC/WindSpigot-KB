@@ -135,6 +135,10 @@ public abstract class EntityHuman extends EntityLiving {
 
 	@Override
 	public void t_() {
+		// WindSpigot - 客户端滞空接管: 1.8 里玩家位移由客户端模拟(自带原版重力),
+		// 服务端改了 gravity/顶点曲线只对生物生效; 想让玩家也按服务端重力飞,
+		// 只能在滞空期逐 tick 补发速度包覆盖客户端的积分。未启用时这里是空查表。
+		KnockbackEngine.tickClientFlight(this);
 		this.noclip = this.isSpectator();
 		if (this.isSpectator()) {
 			this.onGround = false;
@@ -1116,6 +1120,12 @@ public abstract class EntityHuman extends EntityLiving {
 							((EntityPlayer) entity).playerConnection
 									.sendPacket(new PacketPlayOutEntityVelocity(entity));
 							entity.velocityChanged = false;
+							// WindSpigot start - 登记客户端滞空接管(逐 tick 补发速度包,
+							// 否则玩家受击方由客户端用原版重力积分, 服务端的重力/顶点曲线对它无效)
+							if (entity instanceof EntityPlayer) {
+								KnockbackEngine.beginClientFlight((EntityPlayer) entity);
+							}
+							// WindSpigot end
 							// WindSpigot start - server-side-kb：服务端权威击退时不回滚 mot
 							if (!KnockbackEngineSettings.b("server-side-kb")) {
 								entity.motX = d0;

@@ -90,6 +90,8 @@ public final class KnockbackEngine {
 		static final KnockbackEngineSettings.Param AIR_RESIST = KnockbackEngineSettings.param("gravity.air-resistance");
 		static final KnockbackEngineSettings.Param APEX_SCALE = KnockbackEngineSettings.param("gravity.apex-scale");
 		static final KnockbackEngineSettings.Param APEX_THRESHOLD = KnockbackEngineSettings.param("gravity.apex-threshold");
+		static final KnockbackEngineSettings.Param CLIENT_SIDE = KnockbackEngineSettings.param("gravity.client-side");
+		static final KnockbackEngineSettings.Param CLIENT_MAX_TICKS = KnockbackEngineSettings.param("gravity.client-max-ticks");
 		static final KnockbackEngineSettings.Param AIR_GROUND_GRACE = KnockbackEngineSettings.param("air-ground.grace-ticks");
 		static final KnockbackEngineSettings.Param SPRINT_REACH_ENABLED = KnockbackEngineSettings.param("sprint-reach.enabled");
 		static final KnockbackEngineSettings.Param SPRINT_REACH_GRACE = KnockbackEngineSettings.param("sprint-reach.grace-ticks");
@@ -657,19 +659,23 @@ public final class KnockbackEngine {
 		if (!entity.kbGravityOverride || !gravityDiffersFromVanilla()) {
 			return 0.08D;
 		}
+		return effectiveGravity(entity.motY);
+	}
+
+	/**
+	 * 击退滞空期的有效重力（含顶点丝滑过渡），供服务端实体与客户端滞空接管共用。
+	 *   顶点(|vy|=0)     -> g * apex-scale
+	 *   |vy|>=threshold  -> g
+	 * 中间线性插值 ⇒ 竖直速度穿过 0 的那几 tick 步长很小, 顶点前后都平滑。
+	 */
+	private static double effectiveGravity(double vy) {
 		double g = P.GRAVITY.getDouble();
-		// ---- 顶点丝滑过渡 ----
-		// 原版每 tick 固定减 0.08: 竖直速度会在顶点附近由 +0.029 一步跨到 -0.050,
-		// 位移方向瞬间翻转, 手感是"到顶就砸下来"。这里让重力随 |motY| 线性回落:
-		//   顶点(|motY|=0)      -> g * apex-scale      (悬停, 过渡最柔)
-		//   |motY|>=threshold   -> g                   (完全等于设定重力, 不影响上升/下坠段)
-		// 中间线性插值, 因此速度穿过 0 的那几 tick 步长很小, 顶点前后都平滑。
 		double scale = P.APEX_SCALE.getDouble();
 		double threshold = P.APEX_THRESHOLD.getDouble();
 		if (scale < 1.0D && threshold > 0.0D) {
-			double vy = Math.abs(entity.motY);
-			if (vy < threshold) {
-				g *= scale + (1.0D - scale) * (vy / threshold);
+			double a = Math.abs(vy);
+			if (a < threshold) {
+				g *= scale + (1.0D - scale) * (a / threshold);
 			}
 		}
 		return g;
@@ -684,6 +690,74 @@ public final class KnockbackEngine {
 		return 0.9800000190734863D;
 	}
 
+	// ==================== 客户端滞空接管 ====================
+	//
+	// 背景(必须理解才能改这块): 1.8 里"玩家自己的位移由客户端模拟"。
+	//   PlayerConnection 收到 PacketPlayInFlying 后直接 setLocation(客户端坐标), 服务端只做
+	//   "moved too quickly" 校验。整条击退只发一次 S12 速度包, 之后客户端用它自己的
+	//   **原版重力 0.08 / 阻力 0.98** 积分。⇒ 服务端改 gravity.value / apex-scale
+	//   对"玩家受击方"的可见弹道**完全没有影响**(只对生物生效, 因为生物由服务端模拟)。
+	// 想在 1.8 让玩家按自定义重力飞, 唯一手段是滞空期逐 tick 补发 S12 覆盖客户端的积分。
+	// 本实现要点:
+	//   * 只覆写**竖直**分量(用服务端重力曲线算出的 my);
+	//     水平分量回填"客户端自己上一 tick 的位移", 因此不夺走空中转向/加速手感。
+	//   * 落地 / 达到 tick 上限 / 下坠已足够快 / 出现传送级位移 时立即交回客户端。
+	//   * 仅在自定义重力与顶点过渡真的启用时生效(gravityDiffersFromVanilla()), 回原版即自动关闭。
+	//   * 代价: 每次击退在滞空期会有约 8~14 个速度包(这是 1.8 实现自定义重力的固有代价)。
+	private static final Map<Integer, Flight> FLIGHTS = new ConcurrentHashMap<>();
+
+	private static final class Flight {
+		double my;
+		double lastX, lastZ;
+		int ticks;
+	}
+
+	/** 首次速度包发出后登记滞空接管 */
+	public static void beginClientFlight(EntityPlayer victim) {
+		if (!P.CLIENT_SIDE.getBool() || !gravityDiffersFromVanilla()) {
+			return;
+		}
+		Flight f = new Flight();
+		f.my = victim.motY;
+		f.lastX = victim.locX;
+		f.lastZ = victim.locZ;
+		FLIGHTS.put(victim.getId(), f);
+	}
+
+	/** 每个玩家 tick 调用一次: 按服务端重力曲线推进滞空并补发速度包 */
+	public static void tickClientFlight(EntityHuman human) {
+		if (FLIGHTS.isEmpty() || !(human instanceof EntityPlayer)) {
+			return;
+		}
+		EntityPlayer p = (EntityPlayer) human;
+		Flight f = FLIGHTS.get(p.getId());
+		if (f == null) {
+			return;
+		}
+		int maxTicks = P.CLIENT_MAX_TICKS.getInt();
+		// 落地/死亡/超预算/竖直已下坠到可交回客户端 => 停止接管
+		if (p.onGround || p.dead || f.ticks >= maxTicks || f.my < -0.5D) {
+			FLIGHTS.remove(p.getId());
+			return;
+		}
+		// 客户端真实水平速度 = 客户端本 tick 上报的位置差(回填它, 保留空中转向手感)
+		double dx = p.locX - f.lastX;
+		double dz = p.locZ - f.lastZ;
+		f.lastX = p.locX;
+		f.lastZ = p.locZ;
+		if (Math.abs(dx) > 2.0D || Math.abs(dz) > 2.0D) { // 传送级位移, 放弃接管避免拉扯
+			FLIGHTS.remove(p.getId());
+			return;
+		}
+		f.my = (f.my - effectiveGravity(f.my)) * P.AIR_RESIST.getDouble();
+		f.ticks++;
+		p.motX = dx;
+		p.motY = f.my;
+		p.motZ = dz;
+		p.velocityChanged = false;
+		p.playerConnection.sendPacket(new PacketPlayOutEntityVelocity(p));
+	}
+
 	// ==================== 速度同步 ====================
 
 	/**
@@ -693,6 +767,7 @@ public final class KnockbackEngine {
 	public static void syncVelocity(EntityPlayer victim, double preMotX, double preMotY, double preMotZ) {
 		victim.playerConnection.sendPacket(new PacketPlayOutEntityVelocity(victim));
 		victim.velocityChanged = false;
+		beginClientFlight(victim); // WindSpigot - 登记滞空接管(逐 tick 覆盖客户端原版重力)
 		if (!P.SERVER_SIDE_KB.getBool()) {
 			// 原版语义：服务端回滚，由客户端模拟击退运动
 			victim.motX = preMotX;

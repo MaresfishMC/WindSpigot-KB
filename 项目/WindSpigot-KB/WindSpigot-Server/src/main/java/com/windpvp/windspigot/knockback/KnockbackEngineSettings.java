@@ -206,6 +206,8 @@ public class KnockbackEngineSettings {
 		reg("gravity.air-resistance", Type.DOUBLE, 0.98D, CAT_ADVANCED, "击退后空气阻力");
 		reg("gravity.apex-scale", Type.DOUBLE, 1.0D, CAT_ADVANCED, "顶点重力倍率(1=关闭; 越小顶点悬停越久越丝滑)");
 		reg("gravity.apex-threshold", Type.DOUBLE, 0.08D, CAT_ADVANCED, "顶点过渡区(|motY| 低于此值按曲线降重力)");
+		reg("gravity.client-side", Type.BOOL, true, CAT_ADVANCED, "玩家滞空接管(逐tick补发包, 否则客户端用原版重力)");
+		reg("gravity.client-max-ticks", Type.INT, 32, CAT_ADVANCED, "滞空接管最大tick数");
 		reg("air-ground.grace-ticks", Type.INT, 1, CAT_ADVANCED, "空中/地面判定宽限(落地后tick内仍按地面)");
 		// 核心扩展（调试工具不含此节，合并热更新不会丢失）
 		reg("dynamic-misplay.enabled", Type.BOOL, false, CAT_ADVANCED, "动态misplay开关(按目标ping补偿)");
