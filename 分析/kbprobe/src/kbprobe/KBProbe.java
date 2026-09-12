@@ -58,7 +58,9 @@ public class KBProbe extends JavaPlugin implements Listener {
         String victim;
         org.bukkit.entity.Entity ent;                      // 采样对象(玩家或合成生物)
         net.minecraft.server.v1_8_R3.Entity nms;           // 取 motY / onGround
-        boolean cleanup;                                   // 采样结束后移除(合成生物)
+        boolean cleanup;
+        double prevX, prevZ;                               // 上一 tick X/Z, 用于记录水平位移
+        boolean sawAir;                                    // 是否已观测到离地(避免站定玩家 3 tick 就提前收尾)                                   // 采样结束后移除(合成生物)
     }
     private static final Map<Integer, Trace> TRACES = new ConcurrentHashMap<>();
     private static final int TRACE_TICKS = 30;
@@ -76,7 +78,7 @@ public class KBProbe extends JavaPlugin implements Listener {
             if (fresh) {
                 kbOut.write("ts_ms,attacker,victim,atk_sprint,atk_extra_kb,vic_sprint,vic_ground,"
                         + "vic_ndt,vic_last_dmg,event_dmg,atk_yaw,atk_x,atk_y,atk_z,vic_x,vic_y,vic_z,"
-                        + "pre_x,pre_y,pre_z,pkt_x,pkt_y,pkt_z,pkt_h,atk_ping,vic_ping,dist\n");
+                        + "pre_x,pre_y,pre_z,pkt_x,pkt_y,pkt_z,pkt_h,atk_ping,vic_ping,dist,cancelled\n");
                 kbOut.flush();
             }
             boolean freshEv = !new File(dir, "events.csv").exists();
@@ -85,7 +87,7 @@ public class KBProbe extends JavaPlugin implements Listener {
             boolean freshTr = !new File(dir, "traj.csv").exists();
             trajOut = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, "traj.csv"), true), StandardCharsets.UTF_8));
             if (freshTr) {
-                trajOut.write("ts_ms,victim,tick,y,dy,mot_y,vy_pkt,on_ground\n"); // dy=逐tick位移(≈客户端motY)
+                trajOut.write("ts_ms,victim,tick,x,y,z,dx,dy,dz,mot_y,on_ground\n"); // d*=逐tick真实位移(客户端上报)
                 trajOut.flush();
             }
             boolean freshS12 = !new File(dir, "s12.csv").exists();
@@ -145,13 +147,24 @@ public class KBProbe extends JavaPlugin implements Listener {
                     ListenerPriority.MONITOR, PacketType.Play.Server.ENTITY_VELOCITY) {
                 @Override public void onPacketSending(PacketEvent e) {
                     try {
-                        int id = e.getPacket().getIntegers().read(0);
+                        // 用 NMS 句柄读(1.8 该包是 4 个 int: a=实体id, b/c/d=定点速度*8000)。
+                        // 之前用 ProtocolLib 的 getDoubles()/getIntegers() 都读不到东西(异常被吞),
+                        // 导致"抓到 0 个 S12"看起来像"没发包", 实际是读数失败。
+                        Object handle = e.getPacket().getHandle();
+                        java.lang.reflect.Field[] fs = handle.getClass().getDeclaredFields();
+                        java.util.Arrays.sort(fs, (a, b) -> a.getName().compareTo(b.getName()));
+                        int[] iv = new int[4]; int n = 0;
+                        for (java.lang.reflect.Field f : fs) {
+                            if (f.getType() == int.class && n < 4) { f.setAccessible(true); iv[n++] = f.getInt(handle); }
+                        }
+                        if (n < 4) throw new IllegalStateException("S12 字段数=" + n);
+                        int id = iv[0];
                         // 1.8 的 S12 速度分量在协议里是**定点整数**(v*8000), ProtocolLib 也是按
                         // 整数结构暴露的; 早先误用 getDoubles() 会抛异常并被下面的 catch 吞掉,
                         // 于是"抓到 0 个包"其实是读数错误, 不是真没发包(曾据此误判为事件被取消)。
-                        double vx = e.getPacket().getIntegers().read(1) / 8000.0D;
-                        double vy = e.getPacket().getIntegers().read(2) / 8000.0D;
-                        double vz = e.getPacket().getIntegers().read(3) / 8000.0D;
+                        double vx = iv[1] / 8000.0D;
+                        double vy = iv[2] / 8000.0D;
+                        double vz = iv[3] / 8000.0D;
                         String name = "";
                         for (Player on : Bukkit.getOnlinePlayers()) {
                             if (on.getEntityId() == id) { name = on.getName(); break; }
@@ -245,15 +258,16 @@ public class KBProbe extends JavaPlugin implements Listener {
         if (h == null) { skipped++; return; }
         try {
             double vx = e.getVelocity().getX(), vy = e.getVelocity().getY(), vz = e.getVelocity().getZ();
+            boolean cancelled = e.isCancelled();   // 关键仪表: 事件被取消 => 服务端不会发包 => 全场无击退
             double ph = Math.sqrt(vx * vx + vz * vz);
             synchronized (this) {
                 kbOut.write(String.format(Locale.ROOT,
                         "%d,%s,%s,%b,%b,%b,%b,%d,%.3f,%.3f,%.3f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,"
-                        + "%.5f,%.5f,%.5f,%.6f,%.6f,%.6f,%.6f,%d,%d,%.4f%n",
+                        + "%.5f,%.5f,%.5f,%.6f,%.6f,%.6f,%.6f,%d,%d,%.4f,%b%n",
                         h.tsMs, h.attacker, h.victim, h.atkSprint, h.atkExtraKb, h.vicSprint, h.vicGround,
                         h.vicNdt, h.vicLastDmg, h.eventDmg, h.atkYaw,
                         h.atkX, h.atkY, h.atkZ, h.vicX, h.vicY, h.vicZ,
-                        h.preX, h.preY, h.preZ, vx, vy, vz, ph, h.atkPing, h.vicPing, h.dist));
+                        h.preX, h.preY, h.preZ, vx, vy, vz, ph, h.atkPing, h.vicPing, h.dist, cancelled));
                 kbOut.flush(); written++;
             }
         } catch (Exception ex) { getLogger().warning("写日志失败: " + ex); }
@@ -267,17 +281,20 @@ public class KBProbe extends JavaPlugin implements Listener {
             Trace tr = en.getValue();
             if (tr.ent == null || !tr.ent.isValid() || tr.nms == null) { it.remove(); continue; }
             try {
+                double x = tr.ent.getLocation().getX();
                 double y = tr.ent.getLocation().getY();
-                double dy = y - tr.prevY;
+                double z = tr.ent.getLocation().getZ();
+                double dx = x - tr.prevX, dy = y - tr.prevY, dz = z - tr.prevZ;
+                if (!tr.nms.onGround) tr.sawAir = true;
                 tr.ticks++;
                 if (y > tr.peakY) { tr.peakY = y; tr.peakTick = tr.ticks; }
                 synchronized (this) {
-                    trajOut.write(String.format(Locale.ROOT, "%d,%s,%d,%.4f,%.4f,%.4f,%.6f,%b%n",
-                            System.currentTimeMillis(), tr.victim, tr.ticks, y, dy, tr.nms.motY, 0.0D, tr.nms.onGround));
+                    trajOut.write(String.format(Locale.ROOT, "%d,%s,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.6f,%b%n",
+                            System.currentTimeMillis(), tr.victim, tr.ticks, x, y, z, dx, dy, dz, tr.nms.motY, tr.nms.onGround));
                     trajOut.flush();
                 }
-                tr.prevY = y;
-                boolean landed = tr.nms.onGround && tr.ticks > 2;
+                tr.prevX = x; tr.prevY = y; tr.prevZ = z;
+                boolean landed = tr.nms.onGround && tr.sawAir && tr.ticks > 2;
                 if (landed || tr.ticks >= TRACE_TICKS || System.currentTimeMillis() - tr.startMs > 3000L) {
                     getLogger().info(String.format(Locale.ROOT,
                             "弹道 %s: 起点Y=%.3f 顶点Y=%.3f (第%d tick, 升%.3f) 滞空%d tick(%.2fs)",
@@ -435,6 +452,29 @@ public class KBProbe extends JavaPlugin implements Listener {
             String line = sb.toString();
             boolean ok = Bukkit.dispatchCommand(target, line);
             sender.sendMessage("KBProbe/as: " + target.getName() + " => /" + line + "  已执行=" + ok);
+            return true;
+        }
+        if (args.length > 0 && "attack".equalsIgnoreCase(args[0])) {
+            // /kbprobe attack <攻击者> <受击者> [次数]
+            // 走**真实伤害路径**: 直接调用 EntityHuman.attack(Entity), 即玩家左键命中服务端后
+            // 执行的那段代码(伤害结算 -> 阶段一击退 -> 阶段二疾跑加成 -> 发 S12)。
+            // 用于判定"服务端到底有没有发包", 不需要第二名玩家真的点击。
+            if (args.length < 3) { sender.sendMessage("用法: /kbprobe attack <攻击者> <受击者> [次数]"); return true; }
+            Player atk = Bukkit.getPlayerExact(args[1]);
+            Player vic = Bukkit.getPlayerExact(args[2]);
+            if (atk == null || vic == null) { sender.sendMessage("玩家不在线"); return true; }
+            int times = args.length >= 4 ? Integer.parseInt(args[3]) : 1;
+            net.minecraft.server.v1_8_R3.EntityPlayer a =
+                    ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) atk).getHandle();
+            net.minecraft.server.v1_8_R3.EntityPlayer v =
+                    ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) vic).getHandle();
+            for (int k = 0; k < times; k++) {
+                a.attack(v);
+                v.noDamageTicks = 0; // 便于连续测试, 绕过无敌帧
+            }
+            sender.sendMessage(String.format(Locale.ROOT,
+                    "KBProbe/attack: %s -> %s x%d (真实路径) 受击方 motY=%.4f velocityChanged=%b",
+                    atk.getName(), vic.getName(), times, v.motY, v.velocityChanged));
             return true;
         }
         if (args.length > 0 && "where".equalsIgnoreCase(args[0])) {

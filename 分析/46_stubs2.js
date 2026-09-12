@@ -63,6 +63,7 @@ public class PacketEvent {
 package com.comphenix.protocol.events;
 import com.comphenix.protocol.reflect.StructureModifier;
 public class PacketContainer {
+    public Object getHandle() { return null; }
     public StructureModifier<Integer> getIntegers() { return null; }
     public StructureModifier<Double> getDoubles() { return null; }
     public StructureModifier<String> getStrings() { return null; }
