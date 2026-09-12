@@ -88,6 +88,8 @@ public final class KnockbackEngine {
 		static final KnockbackEngineSettings.Param COMBO_RESET = KnockbackEngineSettings.param("combo.reset-ticks");
 		static final KnockbackEngineSettings.Param GRAVITY = KnockbackEngineSettings.param("gravity.value");
 		static final KnockbackEngineSettings.Param AIR_RESIST = KnockbackEngineSettings.param("gravity.air-resistance");
+		static final KnockbackEngineSettings.Param APEX_SCALE = KnockbackEngineSettings.param("gravity.apex-scale");
+		static final KnockbackEngineSettings.Param APEX_THRESHOLD = KnockbackEngineSettings.param("gravity.apex-threshold");
 		static final KnockbackEngineSettings.Param AIR_GROUND_GRACE = KnockbackEngineSettings.param("air-ground.grace-ticks");
 		static final KnockbackEngineSettings.Param SPRINT_REACH_ENABLED = KnockbackEngineSettings.param("sprint-reach.enabled");
 		static final KnockbackEngineSettings.Param SPRINT_REACH_GRACE = KnockbackEngineSettings.param("sprint-reach.grace-ticks");
@@ -631,7 +633,10 @@ public final class KnockbackEngine {
 		int now = MinecraftServer.currentTick;
 		if (now != gravityCacheTick) {
 			gravityCacheTick = now;
-			gravityDiffersCached = P.GRAVITY.getDouble() != 0.08D || P.AIR_RESIST.getDouble() != 0.98D;
+			// 顶点丝滑过渡也属于"非原版重力", 必须一起判定, 否则只配顶点参数时覆写不会生效
+			gravityDiffersCached = P.GRAVITY.getDouble() != 0.08D
+					|| P.AIR_RESIST.getDouble() != 0.98D
+					|| (P.APEX_SCALE.getDouble() < 1.0D && P.APEX_THRESHOLD.getDouble() > 0.0D);
 		}
 		return gravityDiffersCached;
 	}
@@ -641,10 +646,25 @@ public final class KnockbackEngine {
 		if (entity.onGround) {
 			entity.kbGravityOverride = false;
 		}
-		if (entity.kbGravityOverride && gravityDiffersFromVanilla()) {
-			return P.GRAVITY.getDouble();
+		if (!entity.kbGravityOverride || !gravityDiffersFromVanilla()) {
+			return 0.08D;
 		}
-		return 0.08D;
+		double g = P.GRAVITY.getDouble();
+		// ---- 顶点丝滑过渡 ----
+		// 原版每 tick 固定减 0.08: 竖直速度会在顶点附近由 +0.029 一步跨到 -0.050,
+		// 位移方向瞬间翻转, 手感是"到顶就砸下来"。这里让重力随 |motY| 线性回落:
+		//   顶点(|motY|=0)      -> g * apex-scale      (悬停, 过渡最柔)
+		//   |motY|>=threshold   -> g                   (完全等于设定重力, 不影响上升/下坠段)
+		// 中间线性插值, 因此速度穿过 0 的那几 tick 步长很小, 顶点前后都平滑。
+		double scale = P.APEX_SCALE.getDouble();
+		double threshold = P.APEX_THRESHOLD.getDouble();
+		if (scale < 1.0D && threshold > 0.0D) {
+			double vy = Math.abs(entity.motY);
+			if (vy < threshold) {
+				g *= scale + (1.0D - scale) * (vy / threshold);
+			}
+		}
+		return g;
 	}
 
 	/** EntityLiving 每 tick 空气阻力取值 */

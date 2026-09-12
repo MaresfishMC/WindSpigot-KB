@@ -196,6 +196,44 @@ public class KBProbe extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!"kbprobe".equalsIgnoreCase(cmd.getName())) return false;
+        if (args.length > 0 && "traj".equalsIgnoreCase(args[0])) {
+            // 合成弹道自检: 按当前活配置逐 tick 模拟击退滞空期的竖直运动。
+            // 不依赖玩家/僵尸, 用于核对重力 / 顶点丝滑过渡 / 滞空时间。
+            double v = com.windpvp.windspigot.knockback.KnockbackConfig.getCurrentKb() instanceof com.windpvp.windspigot.knockback.CraftKnockbackProfile
+                    ? ((com.windpvp.windspigot.knockback.CraftKnockbackProfile) com.windpvp.windspigot.knockback.KnockbackConfig.getCurrentKb()).getVerticalGround()
+                    : com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("base-kb.vertical.ground").getDouble();
+            if (args.length >= 2) { try { v = Double.parseDouble(args[1]); } catch (NumberFormatException ignored) { } }
+            double g = com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.value").getDouble();
+            double drag = com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.air-resistance").getDouble();
+            double scale = com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.apex-scale").getDouble();
+            double thr = com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.apex-threshold").getDouble();
+            double motY = v, h = 0.0D, peak = 0.0D;
+            int peakTick = 0, apexSoft = 0;
+            StringBuilder sb = new StringBuilder();
+            for (int t = 1; t <= 40; t++) {
+                double gEff = g;
+                if (scale < 1.0D && thr > 0.0D && Math.abs(motY) < thr) {
+                    gEff = g * (scale + (1.0D - scale) * (Math.abs(motY) / thr));
+                    apexSoft++;
+                }
+                motY = (motY - gEff) * drag;
+                h += motY;
+                if (h > peak) { peak = h; peakTick = t; }
+                if (t <= 16) sb.append(String.format(Locale.ROOT, "t%02d:v=%+.4f h=%.4f  ", t, motY, h));
+                if (t > peakTick + 1 && h <= 0.0D) {
+                    sender.sendMessage(String.format(Locale.ROOT,
+                            "KBProbe/traj: 初速=%.6f g=%.4f(等效 %.1f m/s²) 阻力=%.2f 顶点倍率=%.2f 阈值=%.3f",
+                            v, g, g / 0.0025D, drag, scale, thr));
+                    sender.sendMessage("KBProbe/traj: 顶点高度=" + String.format(Locale.ROOT, "%.4f", peak)
+                            + " 格 (第 " + peakTick + " tick), 滞空 " + t + " tick ("
+                            + String.format(Locale.ROOT, "%.2f", t * 0.05D) + " 秒), 顶点过渡区 tick 数=" + apexSoft);
+                    sender.sendMessage("KBProbe/traj: " + sb.toString().trim());
+                    return true;
+                }
+            }
+            sender.sendMessage("KBProbe/traj: 40 tick 内未落地 (初速=" + v + " g=" + g + ")");
+            return true;
+        }
         if (args.length > 0 && "status".equalsIgnoreCase(args[0])) {
             sender.sendMessage("KBProbe: 生效速度包 " + written + " 条 (过滤 " + skipped + "), 原始出手包 " + attacks
                     + " 个, 在线 " + Bukkit.getOnlinePlayers().size() + " 人");

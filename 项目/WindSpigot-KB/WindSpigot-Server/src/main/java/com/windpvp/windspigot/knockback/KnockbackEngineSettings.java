@@ -202,8 +202,10 @@ public class KnockbackEngineSettings {
 		reg("combo.increment", Type.DOUBLE, 0.05D, CAT_ADVANCED, "每次连击水平递增");
 		reg("combo.max", Type.DOUBLE, 0.4D, CAT_ADVANCED, "连击递增上限");
 		reg("combo.reset-ticks", Type.INT, 40, CAT_ADVANCED, "连击重置间隔(tick)");
-		reg("gravity.value", Type.DOUBLE, 0.08D, CAT_ADVANCED, "击退后重力(仅击退滞空时)");
+		reg("gravity.value", Type.DOUBLE, 0.08D, CAT_ADVANCED, "击退后重力(仅击退滞空时; 0.0625≈25m/s²)");
 		reg("gravity.air-resistance", Type.DOUBLE, 0.98D, CAT_ADVANCED, "击退后空气阻力");
+		reg("gravity.apex-scale", Type.DOUBLE, 1.0D, CAT_ADVANCED, "顶点重力倍率(1=关闭; 越小顶点悬停越久越丝滑)");
+		reg("gravity.apex-threshold", Type.DOUBLE, 0.08D, CAT_ADVANCED, "顶点过渡区(|motY| 低于此值按曲线降重力)");
 		reg("air-ground.grace-ticks", Type.INT, 1, CAT_ADVANCED, "空中/地面判定宽限(落地后tick内仍按地面)");
 		// 核心扩展（调试工具不含此节，合并热更新不会丢失）
 		reg("dynamic-misplay.enabled", Type.BOOL, false, CAT_ADVANCED, "动态misplay开关(按目标ping补偿)");
