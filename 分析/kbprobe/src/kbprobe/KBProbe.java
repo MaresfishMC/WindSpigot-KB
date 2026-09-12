@@ -464,10 +464,31 @@ public class KBProbe extends JavaPlugin implements Listener {
             Player vic = Bukkit.getPlayerExact(args[2]);
             if (atk == null || vic == null) { sender.sendMessage("玩家不在线"); return true; }
             int times = args.length >= 4 ? Integer.parseInt(args[3]) : 1;
+            // 距离守卫: 服务端直接调用 attack() 不走原版 reach 判定, 若距离过远会被反作弊判 Reach
+            // (2026-09-13 曾因此误封测试客户端 KBVictim, VL 100 / 检测 Reach)。此处硬性拒绝。
+            // 自动站位: 超过原版 reach 就把攻击方挪到受击方旁边并面向它, 避免服务端直调触发 Reach 误封
+            double reachDist = atk.getLocation().distance(vic.getLocation());
+            if (reachDist > 3.0D) {
+                org.bukkit.Location vl = vic.getLocation();
+                org.bukkit.Location al = vl.clone().add(0, 0, 2.0D);
+                al.setYaw(180.0F); al.setPitch(0.0F);
+                atk.teleport(al);
+                atk.setSprinting(false);
+                sender.sendMessage(String.format(Locale.ROOT, "已自动站位: 距离 %.2f -> 2.00 格", reachDist));
+                reachDist = 2.0D;
+            }
             net.minecraft.server.v1_8_R3.EntityPlayer a =
                     ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) atk).getHandle();
             net.minecraft.server.v1_8_R3.EntityPlayer v =
                     ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) vic).getHandle();
+            // 可选: 强制攻击方疾跑状态(第 5 个参数 on/off), 用于验证疾跑加成路径
+            if (args.length >= 5) {
+                boolean sp = "on".equalsIgnoreCase(args[4]) || "true".equalsIgnoreCase(args[4]);
+                atk.setSprinting(sp);
+                a.setSprinting(sp);
+                a.setExtraKnockback(sp);
+                sender.sendMessage("攻击方疾跑状态强制为: " + sp);
+            }
             for (int k = 0; k < times; k++) {
                 a.attack(v);
                 v.noDamageTicks = 0; // 便于连续测试, 绕过无敌帧

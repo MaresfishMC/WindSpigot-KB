@@ -106,7 +106,7 @@ function audit(rows, traj) {
             const seg = arr.slice(i, j + 1);
             const rise = Math.max(...seg.map(s => s.y)) - arr[i - 1 >= 0 ? i - 1 : i].y;
             const horiz = Math.hypot(seg[seg.length - 1].x - (arr[i - 1] || seg[0]).x, seg[seg.length - 1].z - (arr[i - 1] || seg[0]).z);
-            samples.push({ vic, ticks: seg.length, rise, horiz });
+            samples.push({ vic, ts: seg[0].ts, ticks: seg.length, rise, horiz });
           }
           i = j;
         }
@@ -117,8 +117,10 @@ function audit(rows, traj) {
     if (samples.length) {
       out.push(`  实机弹道对照(${samples.length} 段完整滞空):`);
       for (const s of samples.slice(-4)) out.push(`    ${s.vic}: 滞空 ${s.ticks} tick, 顶点升 ${s.rise.toFixed(3)} 格, 水平位移 ${s.horiz.toFixed(3)} 格`);
-      const shallow = samples.filter(s => s.rise < 0.35).length;
-      const longAir = samples.filter(s => s.ticks > 24).length;
+      const nowMs = Date.now();
+      const fresh = samples.filter(s => s.ts && nowMs - s.ts < 180000);
+      const shallow = fresh.filter(s => s.rise < 0.35).length;
+      const longAir = fresh.filter(s => s.ticks > 24).length;
       if (shallow > 0) alerts.push(`有 ${shallow} 段滞空顶点升幅 <0.35 格(疑似击退过小/被吞)`);
       if (longAir > 0) alerts.push(`有 ${longAir} 段滞空 >24 tick(疑似连击持续抛飞或卡空)`);
     } else {
