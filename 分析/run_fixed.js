@@ -4,7 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const DIR = 'F:\\open\\新服务器\\senven (2)';
 const LOG = 'F:\\open\\新服务器\\PVP内核\\分析\\server_fixed.log';
-const log = fs.createWriteStream(LOG, { encoding: 'utf8' });
+const log = fs.createWriteStream(LOG, { encoding: 'utf8', flags: 'a' }); // 追加: 重启不再清空历史日志
 let buf = '';
 const child = spawn('cmd.exe', ['/c', 'start (windspigot).bat'], { cwd: DIR, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
 child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
