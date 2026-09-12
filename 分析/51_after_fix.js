@@ -38,6 +38,7 @@ function loadCsv(file) {
   return out;
 }
 
+const truthy = v => v === true || v === 'true' || v === 1 || v === '1';
 function loadMmc() {
   const p = path.join(DIR, 'joined.jsonl');
   const out = [];
@@ -46,14 +47,17 @@ function loadMmc() {
     const o = JSON.parse(line);
     const h = parseFloat(o.outH);
     if (!Number.isFinite(h)) continue;
-    out.push({ atkSprint: o.atkSprintTrue === 'true', vicSprint: o.self_sprinting === 'true', h });
+    out.push({ atkSprint: truthy(o.atkSprintTrue), vicSprint: truthy(o.self_sprinting), h });
   }
   return out;
 }
 
 const since = parseInt(process.argv[2] || '0', 10);
 const all = loadCsv(LIVE);
-const live = since > 0 ? all.filter(r => r.ts >= since) : all;
+// 参数语义: > 1e12 视为时间戳(ms), 否则视为"跳过前 N 行"的基线行号
+const live = since > 0
+  ? (since > 1e12 ? all.filter(r => r.ts >= since) : all.slice(since))
+  : all;
 const mmc = loadMmc();
 
 console.log(`本服样本: 全部 ${all.length} / 本次窗口 ${live.length}   (MMC 参考 ${mmc.length})`);
