@@ -210,13 +210,23 @@ public class KBProbe extends JavaPlugin implements Listener {
         World world = Bukkit.getWorlds().get(0);
         Zombie zombie = world.spawn(world.getSpawnLocation(), Zombie.class);
         try {
+            // 合成测试: /kbprobe [x] [z]  —— 直接走内核真实代码路径, 用活配置算基础击退。
+            // x z 省略时用 1.0 / 0.0; 传 0 0 可验证"位置重合"分支(原版应重掷随机方向后照常击退,
+            // 旧实现直接 return 会造成零击退)。
+            double x = 1.0D, z = 0.0D;
+            if (args.length >= 2) {
+                try { x = Double.parseDouble(args[0]); z = Double.parseDouble(args[1]); }
+                catch (NumberFormatException nfe) { sender.sendMessage("§c用法: /kbprobe [x] [z]"); return true; }
+            }
             net.minecraft.server.v1_8_R3.EntityZombie nms =
                     ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftZombie) zombie).getHandle();
             nms.motX = 0; nms.motY = 0; nms.motZ = 0; nms.onGround = true;
-            com.windpvp.windspigot.knockback.KnockbackEngine.applyBaseKnockback(nms, 1.0D, 0.0D, null);
+            com.windpvp.windspigot.knockback.KnockbackEngine.applyBaseKnockback(nms, x, z, null);
             double mag = Math.sqrt(nms.motX * nms.motX + nms.motZ * nms.motZ);
-            sender.sendMessage(String.format(Locale.ROOT, "KBProbe: |motXZ|=%.6f motY=%.6f profile=%s",
-                    mag, nms.motY, com.windpvp.windspigot.knockback.KnockbackConfig.getCurrentKb().getName()));
+            sender.sendMessage(String.format(Locale.ROOT,
+                    "KBProbe: 输入=(%.4f,%.4f) |motXZ|=%.6f motY=%.6f 方向=(%.4f,%.4f) profile=%s",
+                    x, z, mag, nms.motY, mag > 0 ? nms.motX / mag : 0, mag > 0 ? nms.motZ / mag : 0,
+                    com.windpvp.windspigot.knockback.KnockbackConfig.getCurrentKb().getName()));
         } finally { zombie.remove(); }
         return true;
     }
