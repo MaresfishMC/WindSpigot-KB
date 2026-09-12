@@ -86,6 +86,8 @@ public final class ProfileParams {
 				CraftKnockbackProfile::getVerticalAir, dbl((p, v) -> p.setVerticalAir(((Number) v).doubleValue())));
 		reg("vertical-limit", CAT_BASE, "垂直击退上限(motY钳制)", false, 0.015,
 				CraftKnockbackProfile::getVerticalLimit, dbl((p, v) -> p.setVerticalLimit(((Number) v).doubleValue())));
+		reg("horizontal-limit", CAT_BASE, "水平冲量上限(<=0=不限)", false, 0.015,
+				CraftKnockbackProfile::getHorizontalLimit, dbl((p, v) -> p.setHorizontalLimit(((Number) v).doubleValue())));
 		reg("vertical-max", CAT_BASE, "垂直上限(旧路径)", false, 0.015, CraftKnockbackProfile::getVerticalMax,
 				dbl((p, v) -> p.setVerticalMax(((Number) v).doubleValue())));
 		reg("vertical-min", CAT_BASE, "垂直击退下限", false, 0.015, CraftKnockbackProfile::getVerticalMin,
@@ -98,7 +100,7 @@ public final class ProfileParams {
 				CraftKnockbackProfile::getSprintExtraHorizontal, dbl((p, v) -> p.setSprintExtraHorizontal(((Number) v).doubleValue())));
 		reg("sprint-extra.vertical", CAT_BASE, "疾跑额外垂直击退(绝对值)", false, 0.025,
 				CraftKnockbackProfile::getSprintExtraVertical, dbl((p, v) -> p.setSprintExtraVertical(((Number) v).doubleValue())));
-		reg("victim-sprint-extra.horizontal", CAT_BASE, "受击方疾跑额外水平击退(朝攻击者运动时, MMC式)", false, 0.025,
+		reg("victim-sprint-extra.horizontal", CAT_BASE, "受击方疾跑额外水平击退(与运动朝向无关)", false, 0.025,
 				CraftKnockbackProfile::getVictimSprintExtraHorizontal, dbl((p, v) -> p.setVictimSprintExtraHorizontal(((Number) v).doubleValue())));
 		reg("victim-sprint-extra.vertical", CAT_BASE, "受击方疾跑额外垂直击退", false, 0.025,
 				CraftKnockbackProfile::getVictimSprintExtraVertical, dbl((p, v) -> p.setVictimSprintExtraVertical(((Number) v).doubleValue())));

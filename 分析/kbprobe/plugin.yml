@@ -1,0 +1,9 @@
+name: KBProbe
+version: 1.2
+main: kbprobe.KBProbe
+author: DSH
+description: Knockback in-server diagnostic probe (no ProtocolLib)
+commands:
+  kbprobe:
+    description: KB diagnostic probe
+    usage: /kbprobe [status|text]

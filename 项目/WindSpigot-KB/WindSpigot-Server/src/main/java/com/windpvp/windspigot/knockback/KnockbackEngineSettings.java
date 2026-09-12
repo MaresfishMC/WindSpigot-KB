@@ -142,6 +142,8 @@ public class KnockbackEngineSettings {
 		reg("base-kb.vertical.ground", Type.DOUBLE, 0.4D, CAT_BASE, "基础垂直击退(地面)");
 		reg("base-kb.vertical.air", Type.DOUBLE, 0.4D, CAT_BASE, "基础垂直击退(空中)");
 		reg("base-kb.vertical-limit", Type.DOUBLE, 0.4D, CAT_BASE, "垂直击退上限(motY钳制)");
+		// 水平冲量上限: <=0 表示不限。MMC 实测硬上限 0.9494(超出了基础+疾跑各分量之和的钳制)
+		reg("base-kb.horizontal-limit", Type.DOUBLE, -1.0D, CAT_BASE, "水平冲量上限(<=0=不限)");
 		reg("base-kb.horizontal-momentum", Type.DOUBLE, 0.5D, CAT_BASE, "受击水平动量保留(0=完全覆盖)");
 		reg("base-kb.vertical-momentum", Type.DOUBLE, 0.5D, CAT_BASE, "受击垂直动量保留");
 
@@ -158,12 +160,15 @@ public class KnockbackEngineSettings {
 		reg("horizontal.sprint-extra", Type.DOUBLE, 0.0D, CAT_BASE, "疾跑额外水平击退(绝对值)");
 		reg("vertical.sprint-extra", Type.DOUBLE, 0.0D, CAT_BASE, "疾跑额外垂直击退(绝对值)");
 		// ---------- 受击方疾跑额外击退（MMC式, 已并入模式文件 victim-sprint-extra 分节, 此处仅默认值） ----------
-		reg("victim-sprint-extra.horizontal", Type.DOUBLE, 0.0D, CAT_BASE, "受击方疾跑额外水平击退(朝攻击者运动时)");
+		reg("victim-sprint-extra.horizontal", Type.DOUBLE, 0.0D, CAT_BASE, "受击方疾跑额外水平击退(与运动朝向无关)");
 		reg("victim-sprint-extra.vertical", Type.DOUBLE, 0.0D, CAT_BASE, "受击方疾跑额外垂直击退");
 		reg("sprint-reach.enabled", Type.BOOL, false, CAT_SPRINT, "疾跑宽松判定总开关");
 		reg("sprint-reach.grace-ticks", Type.INT, 5, CAT_SPRINT, "疾跑宽限(tick内仍视为疾跑)");
 		reg("sprint-reach.extra", Type.DOUBLE, 0.5D, CAT_SPRINT, "疾跑时额外攻击距离(格)");
 		reg("sprint-reach.feedback", Type.BOOL, false, CAT_SPRINT, "疾跑宽限生效时ActionBar提示");
+		// 防相消: 疾跑/附魔加成沿攻击者朝向施加, 当瞄准方向与"攻击者→受击者"方向夹角>90°时会与基础击退
+		// 反向相消, 实测可使 |速度包| 从 0.949 掉到 0.106(近乎无击退)。开启后只保留不与基础击退反向的分量。
+		reg("sprint-bonus.no-cancel", Type.BOOL, false, CAT_ADVANCED, "疾跑加成防相消(避免瞄准偏差导致近乎无击退)");
 
 		// ---------- 对刀 PVP 独立参数 ----------
 		reg("pvp.enabled", Type.BOOL, true, CAT_PVP, "对刀独立参数总开关");
@@ -319,9 +324,11 @@ public class KnockbackEngineSettings {
 					&& (num < 0.0D || num > 1.0D)) {
 				return "动量保留必须在0~1之间: " + p.path + "=" + num;
 			}
-			// 乘区/上限/衰减/连击等不允许负数（y-limit.vertical-kb-after-limit 明确允许负值）
+			// 乘区/上限/衰减/连击等不允许负数（y-limit.vertical-kb-after-limit 明确允许负值;
+			// base-kb.horizontal-limit 用负值表示"不限"）
 			if (!p.path.equals("y-limit.vertical-kb-after-limit") && !p.path.contains("sprint-extra")
-					&& !p.path.equals("dynamic-misplay.target") && num < 0.0D) {
+					&& !p.path.equals("dynamic-misplay.target")
+					&& !p.path.equals("base-kb.horizontal-limit") && num < 0.0D) {
 				return "参数不允许为负数: " + p.path + "=" + num;
 			}
 		}

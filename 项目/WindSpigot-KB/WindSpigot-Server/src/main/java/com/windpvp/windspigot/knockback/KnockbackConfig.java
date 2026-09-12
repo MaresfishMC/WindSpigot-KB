@@ -89,6 +89,7 @@ public class KnockbackConfig {
 			{ "base-kb.vertical.ground", "vertical.ground" },
 			{ "base-kb.vertical.air", "vertical.air" },
 			{ "base-kb.vertical-limit", "vertical-limit" },
+			{ "base-kb.horizontal-limit", "horizontal-limit" },
 			{ "base-kb.horizontal-momentum", "horizontal-momentum" },
 			{ "base-kb.vertical-momentum", "vertical-momentum" },
 			{ "horizontal.sprint-extra", "sprint-extra.horizontal" },
@@ -377,10 +378,11 @@ public class KnockbackConfig {
 
 		// ---- 垂直钳制与动量(原全局 base-kb 并入) ----
 		profile.setVerticalLimit(yml.getDouble("vertical-limit", 0.4D));
+		profile.setHorizontalLimit(yml.getDouble("horizontal-limit", -1.0D));
 		profile.setHorizontalMomentum(yml.getDouble("horizontal-momentum", 0.5D));
 		profile.setVerticalMomentum(yml.getDouble("vertical-momentum", 0.5D));
 		profile.setClampExplicit(yml.contains("vertical-limit") || yml.contains("horizontal-momentum")
-				|| yml.contains("vertical-momentum"));
+				|| yml.contains("vertical-momentum") || yml.contains("horizontal-limit"));
 
 		// ---- 疾跑额外击退(原全局 sprint-extra 并入) ----
 		profile.setSprintExtraHorizontal(yml.getDouble("sprint-extra.horizontal", 0.0D));
@@ -544,6 +546,7 @@ public class KnockbackConfig {
 		// 旧文件中的键 → 模式分节键(仅补缺失, 不覆盖模式已有值)
 		String[][] mergeMap = {
 				{ "base-kb.vertical-limit", "vertical-limit" },
+				{ "base-kb.horizontal-limit", "horizontal-limit" },
 				{ "base-kb.horizontal-momentum", "horizontal-momentum" },
 				{ "base-kb.vertical-momentum", "vertical-momentum" },
 				{ "horizontal.sprint-extra", "sprint-extra.horizontal" },
@@ -703,7 +706,9 @@ public class KnockbackConfig {
 			if (isRetention && (num < 0.0D || num > 1.0D)) {
 				return "动量保留必须在0~1之间";
 			}
-			if (num < 0.0D && !key.equals("vertical-min") && !key.equals("dynamic-misplay.target")) {
+			// horizontal-limit 用负值表示"不限"
+			if (num < 0.0D && !key.equals("vertical-min") && !key.equals("dynamic-misplay.target")
+					&& !key.equals("horizontal-limit")) {
 				return "参数不允许为负数";
 			}
 			value = num;
@@ -829,21 +834,36 @@ public class KnockbackConfig {
 	// ==================== 玩家个人击退配置 ====================
 
 	/**
+	 * 按玩家名取个人击退模式（命中缓存 / 读 knockback.players 配置）。
+	 * 供击退引擎在实体未显式绑定 profile 时解析玩家个人模式，避免创建 Bukkit 包装对象。
+	 *
+	 * @return 无个人模式时返回 null
+	 */
+	public static KnockbackProfile getPlayerProfileByName(String name) {
+		if (name == null) {
+			return null;
+		}
+		String key = name.toLowerCase();
+		KnockbackProfile profile = playerProfiles.get(key);
+		if (profile != null) {
+			return profile;
+		}
+		String customProfileName = getString("knockback.players." + key, null);
+		if (customProfileName != null) {
+			profile = getKbProfileByName(customProfileName);
+			if (profile != null) {
+				playerProfiles.put(key, profile);
+			}
+		}
+		return profile;
+	}
+
+	/**
 	 * 获取玩家的击退配置（个人配置优先）
 	 */
 	public static KnockbackProfile getPlayerProfile(Player player) {
 		String playerName = player.getName().toLowerCase();
-		KnockbackProfile profile = playerProfiles.get(playerName);
-		if (profile == null) {
-			// 检查是否有自定义配置
-			String customProfileName = getString("knockback.players." + playerName, null);
-			if (customProfileName != null) {
-				profile = getKbProfileByName(customProfileName);
-				if (profile != null) {
-					playerProfiles.put(playerName, profile);
-				}
-			}
-		}
+		KnockbackProfile profile = getPlayerProfileByName(playerName);
 		return profile != null ? profile : currentKb;
 	}
 

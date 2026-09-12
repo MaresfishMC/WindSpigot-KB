@@ -20,3 +20,16 @@ WindSpigot-2.1.4/
 .vscode/
 *.iml
 Thumbs.db
+
+# 标定分析：脚本与探针源码入库，采样数据/日志/临时解包不入库
+分析/*.jsonl
+分析/*.log
+分析/kb-log*.csv
+分析/*.class
+分析/_*/
+分析/classes/
+分析/stubs/
+分析/stubs-classes/
+分析/kbprobe/classes/
+*.class
+

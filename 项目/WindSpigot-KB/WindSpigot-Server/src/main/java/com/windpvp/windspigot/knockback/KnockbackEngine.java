@@ -22,7 +22,7 @@ import net.minecraft.server.PacketPlayOutEntityVelocity;
  * 击退分两个阶段（与原版一致）:
  * - 阶段一 {@link #applyBaseKnockback}：仅与双方 XZ 相对位置相关，
  *   最终击退 = 基础值(模式分节显式 → 全局默认) × 乘区（对刀走 pvp 乘区），
- *   附加距离衰减(MMC式)、连击递增、防飞天限高、垂直上限钳制。
+ *   附加受击方疾跑加成、距离衰减(MMC式)、连击递增、防飞天限高、垂直上限与水平上限钳制。
  * - 阶段二 {@link #applySprintKnockback}：仅与攻击者 yaw 和疾跑状态相关，
  *   sprint-extra 为绝对值累加（模式分节显式 → 全局默认），击退附魔按等级叠加。
  *
@@ -49,6 +49,7 @@ public final class KnockbackEngine {
 		static final KnockbackEngineSettings.Param BASE_V_G = KnockbackEngineSettings.param("base-kb.vertical.ground");
 		static final KnockbackEngineSettings.Param BASE_V_A = KnockbackEngineSettings.param("base-kb.vertical.air");
 		static final KnockbackEngineSettings.Param BASE_V_LIMIT = KnockbackEngineSettings.param("base-kb.vertical-limit");
+		static final KnockbackEngineSettings.Param BASE_H_LIMIT = KnockbackEngineSettings.param("base-kb.horizontal-limit");
 		static final KnockbackEngineSettings.Param BASE_H_MOM = KnockbackEngineSettings.param("base-kb.horizontal-momentum");
 		static final KnockbackEngineSettings.Param BASE_V_MOM = KnockbackEngineSettings.param("base-kb.vertical-momentum");
 		static final KnockbackEngineSettings.Param MULT_H_G = KnockbackEngineSettings.param("multiplier.horizontal.ground");
@@ -88,7 +89,7 @@ public final class KnockbackEngine {
 		static final KnockbackEngineSettings.Param SPRINT_REACH_ENABLED = KnockbackEngineSettings.param("sprint-reach.enabled");
 		static final KnockbackEngineSettings.Param SPRINT_REACH_GRACE = KnockbackEngineSettings.param("sprint-reach.grace-ticks");
 		static final KnockbackEngineSettings.Param SPRINT_REACH_FEEDBACK = KnockbackEngineSettings.param("sprint-reach.feedback");
-		static final KnockbackEngineSettings.Param SERVER_SIDE_KB = KnockbackEngineSettings.param("server-side-kb");
+		static final KnockbackEngineSettings.Param SPRINT_NO_CANCEL = KnockbackEngineSettings.param("sprint-bonus.no-cancel");		static final KnockbackEngineSettings.Param SERVER_SIDE_KB = KnockbackEngineSettings.param("server-side-kb");
 		static final KnockbackEngineSettings.Param DM_ENABLED = KnockbackEngineSettings.param("dynamic-misplay.enabled");
 		static final KnockbackEngineSettings.Param DM_TARGET = KnockbackEngineSettings.param("dynamic-misplay.target");
 		static final KnockbackEngineSettings.Param DM_COMP = KnockbackEngineSettings.param("dynamic-misplay.compensation");
@@ -119,11 +120,36 @@ public final class KnockbackEngine {
 		return p.getDouble();
 	}
 
+	/**
+	 * 解析受击者实际生效的击退模式。
+	 *
+	 * 核心从不调用 {@code Entity.setKnockbackProfile()}（该字段只由插件 API 写入），
+	 * 因此原版实体与玩家的 {@code getKnockbackProfile()} 恒为 null。
+	 * 若不在此兜底，引擎会退化为读取引擎参数的**硬编码默认值**
+	 * （base 0.4 / 无水平上限 / sprint-extra 0），模式文件完全失效。
+	 *
+	 * 取值链: 实体显式绑定 profile → 玩家个人模式 → 全局当前模式(currentKb)
+	 */
+	private static KnockbackProfile resolveProfile(Entity victim) {
+		KnockbackProfile profile = victim.getKnockbackProfile();
+		if (profile != null) {
+			return profile;
+		}
+		if (victim instanceof EntityPlayer) {
+			KnockbackProfile personal = KnockbackConfig
+					.getPlayerProfileByName(((EntityPlayer) victim).getName());
+			if (personal != null) {
+				return personal;
+			}
+		}
+		return KnockbackConfig.getCurrentKb();
+	}
+
 	private static CraftKnockbackProfile craftOf(Entity victim) {
 		if (victim == null) {
 			return null;
 		}
-		KnockbackProfile profile = victim.getKnockbackProfile();
+		KnockbackProfile profile = resolveProfile(victim);
 		return profile instanceof CraftKnockbackProfile ? (CraftKnockbackProfile) profile : null;
 	}
 
@@ -213,7 +239,7 @@ public final class KnockbackEngine {
 	 */
 	public static double getMisplayMultiplier(Entity victim) {
 		// 模式文件显式包含 misplay 字段时, 以模式值为准(配置文件作为基础KB); 全局兜底
-		KnockbackProfile profile = victim.getKnockbackProfile();
+		KnockbackProfile profile = resolveProfile(victim);
 		boolean enabled = P.DM_ENABLED.getBool();
 		double target = P.DM_TARGET.getDouble();
 		double compensation = P.DM_COMP.getDouble();
@@ -269,8 +295,7 @@ public final class KnockbackEngine {
 		}
 
 		// 每击退只取一次受害者 profile 引用（运行速率优化）
-		CraftKnockbackProfile craft = victim.getKnockbackProfile() instanceof CraftKnockbackProfile
-				? (CraftKnockbackProfile) victim.getKnockbackProfile() : null;
+		CraftKnockbackProfile craft = craftOf(victim);
 
 		// 对刀判定: 模式显式 → 全局
 		boolean pvp;
@@ -317,6 +342,8 @@ public final class KnockbackEngine {
 
 		// ---- 受击方疾跑额外击退（MMC式: 受击者疾跑且朝攻击者移动时承受更多击退; 模式显式 → 全局默认） ----
 		// 实测(2026-08-30 受控采样): base 0.527 + 受击方疾跑 0.25(仅当受击者朝攻击者运动) + 攻击方疾跑 0.12
+		// ---- 受击方疾跑额外击退（原为 MMC式"朝攻击者运动时"，实测无方向依赖 →
+		//      仅以"受击方疾跑"为门控。testtt 受控采样: 朝攻击者 n=208 med=0.8915 / 背离 n=19 med=0.8908 一致）
 		double victimSprintExtraH;
 		double victimSprintExtraV;
 		if (craft != null && craft.isVictimSprintExtraExplicit()) {
@@ -327,8 +354,7 @@ public final class KnockbackEngine {
 			victimSprintExtraV = d(craft, P.VICTIM_SPRINT_V);
 		}
 		if ((victimSprintExtraH != 0.0D || victimSprintExtraV != 0.0D) && victim instanceof EntityHuman
-				&& isSprintingEffective((EntityHuman) victim)
-				&& victim.motX * x + victim.motZ * z > 0.0D) {
+				&& isSprintingEffective((EntityHuman) victim)) {
 			horizontal += victimSprintExtraH;
 			vertical += victimSprintExtraV;
 		}
@@ -415,8 +441,33 @@ public final class KnockbackEngine {
 			victim.motY = verticalLimit;
 		}
 
+		// ---- 水平冲量上限（MMC 实测硬上限） ----
+		// 注意: 阶段二(applySprintKnockback)还会再累加疾跑/附魔分量, 故两阶段末尾都要钳制,
+		// 否则"双方疾跑"会输出 1.31 而不是 0.9494。
+		applyHorizontalLimit(victim, craft);
+
 		// ---- 击退滞空期间的自定义重力标记 ----
 		markGravityOverride(victim);
+	}
+
+	/**
+	 * 水平冲量上限钳制（MMC 实测硬上限 0.9494）。
+	 * 基础 + 攻击方疾跑 + 受击方疾跑三分量相加会达到 1.31，但实测输出被钳制在 0.9494
+	 * （716/2805 个样本堆积于该值）；模式值 <=0 表示不限。
+	 * 必须在阶段一与阶段二末尾各调用一次（阶段二会继续累加速度）。
+	 */
+	private static void applyHorizontalLimit(Entity victim, CraftKnockbackProfile craft) {
+		double horizontalLimit = craft != null && craft.isClampExplicit()
+				? craft.getHorizontalLimit() : d(craft, P.BASE_H_LIMIT);
+		if (horizontalLimit <= 0.0D) {
+			return;
+		}
+		double mag = Math.sqrt(victim.motX * victim.motX + victim.motZ * victim.motZ);
+		if (mag > horizontalLimit) {
+			double scale = horizontalLimit / mag;
+			victim.motX *= scale;
+			victim.motZ *= scale;
+		}
 	}
 
 	// ==================== 阶段二：疾跑/附魔额外击退 ====================
@@ -478,8 +529,9 @@ public final class KnockbackEngine {
 				sprintExtraV *= craft.getSprintVerticalMultiplier();
 			}
 			if (sprintExtraH != 0.0D || sprintExtraV != 0.0D) {
-				victim.g(sin * sprintExtraH * dynamicMultiplier, sprintExtraV * dynamicMultiplier,
-						cos * sprintExtraH * dynamicMultiplier);
+				double[] h = horizontalBonus(victim, sin, cos, sprintExtraH);
+				victim.g(h[0] * dynamicMultiplier, sprintExtraV * dynamicMultiplier,
+						h[1] * dynamicMultiplier);
 				applied = true;
 				// 疾跑宽限视觉反馈：宽限生效时通过 ActionBar 提示攻击者
 				if (graceSprint && P.SPRINT_REACH_FEEDBACK.getBool() && attacker instanceof EntityPlayer) {
@@ -494,17 +546,51 @@ public final class KnockbackEngine {
 
 		// 击退附魔（按等级叠加，沿用 profile 的 extra 参数）
 		if (enchantLevel > 0) {
-			victim.g(sin * enchantLevel * profile.getExtraHorizontal() * dynamicMultiplier,
-					profile.getExtraVertical() * dynamicMultiplier,
-					cos * enchantLevel * profile.getExtraHorizontal() * dynamicMultiplier);
+			double[] h = horizontalBonus(victim, sin, cos,
+					enchantLevel * profile.getExtraHorizontal());
+			victim.g(h[0] * dynamicMultiplier, profile.getExtraVertical() * dynamicMultiplier,
+					h[1] * dynamicMultiplier);
 			applied = true;
+		}
+
+		// 阶段二累加完毕后再次钳制水平上限（阶段一末尾的钳制在本次累加之前已失效）
+		if (applied) {
+			applyHorizontalLimit(victim, craft);
 		}
 
 		return applied;
 	}
 
-	// ==================== 击退后自定义重力 ====================
+	/**
+	 * 计算水平额外击退的向量，并在 sprint-bonus.no-cancel 开启时去掉与当前冲量反向的分量。
+	 *
+	 * 背景：疾跑/附魔加成按攻击者朝向 (sin,cos) 施加，而基础击退按"攻击者→受击者"方向施加。
+	 * 实测（本服 599 个发包样本）当两者夹角 &gt;90° 时会互相抵消：|速度包| 从 0.949 掉到
+	 * 0.106~0.47（夹角 120/150/180° 的理论值 0.483/0.266/0.106 与实测逐条吻合），
+	 * 表现就是"打中了但几乎不击退"。开启后只保留不与基础击退相反的分量，
+	 * 保证命中击退不低于基础值；夹角 &lt;90° 时行为完全不变。
+	 *
+	 * @return {x, z} 水平增量
+	 */
+	private static double[] horizontalBonus(Entity victim, double sin, double cos, double magnitude) {
+		double hx = sin * magnitude;
+		double hz = cos * magnitude;
+		if (P.SPRINT_NO_CANCEL.getBool()) {
+			double ix = victim.motX;
+			double iz = victim.motZ;
+			double len2 = ix * ix + iz * iz;
+			if (len2 > 1.0E-8D) {
+				double along = (hx * ix + hz * iz) / len2;   // 沿当前冲量方向的分量系数
+				if (along < 0.0D) {
+					hx -= along * ix;                         // 去掉反向分量(保留垂直分量)
+					hz -= along * iz;
+				}
+			}
+		}
+		return new double[] { hx, hz };
+	}
 
+	// ==================== 击退后自定义重力 ====================
 	/** 击退施加后调用：若重力参数与原版不同，则标记该实体在滞空期间使用自定义重力 */
 	private static void markGravityOverride(EntityLiving victim) {
 		if (gravityDiffersFromVanilla()) {

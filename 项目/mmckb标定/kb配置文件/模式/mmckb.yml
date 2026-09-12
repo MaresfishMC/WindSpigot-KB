@@ -1,0 +1,127 @@
+# ================================================================
+# mmckb —— Minemen Club 击退逆向还原配置 (2026-08-30 testtt 两轮受控采样标定)
+# ================================================================
+# 标定依据: F:\open\数据\testtt 两轮对打, 804 + 2001 = 2805 个 S12 速度包,
+#   并已用双方 events.tsv 的双方真实坐标 / 攻击方真实疾跑状态做几何分解。
+# 数据文件放置: 服务端根目录 kb配置文件/模式/mmckb.yml, 并在 knockback.yml 指定
+#   knockback.current: mmckb
+# ================================================================
+
+# ---- 近战基础击退 (地面/空中分离) ----
+# 实测锚点: 双方均不疾跑时 |速度包| 恒为 4219/8000 = 0.527375 (n=70, θ<8°, sd≈0.003)
+horizontal:
+  ground: 0.527375
+  air: 0.527375
+vertical:
+  ground: 0.361375
+  air: 0.361375
+
+# ---- 垂直/水平钳制 ----
+# out_y 在 2783/2805 个样本里恒等于 2891/8000 = 0.361375, 且与 pre_y (-0.56~+0.33) 无关
+vertical-limit: 0.361375
+horizontal-limit: 0.9494
+vertical-max: 0.361375
+vertical-min: -1.0
+
+# ---- 动量保留: 实测为 0 ----
+# 基准段 |pre| 在 0.018~0.165 (9 倍变化) 时 |out| 恒定 0.5274 ⇒ 服务端完全覆盖原速度
+# (旧配置误写 pvp.horizontal-momentum: 2.0 与 0.5 相乘 = 1.0, 等于完全保留, 属配置 bug)
+horizontal-momentum: 0.0
+vertical-momentum: 0.0
+
+# ---- 疾跑额外击退 (绝对值累加, 沿攻击方 yaw) ----
+# 攻击方疾跑(真值)且受击方不疾跑: |out| = 0.948889 ⇒ 加成 = 0.421514
+sprint-extra:
+  horizontal: 0.4215
+  vertical: 0.0
+
+# ---- 受击方疾跑额外击退 (沿攻击方→受击方方向) ----
+# 受击方疾跑且攻击方不疾跑: |out| = 0.886747 ⇒ 加成 = 0.359372
+# 实测与受击方运动朝向无关 (朝攻击者 n=208 med 0.8915 / 背离 n=19 med 0.8908)
+victim-sprint-extra:
+  horizontal: 0.3594
+  vertical: 0.0
+
+# ---- 对刀PVP 独立乘区 (全部保持 1.0, 让基础值直接生效) ----
+# 注意: pvp.sprint-extra 必须与 sprint-extra 同值 —— 引擎对刀路径优先读 pvp 分节,
+#       旧配置 pvp.sprint-extra = 0.0 会让攻击方疾跑加成在对刀中静默丢失
+pvp:
+  enabled: true
+  horizontal:
+    ground: 1.0
+    air: 1.0
+  vertical:
+    ground: 1.0
+    air: 1.0
+  vertical-limit: 1.0
+  horizontal-momentum: 1.0
+  vertical-momentum: 1.0
+  sprint-extra:
+    horizontal: 0.4215
+    vertical: 0.0
+
+# ---- 全局乘区 (保持 1.0) ----
+multiplier:
+  horizontal:
+    ground: 1.0
+    air: 1.0
+  vertical:
+    ground: 1.0
+    air: 1.0
+  vertical-limit: 1.0
+  horizontal-momentum: 1.0
+  vertical-momentum: 1.0
+
+# ---- 摩擦/系统 (仅投射物与非玩家近战的旧路径使用, 对玩家近战无效) ----
+friction:
+  horizontal: 2.0
+  vertical: 2.0
+stop-sprint: true
+
+# ---- 击退附魔与 W-Tap ----
+# 未标定项: 采样中 kb_level 全为 0, 无附魔样本 ⇒ 沿用核心默认
+extra:
+  horizontal: 0.5
+  vertical: 0.1
+wtap-extra:
+  horizontal: 0.5
+  vertical: 0.1
+add:
+  horizontal: 0.0
+  vertical: 0.0
+
+# ---- 疾跑倍率/空地倍率 (保持 1.0, 加成已在 sprint-extra 内) ----
+sprint-multiplier:
+  horizontal: 1.0
+  vertical: 1.0
+sprint-lenient-enabled: true
+air-multiplier:
+  horizontal: 1.0
+  vertical: 1.0
+ground-multiplier:
+  horizontal: 1.0
+  vertical: 1.0
+
+# ---- 动态 misplay: 实测未检出 ping 补偿 ⇒ 关闭 ----
+dynamic-misplay:
+  enabled: false
+  target: 0.0
+  compensation: 0.5
+
+# ---- 投射物击退: 未标定(0 个投射物样本) ⇒ 保守用核心默认 0.4 ----
+projectiles:
+  rod:
+    horizontal: 0.4
+    vertical: 0.4
+  arrow:
+    horizontal: 0.4
+    vertical: 0.4
+  pearl:
+    horizontal: 0.4
+    vertical: 0.4
+  snowball:
+    horizontal: 0.4
+    vertical: 0.4
+  egg:
+    horizontal: 0.4
+    vertical: 0.4

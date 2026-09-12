@@ -40,6 +40,12 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 	private double horizontalMomentum = 0.5D;
 	private double verticalMomentum = 0.5D;
 	private boolean clampExplicit = false;
+	/**
+	 * 水平冲量上限(MMC 实测硬上限, <=0 表示不限)。
+	 * 依据 testtt 两轮受控采样: 基础 0.527375 + 攻击方疾跑 0.4215 + 受击方疾跑 0.3594
+	 * 相加会到 1.31, 但实测输出被钳制在 0.9494 (716/2805 个样本堆积于该值)。
+	 */
+	private double horizontalLimit = -1.0D;
 
 	// ==================== 疾跑额外击退(原全局 sprint-extra 并入, 绝对值) ====================
 	private double sprintExtraHorizontal = 0.0D;
@@ -152,6 +158,7 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		this.verticalLimit = other.verticalLimit;
 		this.horizontalMomentum = other.horizontalMomentum;
 		this.verticalMomentum = other.verticalMomentum;
+		this.horizontalLimit = other.horizontalLimit;
 		this.clampExplicit = other.clampExplicit;
 		// 疾跑额外击退
 		this.sprintExtraHorizontal = other.sprintExtraHorizontal;
@@ -255,6 +262,7 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 		yml.set("vertical-limit", this.verticalLimit);
 		yml.set("vertical-max", this.verticalMax);
 		yml.set("vertical-min", this.verticalMin);
+		yml.set("horizontal-limit", this.horizontalLimit);
 		yml.set("horizontal-momentum", this.horizontalMomentum);
 		yml.set("vertical-momentum", this.verticalMomentum);
 		// ==== 分类一: 疾跑额外击退(绝对值) ====
@@ -475,6 +483,16 @@ public class CraftKnockbackProfile implements KnockbackProfile {
 
 	public void setClampExplicit(boolean clampExplicit) {
 		this.clampExplicit = clampExplicit;
+	}
+
+	/** 水平冲量上限(<=0 表示不限) */
+	public double getHorizontalLimit() {
+		return horizontalLimit;
+	}
+
+	public void setHorizontalLimit(double horizontalLimit) {
+		this.horizontalLimit = horizontalLimit;
+		this.clampExplicit = true;
 	}
 
 	// ==================== 疾跑额外击退(原全局 sprint-extra 并入) ====================

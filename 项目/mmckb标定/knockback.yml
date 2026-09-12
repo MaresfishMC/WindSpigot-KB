@@ -1,0 +1,18 @@
+# WindSpigot 击退配置文件 (mmckb 配置包 · 指针文件)
+# ------------------------------------------------------------------
+# 本文件旧版曾存放全局引擎键(0.52756539 / 0.350545305 / sprint-extra 0.35475776 /
+# y-limit 开启 / range-reduction 开启 / hit-delay 10 / gravity 0.0625)，
+# 这些值已被 2026-08-30 testtt 两轮受控采样标定推翻，现全部由
+# kb配置文件/ 下的分类文件与 模式/mmckb.yml 承载。
+#
+# 引擎参数结构:
+#   kb配置文件/系统开关.yml      stop-sprint / hit-delay / iframe-knockback ...
+#   kb配置文件/高级机制.yml      y-limit / range-reduction / combo / gravity / sprint-reach ...
+#   kb配置文件/模式/mmckb.yml    基础击退 / 对刀PVP / 乘区 / 疾跑加成 / 上限 / 动量
+#
+# 热更新: /kb reload （合并语义: 只覆盖文件中显式存在的键）
+# 注意: 若把调试工具导出的 knockback.yml 放到本目录, /kb reload 会将其中的引擎键
+#       自动导入 kb配置文件/ 并从本文件移除。
+# ------------------------------------------------------------------
+knockback:
+  current: mmckb
