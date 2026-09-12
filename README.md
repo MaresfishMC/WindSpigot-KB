@@ -95,7 +95,45 @@ build.bat / build.ps1    一键编译脚本（产物输出到 编译后文件/�
 | 攻击方不疾跑 · 受击方疾跑 | med 0.8868（恒定） | med 0.8289（p10 0.5688） |
 | 双方疾跑（W-Tap 连击） | med **0.9494**，66.2% 顶上限 | med **0.8514**，仅 7.7% 顶上限 |
 
+### 重力/顶点丝滑与 1.8 的「客户端权威」约束（2026-09-12 晚）
+
+**必须知道的架构事实**：1.8 里**玩家自己的位移由客户端模拟**。`PlayerConnection` 收到
+`PacketPlayInFlying` 后直接 `setLocation(客户端坐标)`，服务端只做 moved-too-quickly 校验；
+整条击退只发一次 S12 速度包，之后由**客户端用它自带的原版重力 0.08 / 阻力 0.98** 积分。
+
+因此：
+
+- `gravity.value` / `gravity.apex-scale` 只对**生物**生效（生物由服务端模拟），
+  对**玩家受击方**的可见弹道**毫无影响**。
+- 想让玩家按服务端重力曲线飞，1.8 下唯一手段是滞空期**逐 tick 补发速度包**覆盖客户端积分
+  —— 即 `gravity.client-side`。它会带来每次击退约 8~14 个速度包，这是实现该效果的固有代价，
+  与「无敌帧重复补发」那种 bug 性质不同（后者回归检查恒为 0）。
+
+期间还修掉一个把该机制彻底废掉的 bug：`gravityFor()` 旧实现在 `entity.onGround` 为真时
+无条件清 `kbGravityOverride`，而击退多发生在站地面的受击方身上、服务端 `onGround` 要到本 tick
+`move()` 之后才变 false，`gravityFor()` 却在 `move()` 之前调用 ⇒ 标记在击退后第一 tick 就被清掉。
+现在改为 `onGround && motY <= 0` 才解除。
+
+**滞空接管实现要点**（`KnockbackEngine.beginClientFlight` / `tickClientFlight`）：
+
+- 只覆写**竖直**分量；水平分量回填「客户端自己上一 tick 的位移」⇒ 不夺走空中转向/加速手感。
+- 落地 / 死亡 / 超 `gravity.client-max-ticks` / 下坠已足够快(`my < -0.5`) / 传送级位移
+  ⇒ 立即交回客户端，不产生拉扯。
+- 同步写回 `p.motY`，使服务端 moved-too-quickly 校验与客户端真实运动一致。
+- 仅在自定义重力或顶点过渡启用时生效（`gravityDiffersFromVanilla()`），回原版即自动关闭；
+  `client-side: false` 可整体关闭。
+
+**预期弹道**（`/kbprobe traj`，与 `EntityLiving` 同一公式与顺序）：
+
+| | 原版 | 本配置 |
+|---|---|---|
+| 等效重力 | 32 m/s² | **25.0 m/s²** |
+| 顶点 | 0.6062 格 / 第 4 tick | **0.8067 格 / 第 5 tick** |
+| 过零步长 | 0.079（一步翻向） | **0.038 → 0.024**（过渡区 4 tick） |
+| 滞空 | 约 8 tick | **12 tick（0.60 秒，+50%）** |
+
 ### 第三轮：线上监听复核（2026-09-12 晚，修复后新内核）
+
 
 用新内核 + KBProbe v1.3 包层采集 396 个样本（测试员与 `/bot start god` 机器人对刀，
 机器人 `sprint-reset=0.8` 会持续 W-Tap，正好覆盖出问题的场景）：

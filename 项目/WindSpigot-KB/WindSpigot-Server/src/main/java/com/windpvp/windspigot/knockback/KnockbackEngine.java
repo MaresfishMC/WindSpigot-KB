@@ -717,6 +717,11 @@ public final class KnockbackEngine {
 		if (!P.CLIENT_SIDE.getBool() || !gravityDiffersFromVanilla()) {
 			return;
 		}
+		// 兜底: 玩家在滞空期掉线时不会再收到 tick 调用, 条目会残留。
+		// 接管窗口只有十几个 tick, 正常并发量极小, 超过阈值直接清空即可, 保证内存有界。
+		if (FLIGHTS.size() > 64) {
+			FLIGHTS.clear();
+		}
 		Flight f = new Flight();
 		f.my = victim.motY;
 		f.lastX = victim.locX;
