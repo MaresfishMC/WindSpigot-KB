@@ -37,3 +37,5 @@ Thumbs.db
 分析/_*
 *.class
 
+分析/logs/
+分析/_*
