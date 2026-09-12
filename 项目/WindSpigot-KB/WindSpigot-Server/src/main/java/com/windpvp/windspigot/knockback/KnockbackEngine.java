@@ -690,77 +690,87 @@ public final class KnockbackEngine {
 		return 0.9800000190734863D;
 	}
 
-	// ==================== 客户端滞空接管 ====================
+	// ==================== 客户端滞空接管(当前默认关闭, 见下) ====================
+	//
+	// ⚠️ 事故记录(2026-09-12 23:00): 本机制第一版上线后**把水平击退也吃掉了** —— 玩家反馈
+	//   "无垂直kb / kb全都没有了"。原因是本版把水平分量回填成"客户端上一 tick 的位移差",
+	//   但对一个被击退的玩家, 那个位移差≈他本 tick 的残速(站立时接近 0), 于是每 tick 都用
+	//   近零水平速度覆盖了击退冲量。已整体回滚(配置 client-side: false + gravity 回原版)。
+	//
+	// 若要重新启用, 必须先改成: 水平分量由服务端自己积分(用击退初速 + 客户端摩擦 0.91),
+	//   而不是回填客户端位移; 并且只在"竖直"确实需要接管时才发包。
+	//   ⚠️ 在重新验证之前请保持 gravity.client-side: false。
 	//
 	// 背景(必须理解才能改这块): 1.8 里"玩家自己的位移由客户端模拟"。
 	//   PlayerConnection 收到 PacketPlayInFlying 后直接 setLocation(客户端坐标), 服务端只做
 	//   "moved too quickly" 校验。整条击退只发一次 S12 速度包, 之后客户端用它自己的
 	//   **原版重力 0.08 / 阻力 0.98** 积分。⇒ 服务端改 gravity.value / apex-scale
 	//   对"玩家受击方"的可见弹道**完全没有影响**(只对生物生效, 因为生物由服务端模拟)。
-	// 想在 1.8 让玩家按自定义重力飞, 唯一手段是滞空期逐 tick 补发 S12 覆盖客户端的积分。
-	// 本实现要点:
-	//   * 只覆写**竖直**分量(用服务端重力曲线算出的 my);
-	//     水平分量回填"客户端自己上一 tick 的位移", 因此不夺走空中转向/加速手感。
-	//   * 落地 / 达到 tick 上限 / 下坠已足够快 / 出现传送级位移 时立即交回客户端。
-	//   * 仅在自定义重力与顶点过渡真的启用时生效(gravityDiffersFromVanilla()), 回原版即自动关闭。
-	//   * 代价: 每次击退在滞空期会有约 8~14 个速度包(这是 1.8 实现自定义重力的固有代价)。
+	// 还想让玩家按自定义重力飞, 唯一手段是滞空期逐 tick 补发 S12, 且必须做两件事:
+	//   1) 反解补偿: 客户端会做 (vy-0.08)*0.98, 故应发 vy = 目标位移/0.98 + 0.08;
+	//   2) 水平分量必须服务端自行积分, 不能回填客户端位移差(否则击退被自身残速覆盖)。
 	private static final Map<Integer, Flight> FLIGHTS = new ConcurrentHashMap<>();
 
+	/** 客户端自己的积分常量(EntityLiving.m(): motY -= 0.08; motY *= 0.98), 用于反解注入值 */
+	private static final double CLIENT_GRAVITY = 0.08D;
+	private static final double CLIENT_DRAG = 0.98D;
+
 	private static final class Flight {
-		double my;
+		double step;
 		double lastX, lastZ;
 		int ticks;
 	}
 
-	/** 首次速度包发出后登记滞空接管 */
-	public static void beginClientFlight(EntityPlayer victim) {
-		if (!P.CLIENT_SIDE.getBool() || !gravityDiffersFromVanilla()) {
-			return;
-		}
-		// 兜底: 玩家在滞空期掉线时不会再收到 tick 调用, 条目会残留。
-		// 接管窗口只有十几个 tick, 正常并发量极小, 超过阈值直接清空即可, 保证内存有界。
-		if (FLIGHTS.size() > 64) {
-			FLIGHTS.clear();
-		}
-		Flight f = new Flight();
-		f.my = victim.motY;
-		f.lastX = victim.locX;
-		f.lastZ = victim.locZ;
-		FLIGHTS.put(victim.getId(), f);
+	/**
+	 * 把"想要的每 tick 位移"反解成应发给客户端的 vy:
+	 *   客户端实际位移 = (vy - 0.08) * 0.98  ⇒  vy = 目标位移 / 0.98 + 0.08
+	 * 重新实现滞空接管时必须用这个反解, 否则客户端会在服务端重力之上再叠一份原版重力。
+	 */
+	private static double clientInjectY(double desiredStep) {
+		return desiredStep / CLIENT_DRAG + CLIENT_GRAVITY;
 	}
 
-	/** 每个玩家 tick 调用一次: 按服务端重力曲线推进滞空并补发速度包 */
+	/**
+	 * 客户端滞空接管 —— **当前停用(硬开关)**。
+	 *
+	 * 第一版上线即造成"击退整体消失"事故: 它把水平分量回填成客户端上一 tick 的位移差,
+	 * 而被击退玩家那一格的水平位移≈其自身残速(站立时≈0), 于是每 tick 都用近零水平速度
+	 * 覆盖了击退冲量 ⇒ 玩家反馈"无垂直kb / kb全都没有了"。
+	 *
+	 * 重新启用前必须完成:
+	 *   1) 水平分量由服务端自行积分(击退初速 + 客户端空中摩擦 0.91), **不得**回填客户端位移;
+	 *   2) 竖直用 clientInjectY 反解补偿;
+	 *   3) 先在单人环境用 traj.csv 核对整条弹道(顶点/滞空/水平位移)再放量。
+	 * 目前直接返回, 保证无论配置如何都不会影响击退。
+	 */
+	public static void beginClientFlight(EntityPlayer victim) {
+		// 停用: 见方法注释。保留签名以便 EntityHuman 的调用点不变。
+	}
+
+	/** 诊断: 当前接管中的滞空玩家数量(停用期间恒为 0) */
+	public static int activeFlights() {
+		FLIGHTS.clear();
+		return 0;
+	}
+
+	/** 每个玩家 tick 调用一次 —— 停用期间为空操作, 仅清理可能残留的条目 */
 	public static void tickClientFlight(EntityHuman human) {
-		if (FLIGHTS.isEmpty() || !(human instanceof EntityPlayer)) {
-			return;
+		if (!FLIGHTS.isEmpty()) {
+			FLIGHTS.clear();
 		}
-		EntityPlayer p = (EntityPlayer) human;
-		Flight f = FLIGHTS.get(p.getId());
-		if (f == null) {
-			return;
+	}
+
+	/** 供 EntityHuman 调用点使用的编译占位(停用期间不会执行到这里) */
+	private static void unusedTickClientFlight(EntityHuman human) {
+		// 事故版本实现已删除。重新实现时必须:
+		//   1) 水平分量由服务端自行积分(击退初速 + 客户端空中摩擦 0.91), 不得回填客户端位移;
+		//   2) 竖直用 clientInjectY 反解补偿;
+		//   3) 落地/死亡/超 client-max-ticks/竖直下坠足够快 时交回客户端。
+		// 详见 beginClientFlight 的注释。
+		// 说明: 保留空方法体, 避免把未验证的物理逻辑留在可执行路径上。
+		if (!FLIGHTS.isEmpty()) {
+			FLIGHTS.clear();
 		}
-		int maxTicks = P.CLIENT_MAX_TICKS.getInt();
-		// 落地/死亡/超预算/竖直已下坠到可交回客户端 => 停止接管
-		if (p.onGround || p.dead || f.ticks >= maxTicks || f.my < -0.5D) {
-			FLIGHTS.remove(p.getId());
-			return;
-		}
-		// 客户端真实水平速度 = 客户端本 tick 上报的位置差(回填它, 保留空中转向手感)
-		double dx = p.locX - f.lastX;
-		double dz = p.locZ - f.lastZ;
-		f.lastX = p.locX;
-		f.lastZ = p.locZ;
-		if (Math.abs(dx) > 2.0D || Math.abs(dz) > 2.0D) { // 传送级位移, 放弃接管避免拉扯
-			FLIGHTS.remove(p.getId());
-			return;
-		}
-		f.my = (f.my - effectiveGravity(f.my)) * P.AIR_RESIST.getDouble();
-		f.ticks++;
-		p.motX = dx;
-		p.motY = f.my;
-		p.motZ = dz;
-		p.velocityChanged = false;
-		p.playerConnection.sendPacket(new PacketPlayOutEntityVelocity(p));
 	}
 
 	// ==================== 速度同步 ====================

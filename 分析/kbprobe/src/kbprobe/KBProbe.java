@@ -64,8 +64,8 @@ public class KBProbe extends JavaPlugin implements Listener {
     private static final int TRACE_TICKS = 30;
     private BufferedWriter trajOut;
     private static final Map<Integer, Deque<Hit>> PENDING = new ConcurrentHashMap<>();
-    private BufferedWriter kbOut, evOut;
-    private volatile int written = 0, skipped = 0, attacks = 0;
+    private BufferedWriter kbOut, evOut, s12Out;
+    private volatile int written = 0, skipped = 0, attacks = 0, s12Count = 0, s12Errors = 0;
 
     @Override
     public void onEnable() {
@@ -87,6 +87,12 @@ public class KBProbe extends JavaPlugin implements Listener {
             if (freshTr) {
                 trajOut.write("ts_ms,victim,tick,y,dy,mot_y,vy_pkt,on_ground\n"); // dy=逐tick位移(≈客户端motY)
                 trajOut.flush();
+            }
+            boolean freshS12 = !new File(dir, "s12.csv").exists();
+            s12Out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, "s12.csv"), true), StandardCharsets.UTF_8));
+            if (freshS12) {
+                s12Out.write("ts_ms,entity_id,player,vx,vy,vz\n");
+                s12Out.flush();
             }
         } catch (Exception ex) { getLogger().severe("无法打开日志: " + ex); }
 
@@ -131,6 +137,43 @@ public class KBProbe extends JavaPlugin implements Listener {
             getLogger().info("KBProbe v1.3: ProtocolLib 包层已挂载 (USE_ENTITY/ATTACK + ENTITY_ACTION)");
         } catch (Throwable t) {
             getLogger().warning("ProtocolLib 挂载失败(仅剩 Bukkit 层): " + t);
+        }
+
+        // 出包层: 抓所有 S12 速度包(含滞空接管逐 tick 补发的那批), 用于核对客户端实际收到的竖直速度曲线
+        try {
+            ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(this,
+                    ListenerPriority.MONITOR, PacketType.Play.Server.ENTITY_VELOCITY) {
+                @Override public void onPacketSending(PacketEvent e) {
+                    try {
+                        int id = e.getPacket().getIntegers().read(0);
+                        // 1.8 的 S12 速度分量在协议里是**定点整数**(v*8000), ProtocolLib 也是按
+                        // 整数结构暴露的; 早先误用 getDoubles() 会抛异常并被下面的 catch 吞掉,
+                        // 于是"抓到 0 个包"其实是读数错误, 不是真没发包(曾据此误判为事件被取消)。
+                        double vx = e.getPacket().getIntegers().read(1) / 8000.0D;
+                        double vy = e.getPacket().getIntegers().read(2) / 8000.0D;
+                        double vz = e.getPacket().getIntegers().read(3) / 8000.0D;
+                        String name = "";
+                        for (Player on : Bukkit.getOnlinePlayers()) {
+                            if (on.getEntityId() == id) { name = on.getName(); break; }
+                        }
+                        synchronized (KBProbe.this) {
+                            if (s12Out != null) {
+                                s12Out.write(String.format(Locale.ROOT, "%d,%d,%s,%.6f,%.6f,%.6f%n",
+                                        System.currentTimeMillis(), id, name, vx, vy, vz));
+                                s12Out.flush();
+                                s12Count++;
+                            }
+                        }
+                    } catch (Exception ex) {
+                        // 不要静默吞掉: 读数失败会让"抓到 0 个包"看起来像"没发包"
+                        s12Errors++;
+                        if (s12Errors <= 3) getLogger().warning("S12 读取失败: " + ex);
+                    }
+                }
+            });
+            getLogger().info("KBProbe v1.3: S12 出包监听已挂载 (ENTITY_VELOCITY)");
+        } catch (Throwable t) {
+            getLogger().warning("S12 监听挂载失败: " + t);
         }
 
         getLogger().info("KBProbe 诊断就绪 → plugins/KBProbe/{kb-log,events}.csv");
@@ -332,6 +375,16 @@ public class KBProbe extends JavaPlugin implements Listener {
                     "KBProbe/trajmob: 已施加击退 motY=%.6f 重力=%.5f(等效 %.1f m/s²), 开始逐 tick 采样(约 30 tick)",
                     v0, com.windpvp.windspigot.knockback.KnockbackEngine.gravityFor(nms),
                     com.windpvp.windspigot.knockback.KnockbackEngine.gravityFor(nms) / 0.0025D));
+            return true;
+        }
+        if (args.length > 0 && "flights".equalsIgnoreCase(args[0])) {
+            // 滞空接管诊断: 直接问内核当前有几个接管中的玩家, 以及关键开关取值
+            sender.sendMessage("KBProbe/flights: 接管中=" + com.windpvp.windspigot.knockback.KnockbackEngine.activeFlights()
+                    + " client-side=" + com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.client-side").getBool()
+                    + " gravity=" + com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.value").getDouble()
+                    + " apex-scale=" + com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.apex-scale").getDouble()
+                    + " max-ticks=" + com.windpvp.windspigot.knockback.KnockbackEngineSettings.param("gravity.client-max-ticks").getInt());
+            sender.sendMessage("KBProbe/flights: 已抓到 S12 出包 " + s12Count + " 个 → plugins/KBProbe/s12.csv, 生效速度包 " + written + " 条");
             return true;
         }
         if (args.length > 0 && "status".equalsIgnoreCase(args[0])) {
