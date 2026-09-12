@@ -1089,6 +1089,17 @@ public abstract class EntityHuman extends EntityLiving {
 						this.motZ *= 0.6D;
 						if (KnockbackEngineSettings.b("stop-sprint")) {
 							this.setExtraKnockback(false); // Nacho - Prevent desync player sprinting
+						// WindSpigot start - 还原原版 1.8.8 EntityHuman.attack 的 this.setSprinting(false)
+						// (原版第 883 行: 击退命中后攻击方疾跑被服务端重置)。
+						// 缺失它的后果: isSprintingEffective() = isExtraKnockback() || isSprinting(),
+						// extraKnockback 被清但 isSprinting() 仍为 true ⇒ 疾跑额外击退会挂到"每一击"上,
+						// 而不是只在玩家真正 W-Tap 重按疾跑后的那一击上。
+						// 实测(2026-09-12 线上): 双方疾跑时 66.2% 的命中被顶到水平上限 0.9494,
+						// 而 MMC 同组仅 7.7%, 表现即 "W-Tap 连击击退过大"。
+						// 客户端在松开并重新按下 W 之前不会再发 START_SPRINTING, 因此这里正是
+						// W-Tap 机制的落点, 与原版 / MMC 行为一致。
+						this.setSprinting(false);
+						// WindSpigot end
 						}
 					}
 

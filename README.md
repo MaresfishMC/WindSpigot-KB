@@ -10,6 +10,12 @@
 项目/mmckb标定/           mmckb 标定报告 + 可直接部署的配置包
 kb调试工具新版适配/        KB 调试工具前端（kbm调试仪.html）
 分析/                     标定/诊断工具链（脚本 + 服务端探针 KBProbe）
+  47_sprint_groups.js     按双方疾跑状态分组, 本服 vs MMC 对照
+  51_after_fix.js         修复后复核(按列名解析, 兼容探针列布局变化)
+  46_stubs2.js            生成 ProtocolLib 编译期桩类
+  44_monitor_notice.js    监听开始/结束的游戏内播报
+  49/50_probe_restart.js  修复版/探针版重启(播报 + 倒计时 + 停服)
+  52_watch_players.js     值守: 等待测试员上线并统计采样量
 build.bat / build.ps1    一键编译脚本（产物输出到 编译后文件/）
 ```
 
@@ -48,13 +54,55 @@ build.bat / build.ps1    一键编译脚本（产物输出到 编译后文件/�
    `实体显式绑定 → 玩家个人模式 → 全局当前模式`。
 2. **水平冲量上限 `base-kb.horizontal-limit`（新增）**——MMC 实测硬上限 0.9494，
    且在**阶段一与阶段二末尾各钳一次**（只加在阶段一会被阶段二的疾跑加成绕过）。
-3. **`sprint-bonus.no-cancel`（新增，防 "nokb"）**——疾跑/附魔加成沿攻击者朝向施加，
+3. **`sprint-bonus.no-cancel`（新增，默认 false）**——疾跑/附魔加成沿攻击者朝向施加，
    与沿位置方向的基础击退在夹角 >90° 时反向相消：实测夹角 120/150/180° 时
-   \|速度包\| 掉到 0.483/0.266/0.106（打中却几乎不击退）。开启后只保留不反向的分量，
-   夹角 <90° 时行为不变。
+   \|速度包\| 掉到 0.483/0.266/0.106。开启后只保留不反向的分量，命中击退不再低于基础值。
+   **2026-09-12 按线上反馈回调为 `false`**：MMC 本身也存在该相消（其 >90° 样本 25/87 低于 0.45，
+   p10=0.5273、min=0.0149 的低值尾巴是其真实行为），抹掉它等于整体放大击退 ——
+   开启后"双方疾跑"命中 66.2% 堆积在水平上限 0.9494（MMC 同组仅 7.7%）。
 4. **`victim-sprint-extra` 门控**——去掉"必须朝攻击者运动"的点积条件（实测与朝向无关）。
 5. **对刀路由**——`pvp.sprint-extra` 需与 `sprint-extra` 同值，否则引擎对刀路径
    优先读 pvp 分节会**静默丢失**疾跑加成。
+
+### 第二轮线上修复（2026-09-12，据线上数据 + 原版源码定位）
+
+6. **无敌帧吞击退（`nokb` 真凶）——`EntityLiving.damageEntity`**
+   无敌帧内"伤害差值"分支无条件置 `flag = false`，使下方 `if (flag)` 整块被跳过：
+   `this.ac()`（置 `velocityChanged`）与 `this.a(...)`（阶段一击退）都不执行。
+   伤害照常结算并发出数字/音效，但**没有任何 S12 速度包** —— 这正是玩家反馈的
+   "有伤害数字/音效却几乎不位移"，且旧探针只监听 `PlayerVelocityEvent`，完全看不到这些命中。
+   现改为：`iframe-knockback: false` 时保持 `flag = true`，走标准击退流程；
+   开启时才交给 `applyIframeKnockback` 并置 false 以免重复击退。
+
+7. **W-Tap 连击击退过大——缺失原版 `setSprinting(false)`**
+   原版 1.8.8 `EntityHuman.attack` 第 883 行在击退命中后调用 `this.setSprinting(false)`，
+   WindSpigot 把它替换为只清 `setExtraKnockback(false)`。而
+   `isSprintingEffective() = isExtraKnockback() || isSprinting()`，`isSprinting()` 从未被清
+   ⇒ 疾跑额外击退会挂在**每一击**上，而不是只在玩家真正 W-Tap 重按疾跑后的那一击。
+   已补回该行（`stop-sprint: true` 时生效），与原版/MMC 一致。
+
+8. **取消疾跑加成叠加——`victim-sprint-extra` 不再叠在攻击方疾跑加成之上**
+   按双方真实疾跑状态分组的 MMC 2805 样本显示，双方疾跑一组的中位数
+   （0.8514）**低于**攻击方单独疾跑一组（0.9420），即受击方疾跑不会再加一份。
+   本引擎沿同一条"攻击方→受击方"方向直接相加（0.527375+0.3594+0.4215=1.308275）
+   必被水平上限钳制，故改为二者互斥。
+
+分组对照（修复前线上 630 样本 vs MMC 2805 样本，水平 \|速度包\|）：
+
+| 分组 | 本服（修复前） | MMC |
+|---|---|---|
+| 攻击方疾跑 · 受击方不疾跑 | med 0.9436 | med 0.9420 |
+| 攻击方不疾跑 · 受击方疾跑 | med 0.8868（恒定） | med 0.8289（p10 0.5688） |
+| 双方疾跑（W-Tap 连击） | med **0.9494**，66.2% 顶上限 | med **0.8514**，仅 7.7% 顶上限 |
+
+### 诊断探针 KBProbe v1.3
+
+在 Bukkit 层（`EntityDamageByEntityEvent` + `PlayerVelocityEvent`）之外增加 ProtocolLib 包层，
+捕获原始左键出手包（含被无敌帧吞掉的）与疾跑切换，输出 `events.csv`。
+注意 ProtocolLib 5.4.0 **没有** `PacketType.Play.Client.ATTACK`，左键出手是
+`USE_ENTITY` + `EntityUseAction.ATTACK`，故用反射读取 action 枚举；
+编译期桩类由 `分析/46_stubs2.js` 生成（`ProtocolManager` 必须是 interface，
+否则运行时 `IncompatibleClassChangeError`），桩类不打包进 jar。
 
 ## 构建
 

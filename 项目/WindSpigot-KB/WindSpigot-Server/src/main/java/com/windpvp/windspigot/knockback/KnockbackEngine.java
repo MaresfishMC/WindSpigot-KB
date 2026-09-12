@@ -353,11 +353,23 @@ public final class KnockbackEngine {
 			victimSprintExtraH = d(craft, P.VICTIM_SPRINT_H);
 			victimSprintExtraV = d(craft, P.VICTIM_SPRINT_V);
 		}
+		// WindSpigot start - 受击方疾跑加成与攻击方疾跑加成互斥(不同时叠加)
+		// 实测(MMC 2805 样本, 已用双方真实疾跑状态分组):
+		//   攻击方疾跑 + 受击方不疾跑: med 0.9420
+		//   攻击方不疾跑 + 受击方疾跑: med 0.8289
+		//   双方都疾跑:               med 0.8514  (< 攻击方单独疾跑那一组)
+		// 即受击方疾跑并不会在攻击方疾跑加成之上再加一份; 本引擎把两者沿同一条
+		// "攻击方→受击方" 方向直接相加(0.527375+0.3594+0.4215=1.308275)会被水平上限
+		// 钳制成 0.9494, 实测线上 66.2% 的命中堆积在上限(MMC 仅 7.7%), 表现为
+		// "W-Tap 连击击退过大 / 每一击都把对手打飞"。故攻击方拿到疾跑加成时不再叠加受击方加成。
+		boolean attackerSprintBonus = attacker != null && isSprintingEffective(attacker);
 		if ((victimSprintExtraH != 0.0D || victimSprintExtraV != 0.0D) && victim instanceof EntityHuman
+				&& !attackerSprintBonus
 				&& isSprintingEffective((EntityHuman) victim)) {
 			horizontal += victimSprintExtraH;
 			vertical += victimSprintExtraV;
 		}
+		// WindSpigot end
 
 		// ---- 距离衰减（借鉴 MMC：远距离命中减免击退; 开关可随模式文件覆盖） ----
 		if (b(craft, P.RANGE_ENABLED) && attacker != null) {

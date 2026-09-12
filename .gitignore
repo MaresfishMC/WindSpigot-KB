@@ -31,5 +31,8 @@ Thumbs.db
 分析/stubs/
 分析/stubs-classes/
 分析/kbprobe/classes/
+分析/kbprobe/stubs/
+分析/kbprobe/stubs-classes/
+分析/_*
 *.class
 

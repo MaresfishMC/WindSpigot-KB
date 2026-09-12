@@ -1,8 +1,9 @@
 name: KBProbe
-version: 1.2
+version: 1.3
 main: kbprobe.KBProbe
 author: DSH
-description: Knockback in-server diagnostic probe (no ProtocolLib)
+description: Knockback in-server diagnostic probe (ProtocolLib packet layer + Bukkit layer)
+depend: [ProtocolLib]
 commands:
   kbprobe:
     description: KB diagnostic probe
