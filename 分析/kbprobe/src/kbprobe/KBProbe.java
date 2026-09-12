@@ -387,6 +387,64 @@ public class KBProbe extends JavaPlugin implements Listener {
             sender.sendMessage("KBProbe/flights: 已抓到 S12 出包 " + s12Count + " 个 → plugins/KBProbe/s12.csv, 生效速度包 " + written + " 条");
             return true;
         }
+        if (args.length > 0 && "hit".equalsIgnoreCase(args[0])) {
+            // /kbprobe hit <玩家> [水平] [垂直] [yaw度]
+            // 用真实序列驱动一次击退: 设置击退后的 mot -> 发 S12 -> 登记客户端滞空接管。
+            // 等价于 EntityHuman.attack / EntityLiving.damageEntity 里那段代码, 因此可以拿
+            // 一个真人客户端做端到端弹道验证(不需要第二名玩家来打)。
+            if (args.length < 2) { sender.sendMessage("用法: /kbprobe hit <玩家> [水平] [垂直] [yaw]"); return true; }
+            Player target = Bukkit.getPlayerExact(args[1]);
+            if (target == null) { sender.sendMessage("玩家不在线: " + args[1]); return true; }
+            double h = args.length >= 3 ? Double.parseDouble(args[2]) : 0.527375D;
+            double v = args.length >= 4 ? Double.parseDouble(args[3]) : 0.361375D;
+            double yaw = args.length >= 5 ? Double.parseDouble(args[4]) : 0.0D;
+            double rad = yaw * Math.PI / 180.0D;
+            net.minecraft.server.v1_8_R3.EntityPlayer nms =
+                    ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) target).getHandle();
+            nms.motX = -Math.sin(rad) * h;
+            nms.motZ = Math.cos(rad) * h;
+            nms.motY = v;
+            nms.velocityChanged = false;
+            nms.playerConnection.sendPacket(
+                    new net.minecraft.server.v1_8_R3.PacketPlayOutEntityVelocity(nms));
+            com.windpvp.windspigot.knockback.KnockbackEngine.beginClientFlight(nms);
+            Trace tr = new Trace();
+            tr.startMs = System.currentTimeMillis();
+            tr.id = target.getEntityId();
+            tr.ent = target;
+            tr.nms = nms;
+            tr.prevY = target.getLocation().getY();
+            tr.startY = tr.prevY;
+            tr.peakY = tr.prevY;
+            tr.victim = target.getName();
+            TRACES.put(tr.id, tr);
+            sender.sendMessage(String.format(Locale.ROOT,
+                    "KBProbe/hit: %s mot=(%.4f, %.4f, %.4f) 已发 S12 并登记接管, 开始逐 tick 采样",
+                    target.getName(), nms.motX, nms.motY, nms.motZ));
+            return true;
+        }
+        if (args.length > 0 && "as".equalsIgnoreCase(args[0])) {
+            // /kbprobe as <玩家> <指令...>
+            // 以某个玩家的身份执行指令(等价于他在聊天栏里敲)。用途: 自动化把真实客户端送进对局,
+            // 因为合成输入(mouse_event/keybd_event/SendKeys)会被游戏忽略, 无法用键盘鼠标驱动客户端。
+            if (args.length < 3) { sender.sendMessage("用法: /kbprobe as <玩家> <指令...>"); return true; }
+            Player target = Bukkit.getPlayerExact(args[1]);
+            if (target == null) { sender.sendMessage("玩家不在线: " + args[1]); return true; }
+            StringBuilder sb = new StringBuilder();
+            for (int i = 2; i < args.length; i++) { if (i > 2) sb.append(' '); sb.append(args[i]); }
+            String line = sb.toString();
+            boolean ok = Bukkit.dispatchCommand(target, line);
+            sender.sendMessage("KBProbe/as: " + target.getName() + " => /" + line + "  已执行=" + ok);
+            return true;
+        }
+        if (args.length > 0 && "where".equalsIgnoreCase(args[0])) {
+            for (Player on : Bukkit.getOnlinePlayers()) {
+                org.bukkit.Location l = on.getLocation();
+                sender.sendMessage(String.format(Locale.ROOT, "KBProbe/where: %s world=%s (%.2f, %.2f, %.2f) yaw=%.1f onGround=%b",
+                        on.getName(), l.getWorld().getName(), l.getX(), l.getY(), l.getZ(), l.getYaw(), on.isOnGround()));
+            }
+            return true;
+        }
         if (args.length > 0 && "status".equalsIgnoreCase(args[0])) {
             sender.sendMessage("KBProbe: 生效速度包 " + written + " 条 (过滤 " + skipped + "), 原始出手包 " + attacks
                     + " 个, 在线 " + Bukkit.getOnlinePlayers().size() + " 人");

@@ -1,0 +1,684 @@
+[23:36:47] [main/DEBUG] [FML/]: Injecting tracing printstreams for STDOUT/STDERR.
+[23:36:47] [main/INFO] [FML/]: Forge Mod Loader version 11.15.1.1902 for Minecraft 1.8.9 loading
+[23:36:47] [main/INFO] [FML/]: Java is OpenJDK 64-Bit Server VM, version 1.8.0_502, running on Windows 10:amd64:10.0, installed at C:\Program Files\Zulu\zulu-8\jre
+[23:36:47] [main/DEBUG] [FML/]: Java classpath at launch is H:\pcl\.minecraft\libraries\com\mojang\netty\1.8.8\netty-1.8.8.jar;H:\pcl\.minecraft\libraries\oshi-project\oshi-core\1.1\oshi-core-1.1.jar;H:\pcl\.minecraft\libraries\net\java\dev\jna\jna\3.4.0\jna-3.4.0.jar;H:\pcl\.minecraft\libraries\net\java\dev\jna\platform\3.4.0\platform-3.4.0.jar;H:\pcl\.minecraft\libraries\com\ibm\icu\icu4j-core-mojang\51.2\icu4j-core-mojang-51.2.jar;H:\pcl\.minecraft\libraries\net\sf\jopt-simple\jopt-simple\4.6\jopt-simple-4.6.jar;H:\pcl\.minecraft\libraries\com\paulscode\codecjorbis\20101023\codecjorbis-20101023.jar;H:\pcl\.minecraft\libraries\com\paulscode\codecwav\20101023\codecwav-20101023.jar;H:\pcl\.minecraft\libraries\com\paulscode\libraryjavasound\20101123\libraryjavasound-20101123.jar;H:\pcl\.minecraft\libraries\com\paulscode\librarylwjglopenal\20100824\librarylwjglopenal-20100824.jar;H:\pcl\.minecraft\libraries\com\paulscode\soundsystem\20120107\soundsystem-20120107.jar;H:\pcl\.minecraft\libraries\io\netty\netty-all\4.0.23.Final\netty-all-4.0.23.Final.jar;H:\pcl\.minecraft\libraries\com\google\guava\guava\17.0\guava-17.0.jar;H:\pcl\.minecraft\libraries\org\apache\commons\commons-lang3\3.3.2\commons-lang3-3.3.2.jar;H:\pcl\.minecraft\libraries\commons-io\commons-io\2.4\commons-io-2.4.jar;H:\pcl\.minecraft\libraries\commons-codec\commons-codec\1.9\commons-codec-1.9.jar;H:\pcl\.minecraft\libraries\net\java\jinput\jinput\2.0.5\jinput-2.0.5.jar;H:\pcl\.minecraft\libraries\net\java\jutils\jutils\1.0.0\jutils-1.0.0.jar;H:\pcl\.minecraft\libraries\com\google\code\gson\gson\2.2.4\gson-2.2.4.jar;H:\pcl\.minecraft\libraries\com\mojang\authlib\1.5.21\authlib-1.5.21.jar;H:\pcl\.minecraft\libraries\com\mojang\realms\1.7.59\realms-1.7.59.jar;H:\pcl\.minecraft\libraries\org\apache\commons\commons-compress\1.8.1\commons-compress-1.8.1.jar;H:\pcl\.minecraft\libraries\org\apache\httpcomponents\httpclient\4.3.3\httpclient-4.3.3.jar;H:\pcl\.minecraft\libraries\commons-logging\commons-logging\1.1.3\commons-logging-1.1.3.jar;H:\pcl\.minecraft\libraries\org\apache\httpcomponents\httpcore\4.3.2\httpcore-4.3.2.jar;H:\pcl\.minecraft\libraries\org\apache\logging\log4j\log4j-api\2.0-beta9\log4j-api-2.0-beta9.jar;H:\pcl\.minecraft\libraries\org\apache\logging\log4j\log4j-core\2.0-beta9\log4j-core-2.0-beta9.jar;H:\pcl\.minecraft\libraries\org\lwjgl\lwjgl\lwjgl\2.9.4-nightly-20150209\lwjgl-2.9.4-nightly-20150209.jar;H:\pcl\.minecraft\libraries\org\lwjgl\lwjgl\lwjgl_util\2.9.4-nightly-20150209\lwjgl_util-2.9.4-nightly-20150209.jar;H:\pcl\.minecraft\libraries\org\lwjgl\lwjgl\lwjgl-platform\2.9.4-nightly-20150209\lwjgl-platform-2.9.4-nightly-20150209-natives-windows.jar;H:\pcl\.minecraft\libraries\net\java\jinput\jinput-platform\2.0.5\jinput-platform-2.0.5-natives-windows.jar;H:\pcl\.minecraft\libraries\tv\twitch\twitch\6.5\twitch-6.5.jar;H:\pcl\.minecraft\libraries\tv\twitch\twitch-platform\6.5\twitch-platform-6.5-natives-windows-64.jar;H:\pcl\.minecraft\libraries\tv\twitch\twitch-external-platform\4.5\twitch-external-platform-4.5-natives-windows-64.jar;H:\pcl\.minecraft\libraries\net\minecraftforge\forge\1.8.9-11.15.1.1902-1.8.9\forge-1.8.9-11.15.1.1902-1.8.9.jar;H:\pcl\.minecraft\libraries\net\minecraft\launchwrapper\1.12\launchwrapper-1.12.jar;H:\pcl\.minecraft\libraries\org\ow2\asm\asm-all\5.0.3\asm-all-5.0.3.jar;H:\pcl\.minecraft\libraries\jline\jline\2.13\jline-2.13.jar;H:\pcl\.minecraft\libraries\com\typesafe\akka\akka-actor_2.11\2.3.3\akka-actor_2.11-2.3.3.jar;H:\pcl\.minecraft\libraries\com\typesafe\config\1.2.1\config-1.2.1.jar;H:\pcl\.minecraft\libraries\org\scala-lang\scala-actors-migration_2.11\1.1.0\scala-actors-migration_2.11-1.1.0.jar;H:\pcl\.minecraft\libraries\org\scala-lang\scala-compiler\2.11.1\scala-compiler-2.11.1.jar;H:\pcl\.minecraft\libraries\org\scala-lang\plugins\scala-continuations-library_2.11\1.0.2\scala-continuations-library_2.11-1.0.2.jar;H:\pcl\.minecraft\libraries\org\scala-lang\plugins\scala-continuations-plugin_2.11.1\1.0.2\scala-continuations-plugin_2.11.1-1.0.2.jar;H:\pcl\.minecraft\libraries\org\scala-lang\scala-library\2.11.1\scala-library-2.11.1.jar;H:\pcl\.minecraft\libraries\org\scala-lang\scala-parser-combinators_2.11\1.0.1\scala-parser-combinators_2.11-1.0.1.jar;H:\pcl\.minecraft\libraries\org\scala-lang\scala-reflect\2.11.1\scala-reflect-2.11.1.jar;H:\pcl\.minecraft\libraries\org\scala-lang\scala-swing_2.11\1.0.1\scala-swing_2.11-1.0.1.jar;H:\pcl\.minecraft\libraries\org\scala-lang\scala-xml_2.11\1.0.2\scala-xml_2.11-1.0.2.jar;H:\pcl\.minecraft\libraries\lzma\lzma\0.0.1\lzma-0.0.1.jar;H:\pcl\.minecraft\libraries\net\sf\jopt-simple\jopt-simple\4.6\jopt-simple-4.6.jar;H:\pcl\.minecraft\libraries\java3d\vecmath\1.5.2\vecmath-1.5.2.jar;H:\pcl\.minecraft\libraries\net\sf\trove4j\trove4j\3.0.3\trove4j-3.0.3.jar;H:\pcl\.minecraft\versions\fpsmaster\fpsmaster.jar
+[23:36:47] [main/DEBUG] [FML/]: Java library path at launch is H:\pcl\.minecraft\versions\fpsmaster\fpsmaster-natives
+[23:36:47] [main/DEBUG] [FML/]: Enabling runtime deobfuscation
+[23:36:47] [main/DEBUG] [FML/]: Instantiating coremod class FMLCorePlugin
+[23:36:47] [main/DEBUG] [FML/]: Added access transformer class net.minecraftforge.fml.common.asm.transformers.AccessTransformer to enqueued access transformers
+[23:36:47] [main/DEBUG] [FML/]: Enqueued coremod FMLCorePlugin
+[23:36:47] [main/DEBUG] [FML/]: Instantiating coremod class FMLForgePlugin
+[23:36:47] [main/DEBUG] [FML/]: Enqueued coremod FMLForgePlugin
+[23:36:47] [main/DEBUG] [FML/]: All fundamental core mods are successfully located
+[23:36:47] [main/DEBUG] [FML/]: Attempting to load commandline specified mods, relative to H:\pcl\.minecraft\versions\fpsmaster
+[23:36:47] [main/DEBUG] [FML/]: Discovering coremods
+[23:36:47] [main/DEBUG] [FML/]: Examining for coremod candidacy [输入修正] InputFix-1.8.x-v2.jar
+[23:36:47] [main/TRACE] [FML/]: Adding [输入修正] InputFix-1.8.x-v2.jar to the list of known coremods, it will not be examined again
+[23:36:47] [main/DEBUG] [FML/]: Instantiating coremod class InputFix
+[23:36:47] [main/TRACE] [FML/]: coremod named InputFix is loading
+[23:36:47] [main/WARN] [FML/]: The coremod lain.mods.inputfix.InputFix does not have a MCVersion annotation, it may cause issues with this version of Minecraft
+[23:36:47] [main/DEBUG] [FML/]: Enqueued coremod InputFix
+[23:36:47] [main/DEBUG] [FML/]: Examining for coremod candidacy KBAnalyzer-1.8.9-1.1.0.jar
+[23:36:47] [main/TRACE] [FML/]: Found FMLCorePluginContainsFMLMod marker in KBAnalyzer-1.8.9-1.1.0.jar, it will be examined later for regular @Mod instances
+[23:36:47] [main/DEBUG] [FML/]: Instantiating coremod class KBLoadingPlugin
+[23:36:47] [main/TRACE] [FML/]: coremod named KBAnalyzerReadOnlyHooks is loading
+[23:36:47] [main/DEBUG] [FML/]: The coremod com.cne9.kbanalyzer.core.KBLoadingPlugin requested minecraft version 1.8.9 and minecraft is 1.8.9. It will be loaded.
+[23:36:47] [main/DEBUG] [FML/]: Enqueued coremod KBAnalyzerReadOnlyHooks
+[23:36:47] [main/DEBUG] [FML/]: Examining for coremod candidacy v4-beta-nightly-8ac7e2.jar
+[23:36:47] [main/INFO] [FML/]: Loading tweaker org.spongepowered.asm.launch.MixinTweaker from v4-beta-nightly-8ac7e2.jar
+[23:36:47] [main/INFO] [LaunchWrapper/]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[23:36:47] [main/INFO] [LaunchWrapper/]: Loading tweak class name org.spongepowered.asm.launch.MixinTweaker
+[23:36:47] [main/DEBUG] [mixin/]: MixinService [LaunchWrapper] was successfully booted in sun.misc.Launcher$AppClassLoader@36baf30c
+[23:36:47] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.7.11 Source=file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar Service=LaunchWrapper Env=CLIENT
+[23:36:48] [main/DEBUG] [mixin/]: Adding new mixin transformer proxy #1
+[23:36:48] [main/DEBUG] [mixin/]: Initialising Mixin Platform Manager
+[23:36:48] [main/DEBUG] [mixin/]: Mixin platform: primary container is file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar
+[23:36:48] [main/DEBUG] [mixin/]: Adding mixin platform agents for container file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar
+[23:36:48] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentFML for file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar
+[23:36:48] [main/DEBUG] [mixin/]: ForceLoadAsMod was specified for v4-beta-nightly-8ac7e2.jar, attempting force-load
+[23:36:48] [main/DEBUG] [mixin/]: Adding v4-beta-nightly-8ac7e2.jar to reparseable coremod collection
+[23:36:48] [main/DEBUG] [mixin/]: Instancing new MixinPlatformAgentDefault for file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/mojang/netty/1.8.8/netty-1.8.8.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/oshi-project/oshi-core/1.1/oshi-core-1.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/dev/jna/jna/3.4.0/jna-3.4.0.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/dev/jna/platform/3.4.0/platform-3.4.0.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/ibm/icu/icu4j-core-mojang/51.2/icu4j-core-mojang-51.2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/codecjorbis/20101023/codecjorbis-20101023.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/codecwav/20101023/codecwav-20101023.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/libraryjavasound/20101123/libraryjavasound-20101123.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/librarylwjglopenal/20100824/librarylwjglopenal-20100824.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/soundsystem/20120107/soundsystem-20120107.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/io/netty/netty-all/4.0.23.Final/netty-all-4.0.23.Final.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/google/guava/guava/17.0/guava-17.0.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/commons/commons-lang3/3.3.2/commons-lang3-3.3.2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/commons-io/commons-io/2.4/commons-io-2.4.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/commons-codec/commons-codec/1.9/commons-codec-1.9.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/jinput/jinput/2.0.5/jinput-2.0.5.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/jutils/jutils/1.0.0/jutils-1.0.0.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/google/code/gson/gson/2.2.4/gson-2.2.4.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/mojang/authlib/1.5.21/authlib-1.5.21.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/mojang/realms/1.7.59/realms-1.7.59.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/commons/commons-compress/1.8.1/commons-compress-1.8.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/httpcomponents/httpclient/4.3.3/httpclient-4.3.3.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/httpcomponents/httpcore/4.3.2/httpcore-4.3.2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/logging/log4j/log4j-api/2.0-beta9/log4j-api-2.0-beta9.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/logging/log4j/log4j-core/2.0-beta9/log4j-core-2.0-beta9.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/lwjgl/lwjgl/lwjgl/2.9.4-nightly-20150209/lwjgl-2.9.4-nightly-20150209.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/lwjgl/lwjgl/lwjgl_util/2.9.4-nightly-20150209/lwjgl_util-2.9.4-nightly-20150209.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/lwjgl/lwjgl/lwjgl-platform/2.9.4-nightly-20150209/lwjgl-platform-2.9.4-nightly-20150209-natives-windows.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/jinput/jinput-platform/2.0.5/jinput-platform-2.0.5-natives-windows.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/tv/twitch/twitch/6.5/twitch-6.5.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/tv/twitch/twitch-platform/6.5/twitch-platform-6.5-natives-windows-64.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/tv/twitch/twitch-external-platform/4.5/twitch-external-platform-4.5-natives-windows-64.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/minecraftforge/forge/1.8.9-11.15.1.1902-1.8.9/forge-1.8.9-11.15.1.1902-1.8.9.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/minecraft/launchwrapper/1.12/launchwrapper-1.12.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/ow2/asm/asm-all/5.0.3/asm-all-5.0.3.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/jline/jline/2.13/jline-2.13.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/typesafe/akka/akka-actor_2.11/2.3.3/akka-actor_2.11-2.3.3.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/typesafe/config/1.2.1/config-1.2.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-actors-migration_2.11/1.1.0/scala-actors-migration_2.11-1.1.0.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-compiler/2.11.1/scala-compiler-2.11.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/plugins/scala-continuations-library_2.11/1.0.2/scala-continuations-library_2.11-1.0.2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/plugins/scala-continuations-plugin_2.11.1/1.0.2/scala-continuations-plugin_2.11.1-1.0.2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-library/2.11.1/scala-library-2.11.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-parser-combinators_2.11/1.0.1/scala-parser-combinators_2.11-1.0.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-reflect/2.11.1/scala-reflect-2.11.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-swing_2.11/1.0.1/scala-swing_2.11-1.0.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-xml_2.11/1.0.2/scala-xml_2.11-1.0.2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/lzma/lzma/0.0.1/lzma-0.0.1.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/java3d/vecmath/1.5.2/vecmath-1.5.2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/versions/fpsmaster/fpsmaster.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/versions/fpsmaster/mods/%5B输入修正%5D%20InputFix-1.8.x-v2.jar for mixin tweaker
+[23:36:48] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/versions/fpsmaster/mods/KBAnalyzer-1.8.9-1.1.0.jar for mixin tweaker
+[23:36:48] [main/INFO] [LaunchWrapper/]: Loading tweak class name net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
+[23:36:48] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[23:36:48] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLInjectionAndSortingTweaker
+[23:36:48] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[23:36:48] [main/DEBUG] [FML/]: Injecting coremod FMLCorePlugin {net.minecraftforge.fml.relauncher.FMLCorePlugin} class transformers
+[23:36:48] [main/TRACE] [FML/]: Registering transformer net.minecraftforge.fml.common.asm.transformers.BlamingTransformer
+[23:36:48] [main/DEBUG] [mixin/]: Preparing mixins for MixinEnvironment[PREINIT]
+[23:36:48] [main/TRACE] [FML/]: Registering transformer net.minecraftforge.fml.common.asm.transformers.SideTransformer
+[23:36:48] [main/TRACE] [FML/]: Registering transformer net.minecraftforge.fml.common.asm.transformers.EventSubscriptionTransformer
+[23:36:48] [main/TRACE] [FML/]: Registering transformer net.minecraftforge.fml.common.asm.transformers.EventSubscriberTransformer
+[23:36:48] [main/DEBUG] [FML/]: Injection complete
+[23:36:48] [main/DEBUG] [FML/]: Running coremod plugin for FMLCorePlugin {net.minecraftforge.fml.relauncher.FMLCorePlugin}
+[23:36:48] [main/DEBUG] [FML/]: Running coremod plugin FMLCorePlugin
+[23:36:49] [main/DEBUG] [FML/]: Read 825 binary patches
+[23:36:49] [main/DEBUG] [FML/]: Loading deobfuscation resource /deobfuscation_data-1.8.9.lzma with 27891 records
+[23:36:50] [main/INFO] [FML/]: Found valid fingerprint for Minecraft. Certificate fingerprint cd99959656f753dc28d863b46769f7f8fbaefcfc
+[23:36:50] [main/ERROR] [FML/]: FML appears to be missing any signature data. This is not a good thing
+[23:36:50] [main/DEBUG] [FML/]: Coremod plugin class FMLCorePlugin run successfully
+[23:36:50] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[23:36:50] [main/DEBUG] [FML/]: Injecting coremod FMLForgePlugin {net.minecraftforge.classloading.FMLForgePlugin} class transformers
+[23:36:50] [main/DEBUG] [FML/]: Injection complete
+[23:36:50] [main/DEBUG] [FML/]: Running coremod plugin for FMLForgePlugin {net.minecraftforge.classloading.FMLForgePlugin}
+[23:36:50] [main/DEBUG] [FML/]: Running coremod plugin FMLForgePlugin
+[23:36:50] [main/DEBUG] [FML/]: Coremod plugin class FMLForgePlugin run successfully
+[23:36:50] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[23:36:50] [main/DEBUG] [FML/]: Injecting coremod InputFix {lain.mods.inputfix.InputFix} class transformers
+[23:36:50] [main/TRACE] [FML/]: Registering transformer lain.mods.inputfix.InputFixTransformer
+[23:36:50] [main/DEBUG] [FML/]: Injection complete
+[23:36:50] [main/DEBUG] [FML/]: Running coremod plugin for InputFix {lain.mods.inputfix.InputFix}
+[23:36:50] [main/DEBUG] [FML/]: Running coremod plugin InputFix
+[23:36:50] [main/DEBUG] [FML/]: Coremod plugin class InputFix run successfully
+[23:36:50] [main/INFO] [LaunchWrapper/]: Calling tweak class org.spongepowered.asm.launch.MixinTweaker
+[23:36:50] [main/DEBUG] [mixin/]: Processing prepare() for PlatformAgent[MixinPlatformAgentFML:file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar]
+[23:36:50] [main/DEBUG] [mixin/]: Processing prepare() for PlatformAgent[MixinPlatformAgentDefault:file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar]
+[23:36:50] [main/DEBUG] [mixin/]: Registering mixin config: mixins.fpsmaster.json
+[23:36:50] [main/INFO] [mixin/]: Compatibility level set to JAVA_8
+[23:36:50] [main/DEBUG] [mixin/]: Processing launch tasks for PlatformAgent[MixinPlatformAgentFML:file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar]
+[23:36:50] [main/DEBUG] [mixin/]: Creating FML remapper adapter: org.spongepowered.asm.bridge.RemapperAdapterFML
+[23:36:50] [main/DEBUG] [mixin/]: Checking for additional mixins for MixinEnvironment[PREINIT]
+[23:36:50] [main/INFO] [mixin/]: Initialised Mixin FML Remapper Adapter with net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper@76318a7d
+[23:36:50] [main/DEBUG] [mixin/]: Processing launch tasks for PlatformAgent[MixinPlatformAgentDefault:file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar]
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/mojang/netty/1.8.8/netty-1.8.8.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/oshi-project/oshi-core/1.1/oshi-core-1.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/dev/jna/jna/3.4.0/jna-3.4.0.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/dev/jna/platform/3.4.0/platform-3.4.0.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/ibm/icu/icu4j-core-mojang/51.2/icu4j-core-mojang-51.2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/codecjorbis/20101023/codecjorbis-20101023.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/codecwav/20101023/codecwav-20101023.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/libraryjavasound/20101123/libraryjavasound-20101123.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/librarylwjglopenal/20100824/librarylwjglopenal-20100824.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/paulscode/soundsystem/20120107/soundsystem-20120107.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/io/netty/netty-all/4.0.23.Final/netty-all-4.0.23.Final.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/google/guava/guava/17.0/guava-17.0.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/commons/commons-lang3/3.3.2/commons-lang3-3.3.2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/commons-io/commons-io/2.4/commons-io-2.4.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/commons-codec/commons-codec/1.9/commons-codec-1.9.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/jinput/jinput/2.0.5/jinput-2.0.5.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/jutils/jutils/1.0.0/jutils-1.0.0.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/google/code/gson/gson/2.2.4/gson-2.2.4.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/mojang/authlib/1.5.21/authlib-1.5.21.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/mojang/realms/1.7.59/realms-1.7.59.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/commons/commons-compress/1.8.1/commons-compress-1.8.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/httpcomponents/httpclient/4.3.3/httpclient-4.3.3.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/httpcomponents/httpcore/4.3.2/httpcore-4.3.2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/logging/log4j/log4j-api/2.0-beta9/log4j-api-2.0-beta9.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/apache/logging/log4j/log4j-core/2.0-beta9/log4j-core-2.0-beta9.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/lwjgl/lwjgl/lwjgl/2.9.4-nightly-20150209/lwjgl-2.9.4-nightly-20150209.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/lwjgl/lwjgl/lwjgl_util/2.9.4-nightly-20150209/lwjgl_util-2.9.4-nightly-20150209.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/lwjgl/lwjgl/lwjgl-platform/2.9.4-nightly-20150209/lwjgl-platform-2.9.4-nightly-20150209-natives-windows.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/java/jinput/jinput-platform/2.0.5/jinput-platform-2.0.5-natives-windows.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/tv/twitch/twitch/6.5/twitch-6.5.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/tv/twitch/twitch-platform/6.5/twitch-platform-6.5-natives-windows-64.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/tv/twitch/twitch-external-platform/4.5/twitch-external-platform-4.5-natives-windows-64.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/minecraftforge/forge/1.8.9-11.15.1.1902-1.8.9/forge-1.8.9-11.15.1.1902-1.8.9.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/minecraft/launchwrapper/1.12/launchwrapper-1.12.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/ow2/asm/asm-all/5.0.3/asm-all-5.0.3.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/jline/jline/2.13/jline-2.13.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/typesafe/akka/akka-actor_2.11/2.3.3/akka-actor_2.11-2.3.3.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/com/typesafe/config/1.2.1/config-1.2.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-actors-migration_2.11/1.1.0/scala-actors-migration_2.11-1.1.0.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-compiler/2.11.1/scala-compiler-2.11.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/plugins/scala-continuations-library_2.11/1.0.2/scala-continuations-library_2.11-1.0.2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/plugins/scala-continuations-plugin_2.11.1/1.0.2/scala-continuations-plugin_2.11.1-1.0.2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-library/2.11.1/scala-library-2.11.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-parser-combinators_2.11/1.0.1/scala-parser-combinators_2.11-1.0.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-reflect/2.11.1/scala-reflect-2.11.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-swing_2.11/1.0.1/scala-swing_2.11-1.0.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/org/scala-lang/scala-xml_2.11/1.0.2/scala-xml_2.11-1.0.2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/lzma/lzma/0.0.1/lzma-0.0.1.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/java3d/vecmath/1.5.2/vecmath-1.5.2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/libraries/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/versions/fpsmaster/fpsmaster.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/versions/fpsmaster/mods/%5B输入修正%5D%20InputFix-1.8.x-v2.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning file:/H:/pcl/.minecraft/versions/fpsmaster/mods/KBAnalyzer-1.8.9-1.1.0.jar for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: Scanning asmgen:/ for mixin tweaker
+[23:36:50] [main/DEBUG] [mixin/]: inject() running with 1 agents
+[23:36:50] [main/DEBUG] [mixin/]: Processing inject() for PlatformAgent[MixinPlatformAgentFML:file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar]
+[23:36:50] [main/DEBUG] [mixin/]: Processing inject() for PlatformAgent[MixinPlatformAgentDefault:file:/H:/pcl/.minecraft/versions/fpsmaster/mods/v4-beta-nightly-8ac7e2.jar]
+[23:36:50] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.common.launcher.FMLDeobfTweaker
+[23:36:50] [main/DEBUG] [FML/]: Loaded 165 rules from AccessTransformer config file forge_at.cfg
+[23:36:50] [main/DEBUG] [FML/]: Loaded 5 rules from AccessTransformer mod jar file H:\pcl\.minecraft\versions\fpsmaster\mods\v4-beta-nightly-8ac7e2.jar!META-INF/patcher_at.cfg
+
+[23:36:50] [main/DEBUG] [mixin/]: Adding new mixin transformer proxy #2
+[23:36:50] [main/DEBUG] [FML/]: Validating minecraft
+[23:36:50] [main/DEBUG] [mixin/]: Preparing mixins for MixinEnvironment[INIT]
+[23:36:51] [main/DEBUG] [FML/]: Minecraft validated, launching...
+[23:36:51] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper
+[23:36:51] [main/DEBUG] [FML/]: Injecting coremod KBAnalyzerReadOnlyHooks {com.cne9.kbanalyzer.core.KBLoadingPlugin} class transformers
+[23:36:51] [main/TRACE] [FML/]: Registering transformer com.cne9.kbanalyzer.core.ObservationTransformer
+[23:36:51] [main/DEBUG] [FML/]: Injection complete
+[23:36:51] [main/DEBUG] [FML/]: Running coremod plugin for KBAnalyzerReadOnlyHooks {com.cne9.kbanalyzer.core.KBLoadingPlugin}
+[23:36:51] [main/DEBUG] [FML/]: Running coremod plugin KBAnalyzerReadOnlyHooks
+[23:36:51] [main/DEBUG] [FML/]: Coremod plugin class KBLoadingPlugin run successfully
+[23:36:51] [main/INFO] [LaunchWrapper/]: Loading tweak class name net.minecraftforge.fml.common.launcher.TerminalTweaker
+[23:36:51] [main/INFO] [LaunchWrapper/]: Loading tweak class name org.spongepowered.asm.mixin.EnvironmentStateTweaker
+[23:36:51] [main/INFO] [LaunchWrapper/]: Calling tweak class net.minecraftforge.fml.common.launcher.TerminalTweaker
+[23:36:51] [main/INFO] [LaunchWrapper/]: Calling tweak class org.spongepowered.asm.mixin.EnvironmentStateTweaker
+[23:36:51] [main/DEBUG] [mixin/]: Adding new mixin transformer proxy #3
+[23:36:51] [main/DEBUG] [mixin/]: Preparing mixins for MixinEnvironment[DEFAULT]
+[23:36:51] [main/DEBUG] [mixin/]: Selecting config mixins.fpsmaster.json
+[23:36:51] [main/DEBUG] [mixin/]: Preparing mixins.fpsmaster.json (47)
+[23:36:51] [main/DEBUG] [mixin/]: Found name transformer: net.minecraftforge.fml.common.asm.transformers.DeobfuscationTransformer
+[23:36:51] [main/DEBUG] [mixin/]: Rebuilding transformer delegation list:
+[23:36:51] [main/DEBUG] [mixin/]: Found name transformer: net.minecraftforge.fml.common.asm.transformers.DeobfuscationTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    net.minecraftforge.fml.common.asm.transformers.PatchingTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Excluding: org.spongepowered.asm.mixin.transformer.Proxy
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    $wrapper.net.minecraftforge.fml.common.asm.transformers.BlamingTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    $wrapper.net.minecraftforge.fml.common.asm.transformers.SideTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Excluding: $wrapper.net.minecraftforge.fml.common.asm.transformers.EventSubscriptionTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    $wrapper.net.minecraftforge.fml.common.asm.transformers.EventSubscriberTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    $wrapper.lain.mods.inputfix.InputFixTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    net.minecraftforge.fml.common.asm.transformers.DeobfuscationTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    net.minecraftforge.fml.common.asm.transformers.AccessTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    net.minecraftforge.fml.common.asm.transformers.ModAccessTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    net.minecraftforge.fml.common.asm.transformers.ItemStackTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Excluding: org.spongepowered.asm.mixin.transformer.Proxy
+[23:36:51] [main/DEBUG] [mixin/]:   Adding:    $wrapper.com.cne9.kbanalyzer.core.ObservationTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Excluding: net.minecraftforge.fml.common.asm.transformers.TerminalTransformer
+[23:36:51] [main/DEBUG] [mixin/]:   Excluding: org.spongepowered.asm.mixin.transformer.Proxy
+[23:36:51] [main/DEBUG] [mixin/]: Transformer delegation list created with 10 entries
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/Entity to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/EntityLivingBase to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/player/EntityPlayer to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/network/NetworkManager to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/particle/EffectRenderer to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraftforge/fml/client/SplashProgress to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/model/ModelRenderer to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/model/TexturedQuad to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/resources/AbstractResourcePack to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/chunk/ChunkRenderDispatcher to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/particle/EntityFX to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/entity/AbstractClientPlayer to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/ChatLine to metadata cache
+[23:36:51] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/entity/EntityPlayerSP to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/EntityRenderer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/FontRenderer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiChat to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/inventory/GuiContainer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiIngame to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraftforge/client/GuiIngameForge to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiMultiplayer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiNewChat to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiPlayerTabOverlay to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiScreen to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/InventoryEffectRenderer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/ItemRenderer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/settings/KeyBinding to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/layers/LayerArmorBase to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/layers/LayerCape to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/layers/LayerHeldItem to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiMainMenu to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/Minecraft to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/network/NetworkPlayerInfo to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/multiplayer/PlayerControllerMP to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/Render to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/RenderEntityItem to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/RendererLivingEntity to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/RenderManager to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/entity/RenderTNTPrimed to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/ServerSelectionList to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/shader/ShaderGroup to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/audio/SoundHandler to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/multiplayer/WorldClient to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/GlStateManager to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/WorldRenderer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventPacket$PacketType to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/awt/RenderingHints$Key to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/forge/api/IChatLine to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for org/spongepowered/asm/mixin/injection/At$Shift to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraftforge/client/event/EntityViewRenderEvent$CameraSetup to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/util/MovingObjectPosition$MovingObjectType to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/invoke/MethodHandles$Lookup to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/player/EntityPlayer$EnumChatVisibility to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/scoreboard/IScoreObjectiveCriteria$EnumRenderType to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/world/WorldSettings$GameType to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/Gui to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/forge/mixin/MixinItemRenderer$1 to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/block/model/ItemCameraTransforms$TransformType to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventAnimation$Type to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/forge/api/IKeyBinding to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/utils/render/PoseStack$Pose to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/forge/api/IMinecraft to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/forge/api/IRenderManager to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/GlStateManager$Color to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/GlStateManager$TextureState to metadata cache
+[23:36:52] [main/DEBUG] [mixin/]: Prepared 47 mixins in 1.092 sec (23.2ms avg) (124ms load, 693ms transform, 0ms plugin)
+[23:36:52] [main/INFO] [LaunchWrapper/]: Launching wrapped minecraft {net.minecraft.client.main.Main}
+[23:36:52] [main/DEBUG] [mixin/]: Mixing MixinMinecraft from mixins.fpsmaster.json into net.minecraft.client.Minecraft
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/util/IThreadListener to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/profiler/IPlayerUsage to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/ScaledResolution to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/shader/Framebuffer to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/awt/Color to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/io/Serializable to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/awt/Paint to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/awt/Transparency to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/util/ResourceLocation to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/utils/render/Render2DUtils to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/utils/Utility to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/FPSMaster to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventTick to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/Event to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/EventDispatcher to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/settings/GameSettings to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/RenderGlobal to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/interfaces/ProviderManager to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/interfaces/game/IMinecraftProvider to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for org/lwjgl/opengl/Display to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/optimizes/Performance to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/settings/impl/NumberSetting to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/settings/Setting to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/Number to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/settings/impl/BooleanSetting to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/Boolean to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/System to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventMouseClick to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for org/lwjgl/input/Keyboard to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventKey to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/util/Session to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/texture/TextureManager to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for org/spongepowered/asm/mixin/injection/callback/CallbackInfo to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/util/ReportedException to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/util/MinecraftError to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/RuntimeException to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/Exception to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/Throwable to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/Error to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/util/Iterator to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiGameOver to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/String to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/Integer to metadata cache
+[23:36:52] [main/DEBUG] [mixin/]: Mixing MixinEntityPlayer from mixins.fpsmaster.json into net.minecraft.entity.player.EntityPlayer
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/player/PlayerCapabilities to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/command/ICommandSender to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraftforge/common/capabilities/ICapabilitySerializable to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraftforge/common/capabilities/ICapabilityProvider to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraftforge/common/util/INBTSerializable to metadata cache
+[23:36:52] [main/DEBUG] [mixin/]: Mixing MixinEntityLivingBase from mixins.fpsmaster.json into net.minecraft.entity.EntityLivingBase
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/manager/ModuleManager to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/manager/Module to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/render/CleanView to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for java/lang/Class to metadata cache
+[23:36:52] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/nbt/NBTTagList to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinEntity from mixins.fpsmaster.json into net.minecraft.entity.Entity
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/nbt/NBTTagCompound to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/nbt/NBTBase to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraftforge/common/IExtendedEntityProperties to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinEntityPlayerSP from mixins.fpsmaster.json into net.minecraft.client.entity.EntityPlayerSP
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventUpdate to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinAbstractClientPlayer from mixins.fpsmaster.json into net.minecraft.client.entity.AbstractClientPlayer
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/utility/CustomFOV to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/SharedMonsterAttributes to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/ai/attributes/IAttributeInstance to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/lang/Float to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/lang/Comparable to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/item/ItemStack to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/init/Items to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for com/mojang/authlib/GameProfile to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventCapeLoading to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/CancelableEvent to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/entity/ai/attributes/IAttribute to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/item/Item to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/item/ItemBow to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/ThreadDownloadImageData to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/texture/ITextureObject to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/texture/SimpleTexture to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/texture/AbstractTexture to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinGuiScreen from mixins.fpsmaster.json into net.minecraft.client.gui.GuiScreen
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/interfaces/BetterScreen to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/utils/math/animation/AnimationUtils to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventSendChatMessage to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/awt/datatransfer/Transferable to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/nbt/NBTException to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing WorldClientMixin from mixins.fpsmaster.json into net.minecraft.client.multiplayer.WorldClient
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/world/World to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinGuiIngame from mixins.fpsmaster.json into net.minecraft.client.gui.GuiIngame
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/render/Crosshair to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/interfaces/Scoreboard to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/scoreboard/ScoreObjective to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinGuiIngameForge from mixins.fpsmaster.json into net.minecraftforge.client.GuiIngameForge
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventMotionBlur to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/event/events/EventRender2D to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/interfaces/CustomTitles to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinMainMenu from mixins.fpsmaster.json into net.minecraft.client.gui.GuiMainMenu
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/ui/screens/mainmenu/MainMenu to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/utils/render/ScaledGuiScreen to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/client/gui/GuiYesNoCallback to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/io/IOException to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/util/ArrayList to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/util/AbstractList to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/util/AbstractCollection to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinGuiChat from mixins.fpsmaster.json into net.minecraft.client.gui.GuiChat
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/websocket/client/WsClient to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for org/java_websocket/client/WebSocketClient to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for org/java_websocket/enums/ReadyState to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/modules/i18n/Language to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for org/lwjgl/input/Mouse to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinInventoryEffectRenderer from mixins.fpsmaster.json into net.minecraft.client.renderer.InventoryEffectRenderer
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for java/util/Collection to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/potion/Potion to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for net/minecraft/potion/PotionEffect to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/optimizes/FixedInventory to metadata cache
+[23:36:53] [main/DEBUG] [mixin/]: Mixing MixinGuiContainer from mixins.fpsmaster.json into net.minecraft.client.gui.inventory.GuiContainer
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for org/lwjgl/opengl/GL11 to metadata cache
+[23:36:53] [main/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/interfaces/ClientSettings to metadata cache
+[23:36:57] [Client thread/DEBUG] [mixin/]: Mixing MixinKeybinding from mixins.fpsmaster.json into net.minecraft.client.settings.KeyBinding
+[23:36:57] [Client thread/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/utility/Sprint to metadata cache
+[23:36:58] [Client thread/INFO] [FPSMaster/]: release en_us
+[23:36:58] [Client thread/INFO] [FPSMaster/]: release zh_cn
+[23:36:58] [Client thread/WARN] [FML/]: =============================================================
+[23:36:58] [Client thread/WARN] [FML/]: MOD HAS DIRECT REFERENCE System.exit() THIS IS NOT ALLOWED REROUTING TO FML!
+[23:36:58] [Client thread/WARN] [FML/]: Offendor: com/sun/jna/Native.main([Ljava/lang/String;)V
+[23:36:58] [Client thread/WARN] [FML/]: Use FMLCommonHandler.exitJava instead
+[23:36:58] [Client thread/WARN] [FML/]: =============================================================
+[23:36:58] [Client thread/DEBUG] [mixin/]: Mixing accessor.GlStateManagerAccessor from mixins.fpsmaster.json into net.minecraft.client.renderer.GlStateManager
+[23:36:58] [Client thread/DEBUG] [mixin/]: Renaming @Unique method getColorState()Lnet/minecraft/client/renderer/GlStateManager$Color; to getColorState_$md$808791$0 in mixins.fpsmaster.json:accessor.GlStateManagerAccessor
+[23:36:58] [Client thread/DEBUG] [mixin/]: Renaming @Unique method getTextureState()[Lnet/minecraft/client/renderer/GlStateManager$TextureState; to getTextureState_$md$808791$1 in mixins.fpsmaster.json:accessor.GlStateManagerAccessor
+[23:36:58] [Client thread/DEBUG] [mixin/]: Renaming @Unique method getActiveTextureUnit()I to getActiveTextureUnit_$md$808791$2 in mixins.fpsmaster.json:accessor.GlStateManagerAccessor
+[23:36:58] [Client thread/DEBUG] [mixin/]: Mixing MixinSplashScreen from mixins.fpsmaster.json into net.minecraftforge.fml.client.SplashProgress
+[23:36:58] [Client thread/DEBUG] [mixin/]: Mixing AbstractResourcePackMixin_DownscaleImages from mixins.fpsmaster.json into net.minecraft.client.resources.AbstractResourcePack
+[23:36:58] [Client thread/TRACE] [mixin/]: Added class metadata for net/minecraft/client/renderer/texture/TextureUtil to metadata cache
+[23:36:59] [Client thread/TRACE] [mixin/]: Added class metadata for java/awt/image/BufferedImage to metadata cache
+[23:36:59] [Client thread/TRACE] [mixin/]: Added class metadata for java/awt/Image to metadata cache
+[23:36:59] [Client thread/TRACE] [mixin/]: Added class metadata for java/awt/image/WritableRenderedImage to metadata cache
+[23:36:59] [Client thread/TRACE] [mixin/]: Added class metadata for java/awt/image/RenderedImage to metadata cache
+[23:36:59] [Client thread/TRACE] [mixin/]: Added class metadata for java/awt/RenderingHints to metadata cache
+[23:36:59] [Client thread/TRACE] [mixin/]: Added class metadata for java/awt/Graphics2D to metadata cache
+[23:36:59] [Client thread/TRACE] [mixin/]: Added class metadata for java/awt/Graphics to metadata cache
+[23:36:59] [Client thread/DEBUG] [FML/]: Bar Finished: Loading Resource - LanguageManager took 0.005s
+[23:36:59] [Client thread/DEBUG] [mixin/]: Mixing accessor.WorldRendererAccessor from mixins.fpsmaster.json into net.minecraft.client.renderer.WorldRenderer
+[23:36:59] [Client thread/DEBUG] [FML/]: Bar Finished: Loading Resource - Animation took 0.000s
+[23:36:59] [Client thread/INFO] [FML/]: MinecraftForge v11.15.1.1902 Initialized
+[23:36:59] [Client thread/INFO] [FML/]: Replaced 229 ore recipies
+[23:36:59] [Client thread/DEBUG] [FML/]: File H:\pcl\.minecraft\versions\fpsmaster\config\injectedDependencies.json not found. No dependencies injected
+[23:36:59] [Client thread/DEBUG] [FML/]: Building injected Mod Containers [net.minecraftforge.fml.common.FMLContainer, net.minecraftforge.common.ForgeModContainer, lain.mods.inputfix.InputFixDummyContainer]
+[23:36:59] [Client thread/DEBUG] [FML/]: Attempting to load mods contained in the minecraft jar file and associated classes
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\libraries\com\mojang\netty\1.8.8\netty-1.8.8.jar, examining for mod candidates
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\libraries\oshi-project\oshi-core\1.1\oshi-core-1.1.jar, examining for mod candidates
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\libraries\net\java\dev\jna\jna\3.4.0\jna-3.4.0.jar, examining for mod candidates
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\libraries\net\java\dev\jna\platform\3.4.0\platform-3.4.0.jar, examining for mod candidates
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\ibm\icu\icu4j-core-mojang\51.2\icu4j-core-mojang-51.2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\net\sf\jopt-simple\jopt-simple\4.6\jopt-simple-4.6.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\paulscode\codecjorbis\20101023\codecjorbis-20101023.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\paulscode\codecwav\20101023\codecwav-20101023.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\libraries\com\paulscode\libraryjavasound\20101123\libraryjavasound-20101123.jar, examining for mod candidates
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\paulscode\librarylwjglopenal\20100824\librarylwjglopenal-20100824.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\paulscode\soundsystem\20120107\soundsystem-20120107.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\io\netty\netty-all\4.0.23.Final\netty-all-4.0.23.Final.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\google\guava\guava\17.0\guava-17.0.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\apache\commons\commons-lang3\3.3.2\commons-lang3-3.3.2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\commons-io\commons-io\2.4\commons-io-2.4.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\commons-codec\commons-codec\1.9\commons-codec-1.9.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\net\java\jinput\jinput\2.0.5\jinput-2.0.5.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\net\java\jutils\jutils\1.0.0\jutils-1.0.0.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\google\code\gson\gson\2.2.4\gson-2.2.4.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\mojang\authlib\1.5.21\authlib-1.5.21.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\mojang\realms\1.7.59\realms-1.7.59.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\apache\commons\commons-compress\1.8.1\commons-compress-1.8.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\apache\httpcomponents\httpclient\4.3.3\httpclient-4.3.3.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\commons-logging\commons-logging\1.1.3\commons-logging-1.1.3.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\apache\httpcomponents\httpcore\4.3.2\httpcore-4.3.2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\apache\logging\log4j\log4j-api\2.0-beta9\log4j-api-2.0-beta9.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\apache\logging\log4j\log4j-core\2.0-beta9\log4j-core-2.0-beta9.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\lwjgl\lwjgl\lwjgl\2.9.4-nightly-20150209\lwjgl-2.9.4-nightly-20150209.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\lwjgl\lwjgl\lwjgl_util\2.9.4-nightly-20150209\lwjgl_util-2.9.4-nightly-20150209.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\lwjgl\lwjgl\lwjgl-platform\2.9.4-nightly-20150209\lwjgl-platform-2.9.4-nightly-20150209-natives-windows.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\net\java\jinput\jinput-platform\2.0.5\jinput-platform-2.0.5-natives-windows.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\tv\twitch\twitch\6.5\twitch-6.5.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\tv\twitch\twitch-platform\6.5\twitch-platform-6.5-natives-windows-64.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\tv\twitch\twitch-external-platform\4.5\twitch-external-platform-4.5-natives-windows-64.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\libraries\net\minecraftforge\forge\1.8.9-11.15.1.1902-1.8.9\forge-1.8.9-11.15.1.1902-1.8.9.jar, examining for mod candidates
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\net\minecraft\launchwrapper\1.12\launchwrapper-1.12.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\ow2\asm\asm-all\5.0.3\asm-all-5.0.3.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\libraries\jline\jline\2.13\jline-2.13.jar, examining for mod candidates
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\typesafe\akka\akka-actor_2.11\2.3.3\akka-actor_2.11-2.3.3.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\com\typesafe\config\1.2.1\config-1.2.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\scala-actors-migration_2.11\1.1.0\scala-actors-migration_2.11-1.1.0.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\scala-compiler\2.11.1\scala-compiler-2.11.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\plugins\scala-continuations-library_2.11\1.0.2\scala-continuations-library_2.11-1.0.2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\plugins\scala-continuations-plugin_2.11.1\1.0.2\scala-continuations-plugin_2.11.1-1.0.2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\scala-library\2.11.1\scala-library-2.11.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\scala-parser-combinators_2.11\1.0.1\scala-parser-combinators_2.11-1.0.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\scala-reflect\2.11.1\scala-reflect-2.11.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\scala-swing_2.11\1.0.1\scala-swing_2.11-1.0.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\org\scala-lang\scala-xml_2.11\1.0.2\scala-xml_2.11-1.0.2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\lzma\lzma\0.0.1\lzma-0.0.1.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\net\sf\jopt-simple\jopt-simple\4.6\jopt-simple-4.6.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\java3d\vecmath\1.5.2\vecmath-1.5.2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\libraries\net\sf\trove4j\trove4j\3.0.3\trove4j-3.0.3.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a minecraft related file at H:\pcl\.minecraft\versions\fpsmaster\fpsmaster.jar, examining for mod candidates
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\versions\fpsmaster\mods\[输入修正] InputFix-1.8.x-v2.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\versions\fpsmaster\mods\KBAnalyzer-1.8.9-1.1.0.jar
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping known library file H:\pcl\.minecraft\versions\fpsmaster\mods\v4-beta-nightly-8ac7e2.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Minecraft jar mods loaded successfully
+[23:36:59] [Client thread/INFO] [FML/]: Found 0 mods from the command line. Injecting into mod discoverer
+[23:36:59] [Client thread/INFO] [FML/]: Searching H:\pcl\.minecraft\versions\fpsmaster\mods for mods
+[23:36:59] [Client thread/DEBUG] [FML/]: Ignoring unknown file [资源加载] ResourceLoader-MC1.8.8-1.4.jar.disabled in mods directory
+[23:36:59] [Client thread/TRACE] [FML/]: Skipping already parsed coremod or tweaker [输入修正] InputFix-1.8.x-v2.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Ignoring unknown file KBAnalyzer-1.8.9-1.0.0.jar.disabled in mods directory
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a candidate zip or jar file KBAnalyzer-1.8.9-1.1.0.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Ignoring unknown file KnockbackTracker-1.0.jar.disabled in mods directory
+[23:36:59] [Client thread/DEBUG] [FML/]: Found a candidate zip or jar file v4-beta-nightly-8ac7e2.jar
+[23:36:59] [Client thread/DEBUG] [FML/]: Examining file netty-1.8.8.jar for potential mods
+[23:36:59] [Client thread/DEBUG] [FML/]: The mod container netty-1.8.8.jar appears to be missing an mcmod.info file
+[23:36:59] [Client thread/DEBUG] [FML/]: Examining file oshi-core-1.1.jar for potential mods
+[23:36:59] [Client thread/DEBUG] [FML/]: The mod container oshi-core-1.1.jar appears to be missing an mcmod.info file
+[23:36:59] [Client thread/DEBUG] [FML/]: Examining file jna-3.4.0.jar for potential mods
+[23:36:59] [Client thread/DEBUG] [FML/]: The mod container jna-3.4.0.jar appears to be missing an mcmod.info file
+[23:36:59] [Client thread/DEBUG] [FML/]: Examining file platform-3.4.0.jar for potential mods
+[23:36:59] [Client thread/DEBUG] [FML/]: The mod container platform-3.4.0.jar appears to be missing an mcmod.info file
+[23:36:59] [Client thread/DEBUG] [FML/]: Examining file libraryjavasound-20101123.jar for potential mods
+[23:36:59] [Client thread/DEBUG] [FML/]: The mod container libraryjavasound-20101123.jar appears to be missing an mcmod.info file
+[23:36:59] [Client thread/DEBUG] [FML/]: Examining file forge-1.8.9-11.15.1.1902-1.8.9.jar for potential mods
+[23:36:59] [Client thread/DEBUG] [FML/]: The mod container forge-1.8.9-11.15.1.1902-1.8.9.jar appears to be missing an mcmod.info file
+[23:37:00] [Client thread/DEBUG] [FML/]: Examining file jline-2.13.jar for potential mods
+[23:37:00] [Client thread/DEBUG] [FML/]: The mod container jline-2.13.jar appears to be missing an mcmod.info file
+[23:37:00] [Client thread/DEBUG] [FML/]: Examining file fpsmaster.jar for potential mods
+[23:37:00] [Client thread/DEBUG] [FML/]: The mod container fpsmaster.jar appears to be missing an mcmod.info file
+[23:37:00] [Client thread/DEBUG] [FML/]: Examining file KBAnalyzer-1.8.9-1.1.0.jar for potential mods
+[23:37:00] [Client thread/TRACE] [FML/]: Located mcmod.info file in file KBAnalyzer-1.8.9-1.1.0.jar
+[23:37:00] [Client thread/DEBUG] [FML/]: Identified a mod of type Lnet/minecraftforge/fml/common/Mod; (com.cne9.kbanalyzer.KBAnalyzerMod) - loading
+[23:37:00] [Client thread/TRACE] [kbanalyzer/]: Parsed dependency info : [] [] []
+[23:37:00] [Client thread/DEBUG] [FML/]: Examining file v4-beta-nightly-8ac7e2.jar for potential mods
+[23:37:00] [Client thread/TRACE] [FML/]: Located mcmod.info file in file v4-beta-nightly-8ac7e2.jar
+[23:37:00] [Client thread/DEBUG] [FML/]: Identified a mod of type Lnet/minecraftforge/fml/common/Mod; (top.fpsmaster.forge.Mod) - loading
+[23:37:00] [Client thread/TRACE] [fpsmaster/]: Parsed dependency info : [] [] []
+[23:37:00] [Client thread/DEBUG] [fpsmaster/]: Attempting to load the file version.properties from v4-beta-nightly-8ac7e2.jar to locate a version number for fpsmaster
+[23:37:00] [Client thread/WARN] [fpsmaster/]: Mod fpsmaster is missing the required element 'version' and a version.properties file could not be found. Falling back to metadata version v4
+[23:37:01] [Client thread/INFO] [FML/]: Forge Mod Loader has identified 6 mods to load
+[23:37:01] [Client thread/TRACE] [FML/]: Received a system property request ''
+[23:37:01] [Client thread/TRACE] [FML/]: System property request managing the state of 0 mods
+[23:37:01] [Client thread/DEBUG] [FML/]: After merging, found state information for 0 mods
+[23:37:01] [Client thread/DEBUG] [FML/]: Found translations in forge-1.8.9-11.15.1.1902-1.8.9.jar [af_ZA, ar_SA, br_FR, ca_ES, cs_CZ, da_DK, de_DE, el_GR, en_US, es_ES, fa_IR, fi_FI, fr_FR, he_IL, hu_HU, it_IT, ja_JP, ko_KR, lt_LT, nb_NO, nl_NL, nn_NO, no_NO, pl_PL, pt_BR, pt_PT, ro_RO, ru_RU, sl_SI, sr_SP, sv_SE, tr_TR, uk_UA, vi_VN, zh_CN, zh_TW]
+[23:37:01] [Client thread/DEBUG] [FML/]: Found translations in forge-1.8.9-11.15.1.1902-1.8.9.jar [af_ZA, ar_SA, br_FR, ca_ES, cs_CZ, da_DK, de_DE, el_GR, en_US, es_ES, fa_IR, fi_FI, fr_FR, he_IL, hu_HU, it_IT, ja_JP, ko_KR, lt_LT, nb_NO, nl_NL, nn_NO, no_NO, pl_PL, pt_BR, pt_PT, ro_RO, ru_RU, sl_SI, sr_SP, sv_SE, tr_TR, uk_UA, vi_VN, zh_CN, zh_TW]
+[23:37:01] [Client thread/DEBUG] [kbanalyzer/]: Enabling mod kbanalyzer
+[23:37:01] [Client thread/DEBUG] [FML/]: Found translations in KBAnalyzer-1.8.9-1.1.0.jar [zh_CN, en_US]
+[23:37:01] [Client thread/DEBUG] [fpsmaster/]: Enabling mod fpsmaster
+[23:37:01] [Client thread/DEBUG] [FML/]: Found translations in v4-beta-nightly-8ac7e2.jar [en_us, zh_cn]
+[23:37:01] [Client thread/TRACE] [FML/]: Verifying mod requirements are satisfied
+[23:37:01] [Client thread/TRACE] [FML/]: All mod requirements are satisfied
+[23:37:01] [Client thread/TRACE] [FML/]: Sorting mods into an ordered list
+[23:37:01] [Client thread/TRACE] [FML/]: Mod sorting completed successfully
+[23:37:01] [Client thread/DEBUG] [FML/]: Mod sorting data
+[23:37:01] [Client thread/DEBUG] [FML/]: 	kbanalyzer(KB Analyzer:1.1.0): KBAnalyzer-1.8.9-1.1.0.jar ()
+[23:37:01] [Client thread/DEBUG] [FML/]: 	fpsmaster(FPSMaster Mod:v4): v4-beta-nightly-8ac7e2.jar ()
+[23:37:01] [Client thread/TRACE] [mcp/mcp]: Sending event FMLConstructionEvent to mod mcp
+[23:37:01] [Client thread/TRACE] [mcp/mcp]: Sent event FMLConstructionEvent to mod mcp
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Construction - Minecraft Coder Pack took 0.001s
+[23:37:01] [Client thread/TRACE] [FML/FML]: Sending event FMLConstructionEvent to mod FML
+[23:37:01] [Client thread/TRACE] [FML/FML]: Mod FML is using network checker : Invoking method checkModLists
+[23:37:01] [Client thread/TRACE] [FML/FML]: Testing mod FML to verify it accepts its own version in a remote connection
+[23:37:01] [Client thread/TRACE] [FML/FML]: The mod FML accepts its own version (8.0.99.99)
+[23:37:01] [Client thread/INFO] [FML/FML]: Attempting connection with missing mods [mcp, FML, Forge, InputFix, kbanalyzer, fpsmaster] at CLIENT
+[23:37:01] [Client thread/INFO] [FML/FML]: Attempting connection with missing mods [mcp, FML, Forge, InputFix, kbanalyzer, fpsmaster] at SERVER
+[23:37:01] [Client thread/TRACE] [FML/FML]: Sent event FMLConstructionEvent to mod FML
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Construction - Forge Mod Loader took 0.422s
+[23:37:01] [Client thread/TRACE] [Forge/Forge]: Sending event FMLConstructionEvent to mod Forge
+[23:37:01] [Client thread/TRACE] [FML/Forge]: Mod Forge is using network checker : No network checking performed
+[23:37:01] [Client thread/TRACE] [FML/Forge]: Testing mod Forge to verify it accepts its own version in a remote connection
+[23:37:01] [Client thread/TRACE] [FML/Forge]: The mod Forge accepts its own version (11.15.1.1902)
+[23:37:01] [Client thread/TRACE] [Forge/Forge]: Sent event FMLConstructionEvent to mod Forge
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Construction - Minecraft Forge took 0.009s
+[23:37:01] [Client thread/TRACE] [InputFix/InputFix]: Sending event FMLConstructionEvent to mod InputFix
+[23:37:01] [Client thread/TRACE] [InputFix/InputFix]: Sent event FMLConstructionEvent to mod InputFix
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Construction - InputFix took 0.000s
+[23:37:01] [Client thread/TRACE] [kbanalyzer/kbanalyzer]: Sending event FMLConstructionEvent to mod kbanalyzer
+[23:37:01] [Client thread/TRACE] [FML/kbanalyzer]: Mod kbanalyzer is using network checker : No network checking performed
+[23:37:01] [Client thread/TRACE] [FML/kbanalyzer]: Testing mod kbanalyzer to verify it accepts its own version in a remote connection
+[23:37:01] [Client thread/TRACE] [FML/kbanalyzer]: The mod kbanalyzer accepts its own version (1.1.0)
+[23:37:01] [Client thread/DEBUG] [FML/kbanalyzer]: Attempting to inject @SidedProxy classes into kbanalyzer
+[23:37:01] [Client thread/TRACE] [kbanalyzer/kbanalyzer]: Sent event FMLConstructionEvent to mod kbanalyzer
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Construction - KB Analyzer took 0.011s
+[23:37:01] [Client thread/TRACE] [fpsmaster/fpsmaster]: Sending event FMLConstructionEvent to mod fpsmaster
+[23:37:01] [Client thread/TRACE] [FML/fpsmaster]: Mod fpsmaster is using network checker : Accepting version v4
+[23:37:01] [Client thread/TRACE] [FML/fpsmaster]: Testing mod fpsmaster to verify it accepts its own version in a remote connection
+[23:37:01] [Client thread/TRACE] [FML/fpsmaster]: The mod fpsmaster accepts its own version (v4)
+[23:37:01] [Client thread/DEBUG] [FML/fpsmaster]: Attempting to inject @SidedProxy classes into fpsmaster
+[23:37:01] [Client thread/TRACE] [fpsmaster/fpsmaster]: Sent event FMLConstructionEvent to mod fpsmaster
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Construction - FPSMaster Mod took 0.002s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Finished: Construction took 0.444s
+[23:37:01] [Client thread/DEBUG] [FML/]: Mod signature data
+[23:37:01] [Client thread/DEBUG] [FML/]:  	Valid Signatures:
+[23:37:01] [Client thread/DEBUG] [FML/]:  	Missing Signatures:
+[23:37:01] [Client thread/DEBUG] [FML/]: 		mcp	(Minecraft Coder Pack	9.19)	minecraft.jar
+[23:37:01] [Client thread/DEBUG] [FML/]: 		FML	(Forge Mod Loader	8.0.99.99)	forge-1.8.9-11.15.1.1902-1.8.9.jar
+[23:37:01] [Client thread/DEBUG] [FML/]: 		Forge	(Minecraft Forge	11.15.1.1902)	forge-1.8.9-11.15.1.1902-1.8.9.jar
+[23:37:01] [Client thread/DEBUG] [FML/]: 		InputFix	(InputFix	1.8.x-v2)	minecraft.jar
+[23:37:01] [Client thread/DEBUG] [FML/]: 		kbanalyzer	(KB Analyzer	1.1.0)	KBAnalyzer-1.8.9-1.1.0.jar
+[23:37:01] [Client thread/DEBUG] [FML/]: 		fpsmaster	(FPSMaster Mod	v4)	v4-beta-nightly-8ac7e2.jar
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - Default took 0.019s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - FMLFileResourcePack:Forge Mod Loader took 0.001s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - FMLFileResourcePack:Minecraft Forge took 0.002s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - FMLFileResourcePack:KB Analyzer took 0.000s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - FMLFileResourcePack:FPSMaster Mod took 0.002s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - 1.8.9By Pack.zip took 0.004s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - Breaking Animation 8.zip took 0.000s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - .3D1.8.9.zip took 0.000s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - .1.8.9.zip took 0.000s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - .1.8.9.zip took 0.000s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - .1.8.9.zip took 0.000s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - .1.8.9.zip took 0.000s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Finished: Reloading took 0.033s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: Loading Resources - Reloading listeners took 0.033s
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Finished: Loading Resources took 0.063s
+[23:37:01] [Client thread/DEBUG] [Forge Mod Loader/]: Mod Forge Mod Loader is missing a pack.mcmeta file, substituting a dummy one
+[23:37:01] [Client thread/DEBUG] [Minecraft Forge/]: Mod Minecraft Forge is missing a pack.mcmeta file, substituting a dummy one
+[23:37:01] [Client thread/DEBUG] [KB Analyzer/]: Mod KB Analyzer is missing a pack.mcmeta file, substituting a dummy one
+[23:37:01] [Client thread/DEBUG] [FPSMaster Mod/]: Mod FPSMaster Mod is missing a pack.mcmeta file, substituting a dummy one
+[23:37:01] [Client thread/INFO] [FML/]: Processing ObjectHolder annotations
+[23:37:01] [Client thread/INFO] [FML/]: Found 384 ObjectHolder annotations
+[23:37:01] [Client thread/INFO] [FML/]: Identifying ItemStackHolder annotations
+[23:37:01] [Client thread/INFO] [FML/]: Found 0 ItemStackHolder annotations
+[23:37:01] [Client thread/TRACE] [mcp/mcp]: Sending event FMLPreInitializationEvent to mod mcp
+[23:37:01] [Client thread/TRACE] [mcp/mcp]: Sent event FMLPreInitializationEvent to mod mcp
+[23:37:01] [Client thread/DEBUG] [FML/]: Bar Step: PreInitialization - Minecraft Coder Pack took 0.000s
+[23:37:01] [Client thread/TRACE] [FML/FML]: Sending event FMLPreInitializationEvent to mod FML
+[23:37:02] [Client thread/TRACE] [FML/FML]: Sent event FMLPreInitializationEvent to mod FML
+[23:37:02] [Client thread/DEBUG] [FML/]: Bar Step: PreInitialization - Forge Mod Loader took 0.321s
+[23:37:02] [Client thread/TRACE] [Forge/Forge]: Sending event FMLPreInitializationEvent to mod Forge
+[23:37:02] [Client thread/INFO] [FML/Forge]: Configured a dormant chunk cache size of 0
+[23:37:02] [Client thread/TRACE] [Forge/Forge]: Sent event FMLPreInitializationEvent to mod Forge
+[23:37:02] [Client thread/DEBUG] [FML/]: Bar Step: PreInitialization - Minecraft Forge took 0.073s
+[23:37:02] [Client thread/TRACE] [InputFix/InputFix]: Sending event FMLPreInitializationEvent to mod InputFix
+[23:37:02] [Client thread/TRACE] [InputFix/InputFix]: Sent event FMLPreInitializationEvent to mod InputFix
+[23:37:02] [Client thread/DEBUG] [FML/]: Bar Step: PreInitialization - InputFix took 0.000s
+[23:37:02] [Client thread/TRACE] [kbanalyzer/kbanalyzer]: Sending event FMLPreInitializationEvent to mod kbanalyzer
+[23:37:02] [Client thread/TRACE] [kbanalyzer/kbanalyzer]: Sent event FMLPreInitializationEvent to mod kbanalyzer
+[23:37:02] [Client thread/DEBUG] [FML/]: Bar Step: PreInitialization - KB Analyzer took 0.000s
+[23:37:02] [Client thread/TRACE] [fpsmaster/fpsmaster]: Sending event FMLPreInitializationEvent to mod fpsmaster
+[23:37:02] [Client thread/TRACE] [fpsmaster/fpsmaster]: Sent event FMLPreInitializationEvent to mod fpsmaster
+[23:37:02] [Client thread/DEBUG] [FML/]: Bar Step: PreInitialization - FPSMaster Mod took 0.000s
+[23:37:02] [Client thread/DEBUG] [FML/]: Bar Finished: PreInitialization took 0.396s
+[23:37:02] [Client thread/INFO] [FML/]: Applying holder lookups
+[23:37:02] [Client thread/INFO] [FML/]: Holder lookups applied
+[23:37:02] [Client thread/INFO] [FML/]: Injecting itemstacks
+[23:37:02] [Client thread/INFO] [FML/]: Itemstack injection complete
+[23:37:02] [Client thread/DEBUG] [FML/]: Bar Finished: Loading Resource - TextureManager took 0.000s
+[23:37:02] [Forge Version Check/INFO] [ForgeVersionCheck/Forge]: [Forge] Starting version check at http://files.minecraftforge.net/maven/net/minecraftforge/forge/promotions_slim.json
+[23:37:02] [Client thread/DEBUG] [mixin/]: Mixing MixinSoundHandler from mixins.fpsmaster.json into net.minecraft.client.audio.SoundHandler
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for top/fpsmaster/features/impl/utility/SoundModifier to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for net/minecraft/client/audio/PositionedSoundRecord to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for net/minecraft/client/audio/PositionedSound to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for net/minecraft/client/audio/ISound to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for net/minecraft/client/audio/SoundManager to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for java/util/Map to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for java/util/List to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for net/minecraft/client/audio/SoundHandler$2 to metadata cache
+[23:37:02] [Client thread/TRACE] [mixin/]: Added class metadata for net/minecraft/client/audio/SoundEventAccessor to metadata cache
+[23:37:02] [Forge Version Check/DEBUG] [ForgeVersionCheck/Forge]: [Forge] Received version check data:
+Moved Permanently
+[23:37:02] [Forge Version Check/DEBUG] [ForgeVersionCheck/Forge]: Failed to process update information
+com.google.gson.JsonSyntaxException: java.lang.IllegalStateException: Expected BEGIN_OBJECT but was STRING at line 1 column 1
+	at com.google.gson.Gson.fromJson(Gson.java:815) ~[Gson.class:?]
+	at com.google.gson.Gson.fromJson(Gson.java:768) ~[Gson.class:?]
+	at com.google.gson.Gson.fromJson(Gson.java:717) ~[Gson.class:?]
+	at com.google.gson.Gson.fromJson(Gson.java:689) ~[Gson.class:?]
+	at net.minecraftforge.common.ForgeVersion$1.process(ForgeVersion.java:156) [ForgeVersion$1.class:?]
+	at net.minecraftforge.common.ForgeVersion$1.run(ForgeVersion.java:131) [ForgeVersion$1.class:?]
+Caused by: java.lang.IllegalStateException: Expected BEGIN_OBJECT but was STRING at line 1 column 1
+	at com.google.gson.stream.JsonReader.beginObject(JsonReader.java:374) ~[JsonReader.class:?]
+	at com.google.gson.internal.bind.MapTypeAdapterFactory$Adapter.read(MapTypeAdapterFactory.java:183) ~[MapTypeAdapterFactory$Adapter.class:?]
+	at com.google.gson.internal.bind.MapTypeAdapterFactory$Adapter.read(MapTypeAdapterFactory.java:145) ~[MapTypeAdapterFactory$Adapter.class:?]
+	at com.google.gson.Gson.fromJson(Gson.java:803) ~[Gson.class:?]
+	... 5 more

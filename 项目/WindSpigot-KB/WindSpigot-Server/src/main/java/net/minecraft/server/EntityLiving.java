@@ -882,6 +882,13 @@ public abstract class EntityLiving extends Entity {
 						this.aw = (float) (MathHelper.b(distanceZ, distanceX) * 180.0D / 3.1415927410125732D
 								- this.yaw);
 						this.a(distanceX, distanceZ, damagesource);
+						// WindSpigot start - 玩家受击方的客户端滞空接管登记。
+						// 玩家攻击者的路径由 EntityHuman.attack() 在阶段二(疾跑加成)之后登记, 这里跳过;
+						// 生物/环境攻击者没有那条路径, 在此登记, 顺带让"单人+一个客户端"也能验证弹道。
+						if (this instanceof EntityPlayer && !(damagesource.getEntity() instanceof EntityHuman)) {
+							KnockbackEngine.beginClientFlight((EntityPlayer) this);
+						}
+						// WindSpigot end
 					} else {
 						this.aw = (int) (random.nextDouble() * 2.0D) * 180;
 						// WindSpigot end
