@@ -48,6 +48,18 @@ public class KBProbe extends JavaPlugin implements Listener {
         double atkX, atkY, atkZ, atkYaw, vicX, vicY, vicZ, preX, preY, preZ, dist;
         int atkPing, vicPing;
     }
+
+    /** 实机弹道追踪: 命中后逐 tick 记录受击方 Y, 用于核对顶点高度/滞空时间是否与合成弹道一致 */
+    private static final class Trace {
+        long startMs;
+        int ticks, id;
+        double prevY, startY, peakY;
+        int peakTick;
+        String victim;
+    }
+    private static final Map<Integer, Trace> TRACES = new ConcurrentHashMap<>();
+    private static final int TRACE_TICKS = 30;
+    private BufferedWriter trajOut;
     private static final Map<Integer, Deque<Hit>> PENDING = new ConcurrentHashMap<>();
     private BufferedWriter kbOut, evOut;
     private volatile int written = 0, skipped = 0, attacks = 0;
@@ -67,9 +79,19 @@ public class KBProbe extends JavaPlugin implements Listener {
             boolean freshEv = !new File(dir, "events.csv").exists();
             evOut = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, "events.csv"), true), StandardCharsets.UTF_8));
             if (freshEv) { evOut.write("ts_ms,type,player,x,y,z,yaw,sprint,extra_kb,ndt,last_dmg\n"); evOut.flush(); }
+            boolean freshTr = !new File(dir, "traj.csv").exists();
+            trajOut = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(dir, "traj.csv"), true), StandardCharsets.UTF_8));
+            if (freshTr) {
+                trajOut.write("ts_ms,victim,tick,y,dy,mot_y,vy_pkt,on_ground\n"); // dy=逐tick位移(≈客户端motY)
+                trajOut.flush();
+            }
         } catch (Exception ex) { getLogger().severe("无法打开日志: " + ex); }
 
         getServer().getPluginManager().registerEvents(this, this);
+
+        // 实机弹道追踪任务: 命中后逐 tick 采样受击方 Y(客户端的真实轨迹, 服务端只做记录),
+        // 用于核对"顶点丝滑过渡 + 25 m/s² 重力"在实机上是否真的按预期生效。
+        getServer().getScheduler().runTaskTimer(this, this::tickTraces, 1L, 1L);
 
         try {
             ProtocolLibrary.getProtocolManager().addPacketListener(new PacketAdapter(this,
@@ -160,6 +182,18 @@ public class KBProbe extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onVelocity(PlayerVelocityEvent e) {
         Hit h = take(e.getPlayer().getEntityId());
+        // 无论是否匹配到上下文, 都开启弹道追踪(速度包＝击退生效, 后续 Y 变化就是弹道)
+        Player tp = e.getPlayer();
+        if (TRACES.size() < 12) {
+            Trace tr = new Trace();
+            tr.startMs = System.currentTimeMillis();
+            tr.id = tp.getEntityId();
+            tr.prevY = tp.getLocation().getY();
+            tr.startY = tr.prevY;
+            tr.peakY = tr.prevY;
+            tr.victim = tp.getName();
+            TRACES.put(tr.id, tr);
+        }
         if (h == null) { skipped++; return; }
         try {
             double vx = e.getVelocity().getX(), vy = e.getVelocity().getY(), vz = e.getVelocity().getZ();
@@ -177,8 +211,43 @@ public class KBProbe extends JavaPlugin implements Listener {
         } catch (Exception ex) { getLogger().warning("写日志失败: " + ex); }
     }
 
-    private Hit take(int entityId) {
-        Deque<Hit> q = PENDING.get(entityId);
+    /** 每 tick 采样被追踪受击方的 Y, 落地或满 TRACE_TICKS 后收尾并打印顶点/滞空摘要 */
+    private void tickTraces() {
+        if (TRACES.isEmpty() || trajOut == null) return;
+        for (java.util.Iterator<Map.Entry<Integer, Trace>> it = TRACES.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Integer, Trace> en = it.next();
+            Trace tr = en.getValue();
+            Player p = null;
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                if (online.getEntityId() == tr.id) { p = online; break; }
+            }
+            if (p == null) { it.remove(); continue; }
+            try {
+                double y = p.getLocation().getY();
+                double dy = y - tr.prevY;
+                tr.ticks++;
+                if (y > tr.peakY) { tr.peakY = y; tr.peakTick = tr.ticks; }
+                net.minecraft.server.v1_8_R3.EntityPlayer nms =
+                        ((org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer) p).getHandle();
+                synchronized (this) {
+                    trajOut.write(String.format(Locale.ROOT, "%d,%s,%d,%.4f,%.4f,%.4f,%.6f,%b%n",
+                            System.currentTimeMillis(), tr.victim, tr.ticks, y, dy, nms.motY, 0.0D, nms.onGround));
+                    trajOut.flush();
+                }
+                tr.prevY = y;
+                boolean landed = nms.onGround && tr.ticks > 2;
+                if (landed || tr.ticks >= TRACE_TICKS || System.currentTimeMillis() - tr.startMs > 3000L) {
+                    getLogger().info(String.format(Locale.ROOT,
+                            "弹道 %s: 起点Y=%.3f 顶点Y=%.3f (第%d tick, 升%.3f) 滞空%d tick(%.2fs)",
+                            tr.victim, tr.startY, tr.peakY, tr.peakTick, tr.peakY - tr.startY,
+                            tr.ticks, tr.ticks * 0.05D));
+                    it.remove();
+                }
+            } catch (Exception ex) { it.remove(); }
+        }
+    }
+
+    private Hit take(int entityId) {        Deque<Hit> q = PENDING.get(entityId);
         if (q == null) return null;
         long now = System.currentTimeMillis();
         synchronized (q) {
@@ -265,6 +334,15 @@ public class KBProbe extends JavaPlugin implements Listener {
                     "KBProbe: 输入=(%.4f,%.4f) |motXZ|=%.6f motY=%.6f 方向=(%.4f,%.4f) profile=%s",
                     x, z, mag, nms.motY, mag > 0 ? nms.motX / mag : 0, mag > 0 ? nms.motZ / mag : 0,
                     com.windpvp.windspigot.knockback.KnockbackConfig.getCurrentKb().getName()));
+            // 重力覆写接线检查: 击退后必须置位 kbGravityOverride, 否则"顶点丝滑/自定义重力"在实机上完全不会生效
+            // (合成弹道 /kbprobe traj 走的是配置层, 不能证明这条接线)。
+            sender.sendMessage(String.format(Locale.ROOT,
+                    "KBProbe/grav: kbGravityOverride=%b gravityFor=%.5f(等效 %.1f m/s²) airResistanceFor=%.4f motY=%.6f",
+                    nms.kbGravityOverride,
+                    com.windpvp.windspigot.knockback.KnockbackEngine.gravityFor(nms),
+                    com.windpvp.windspigot.knockback.KnockbackEngine.gravityFor(nms) / 0.0025D,
+                    com.windpvp.windspigot.knockback.KnockbackEngine.airResistanceFor(nms),
+                    nms.motY));
         } finally { zombie.remove(); }
         return true;
     }

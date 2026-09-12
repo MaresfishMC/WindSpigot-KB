@@ -643,9 +643,17 @@ public final class KnockbackEngine {
 
 	/** EntityLiving 每 tick 重力取值（落地自动解除覆写） */
 	public static double gravityFor(EntityLiving entity) {
-		if (entity.onGround) {
+		// WindSpigot start - 解除条件必须排除"刚被击退的那一 tick"
+		// 旧实现: if (entity.onGround) 就清标记。但击退是在地面命中时施加的, 服务端 onGround
+		// 要到本 tick 的 move() 之后才变 false, 而 gravityFor() 在 move() 之前调用 ⇒
+		// 标记在击退后的第一 tick 就被清掉, 整段滞空都退回原版 0.08 重力,
+		// 自定义重力与顶点丝滑过渡对"站在地上被打飞"这一最常见情形**完全不生效**
+		// (实机接线自检: kbGravityOverride=true 但 gravityFor=0.08000)。
+		// 现在只有"确实停在地面上且没有上升速度"才解除; 击退带来的 motY>0 会保留覆写。
+		if (entity.onGround && entity.motY <= 0.0D) {
 			entity.kbGravityOverride = false;
 		}
+		// WindSpigot end
 		if (!entity.kbGravityOverride || !gravityDiffersFromVanilla()) {
 			return 0.08D;
 		}
@@ -669,7 +677,8 @@ public final class KnockbackEngine {
 
 	/** EntityLiving 每 tick 空气阻力取值 */
 	public static double airResistanceFor(EntityLiving entity) {
-		if (entity.kbGravityOverride && !entity.onGround && gravityDiffersFromVanilla()) {
+		// 与重力同理: 击退当 tick 服务端 onGround 仍是 true, 但 motY>0 说明已离地, 应视为滞空
+		if (entity.kbGravityOverride && (!entity.onGround || entity.motY > 0.0D) && gravityDiffersFromVanilla()) {
 			return P.AIR_RESIST.getDouble();
 		}
 		return 0.9800000190734863D;
