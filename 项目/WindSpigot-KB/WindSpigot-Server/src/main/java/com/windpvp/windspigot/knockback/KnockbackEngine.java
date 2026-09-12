@@ -36,6 +36,9 @@ import net.minecraft.server.PacketPlayOutEntityVelocity;
  */
 public final class KnockbackEngine {
 
+	/** 位置重合时重掷方向用(Entity.random 为 protected, 引擎不在此包内) */
+	private static final java.util.Random RANDOM = new java.util.Random();
+
 	private KnockbackEngine() {
 	}
 
@@ -283,7 +286,17 @@ public final class KnockbackEngine {
 	public static void applyBaseKnockback(EntityLiving victim, double x, double z, EntityHuman attacker) {
 		double magnitude = Math.sqrt(x * x + z * z);
 		if (magnitude < 1.0E-4D) {
-			return;
+			// WindSpigot start - 原版一致性: 攻受位置几乎重合时重掷随机小方向, 击退照常施加。
+			// 原版 1.8.8 EntityLiving.damageEntity 用 for 循环重掷 distanceX/distanceZ 直到
+			// 平方和 >= 1.0E-4, 之后 EntityLiving.a() 会自行归一化, 因此击退强度不受影响、
+			// 只有方向被随机化。旧实现此处直接 return ⇒ 贴脸/同格命中"有伤害却零击退"(nokb 的一种形态),
+			// 且会连带跳过水平上限钳制与重力覆写标记。
+			do {
+				x = (RANDOM.nextDouble() - RANDOM.nextDouble()) * 0.01D;
+				z = (RANDOM.nextDouble() - RANDOM.nextDouble()) * 0.01D;
+				magnitude = Math.sqrt(x * x + z * z);
+			} while (magnitude < 1.0E-4D);
+			// WindSpigot end
 		}
 
 		boolean air = !victim.onGround;
